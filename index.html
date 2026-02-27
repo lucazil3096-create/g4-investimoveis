@@ -1213,11 +1213,14 @@ function Header({page, setPage, scrolled, isAdmin, setIsAdmin}) {
   const [menuOpen, setMenuOpen] = useState(false);
   const showAdminBar = isAdmin && page !== "admin" && page !== "login";
   const nav = (p) => { setPage(p); setMenuOpen(false); };
-  const tapCount = React.useRef(0);
-  const tapTimer = React.useRef(null);
+  useEffect(() => {
+    const handleKey = (e) => { if (e.altKey && e.key.toLowerCase() === 'a') { e.preventDefault(); nav("login"); } };
+    window.addEventListener("keydown", handleKey);
+    return () => window.removeEventListener("keydown", handleKey);
+  }, []);
   return React.createElement("header", {className: `header ${scrolled ? 'scrolled' : ''} ${showAdminBar ? 'has-admin-bar' : ''}`},
     React.createElement("div", {className: "header-inner"},
-      React.createElement("a", {className: "logo-link", onClick: (e) => { e.preventDefault(); tapCount.current++; if(tapTimer.current) clearTimeout(tapTimer.current); tapTimer.current = setTimeout(()=>{tapCount.current=0;},2000); if(tapCount.current>=5){tapCount.current=0;nav("login");} else {nav("home");}}, href: "#"},
+      React.createElement("a", {className: "logo-link", onClick: (e) => { e.preventDefault(); nav("home"); }, href: "#"},
         React.createElement("img", {src: LOGO_SRC, alt: "G4 Investimóveis", className: "logo-img"})
       ),
       React.createElement("button", {className: "mobile-toggle", onClick: () => setMenuOpen(!menuOpen)}, menuOpen ? I.close : I.menu),
