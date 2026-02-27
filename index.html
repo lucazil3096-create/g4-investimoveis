@@ -996,6 +996,7 @@ a { text-decoration: none; color: inherit; }
 <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.9/babel.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <script type="text/babel">
 const { useState, useEffect, useCallback, useRef } = React;
 
@@ -1092,6 +1093,17 @@ const genId = () => Math.random().toString(36).substr(2,9);
 const fmtCurrency = v => new Intl.NumberFormat("pt-BR",{style:"currency",currency:"BRL"}).format(v);
 
 const INITIAL_PROPS = [
+  {
+    id:genId(), title:"Casa Mista - Ref: 001-006", type:"Casa", transaction:"Venda",
+    price:0, showPrice:false, area:750, bedrooms:3, bathrooms:2, garages:1,
+    city:"Mamborê", neighborhood:"Centro", address:"Av. Antônio Chiminácio, 1205 - Centro - Mamborê/PR",
+    lat:-24.3196, lng:-52.5278,
+    description:"Casa mista (madeira/alvenaria), área gourmet em alvenaria. Terreno plano com área de 750,00 m². Dimensões de 15x50 (L.16 Q.75). Próximo ao centro comercial. Posicionamento: Frente oeste. Valor sujeito a alteração sem aviso prévio.",
+    features:["Área Gourmet","Terreno Plano","Próximo ao Centro","Pátio","Construção Mista","Frente Oeste"],
+    rooms:[{name:"Dormitório",qty:3},{name:"Sala de Estar",qty:1},{name:"Sala de TV",qty:1},{name:"Copa",qty:1},{name:"Cozinha",qty:1},{name:"Banheiro Social",qty:2},{name:"Despensa",qty:1},{name:"Área de Serviço",qty:1},{name:"Área Gourmet",qty:1},{name:"Pátio",qty:1},{name:"Vaga de Garagem",qty:1}],
+    images:[],
+    sold:false, reserved:false, featured:true, active:true, createdAt:"2025-02-27"
+  },
   {
     id:genId(), title:"Casa Moderna com Piscina", type:"Casa", transaction:"Venda",
     price:650000, showPrice:true, area:280, bedrooms:3, bathrooms:2, garages:2,
@@ -1873,30 +1885,65 @@ function PropForm({property, onSave, onCancel}) {
     });
   };
 
+  const isImageFile = (name) => /\.(jpg|jpeg|png|webp|gif|bmp)$/i.test(name);
+  const isZipFile = (name) => /\.(zip)$/i.test(name);
+
+  const extractZipImages = async (file) => {
+    if (typeof JSZip === 'undefined') { console.error("JSZip not loaded"); return []; }
+    try {
+      const zip = await JSZip.loadAsync(file);
+      const imageFiles = [];
+      zip.forEach((path, entry) => {
+        if (!entry.dir && isImageFile(entry.name)) imageFiles.push(entry);
+      });
+      imageFiles.sort((a,b) => a.name.localeCompare(b.name));
+      const results = [];
+      for (const entry of imageFiles) {
+        const blob = await entry.async("blob");
+        const ext = entry.name.split('.').pop().toLowerCase();
+        const mime = ext === 'png' ? 'image/png' : ext === 'webp' ? 'image/webp' : ext === 'gif' ? 'image/gif' : 'image/jpeg';
+        const imageFile = new File([blob], entry.name.split('/').pop(), {type: mime});
+        results.push(imageFile);
+      }
+      return results;
+    } catch(err) { console.error("ZIP extract error:", err); return []; }
+  };
+
   const handleUpload = async (e) => {
-    const files = Array.from(e.target.files);
-    if (!files.length) return;
+    const rawFiles = Array.from(e.target.files);
+    if (!rawFiles.length) return;
     setUploading(true);
 
+    // Separate ZIP files from regular images
+    let imageFiles = [];
+    for (const file of rawFiles) {
+      if (isZipFile(file.name)) {
+        const extracted = await extractZipImages(file);
+        imageFiles.push(...extracted);
+      } else if (isImageFile(file.name) || file.type.startsWith('image/')) {
+        imageFiles.push(file);
+      }
+    }
+
+    if (imageFiles.length === 0) { setUploading(false); if (fileRef.current) fileRef.current.value = ""; return; }
+
     if (firebaseOK && storage) {
-      // Upload to Firebase Storage
       const urls = [];
-      for (let i = 0; i < files.length; i++) {
+      for (let i = 0; i < imageFiles.length; i++) {
         try {
-          const url = await FB.uploadImage(files[i], f.id, f.images.length + i);
+          const url = await FB.uploadImage(imageFiles[i], f.id, f.images.length + i);
           if (url) urls.push(url);
         } catch(err) { console.error("Upload fail:", err); }
       }
       if (urls.length > 0) setF(prev => ({...prev, images: [...prev.images, ...urls]}));
     } else {
-      // Fallback: base64 (demo mode)
       let done = 0; const results = [];
-      files.forEach((file, idx) => {
+      imageFiles.forEach((file, idx) => {
         const reader = new FileReader();
         reader.onload = (ev) => {
           results[idx] = ev.target.result;
           done++;
-          if (done === files.length) {
+          if (done === imageFiles.length) {
             setF(prev => ({...prev, images: [...prev.images, ...results.filter(Boolean)]}));
           }
         };
@@ -1993,9 +2040,10 @@ function PropForm({property, onSave, onCancel}) {
 
       ST({icon: I.photo, title: "Fotos do Imóvel", sub: "Envie do computador ou cole URLs. A 1ª foto será a capa do anúncio."}),
       React.createElement("div", {className: "af-group full"},
-        React.createElement("input", {ref:fileRef, type:"file", accept:"image/*", multiple:true, onChange:handleUpload, style:{display:"none"}}),
+        React.createElement("input", {ref:fileRef, type:"file", accept:"image/*,.zip", multiple:true, onChange:handleUpload, style:{display:"none"}}),
         React.createElement("div", {style:{display:"flex",gap:10,marginBottom:14,flexWrap:"wrap"}},
-          React.createElement("button", {className:"btn-red", onClick:()=>fileRef.current&&fileRef.current.click(), style:{padding:"14px 28px"}}, I.photo, uploading ? " Carregando..." : " Enviar Fotos do Computador"),
+          React.createElement("button", {className:"btn-red", onClick:()=>fileRef.current&&fileRef.current.click(), style:{padding:"14px 28px"}}, I.photo, uploading ? " Extraindo e enviando..." : " Enviar Fotos ou ZIP"),
+          React.createElement("span", {style:{fontSize:".72rem",color:"var(--text-light)",marginTop:4}}, "Aceita imagens (JPG, PNG, WEBP) e arquivos .ZIP com fotos dentro"),
           React.createElement("span", {style:{fontSize:".82rem",color:"var(--text-light)",display:"flex",alignItems:"center"}}, "JPG, PNG, WEBP — selecione várias de uma vez")
         ),
         React.createElement("div", {style:{display:"flex",gap:8,marginBottom:16}},
