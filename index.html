@@ -1035,7 +1035,7 @@ const FB = {
   async loadAll() {
     if (!initFirebase()) return null;
     try {
-      const snap = await db.collection("properties").orderBy("createdAt","desc").get();
+      const snap = await db.collection("properties").get();
       return snap.docs.map(d => ({id: d.id, ...d.data()}));
     } catch(e) { console.error("Load error:", e); return null; }
   },
@@ -2120,7 +2120,13 @@ function App() {
   const [page, setPage] = useState("home");
   const [props, setProps] = useState([]);
   const [selProp, setSelProp] = useState(null);
-  const [isAdmin, setIsAdmin] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(() => {
+    try { return sessionStorage.getItem("g4_admin") === "true"; } catch(e) { return false; }
+  });
+  const setAdmin = (val) => {
+    setIsAdmin(val);
+    try { if(val) sessionStorage.setItem("g4_admin","true"); else sessionStorage.removeItem("g4_admin"); } catch(e) {}
+  };
   const [favs, setFavs] = useState([]);
   const [scrolled, setScrolled] = useState(false);
   const [showTop, setShowTop] = useState(false);
@@ -2167,7 +2173,7 @@ function App() {
       React.createElement("div", {style:{fontSize:".9rem",color:"var(--text-light)"}}, "Carregando imóveis...")
     ) : React.createElement(React.Fragment, null,
     isAdmin && page !== "admin" && React.createElement("div", {className: "admin-bar"}, I.eye, " MODO ADMIN — Você está vendo todos os preços (catálogo interno)", !firebaseOK && " | ⚠ MODO DEMO"),
-    React.createElement(Header, {page, setPage, scrolled, isAdmin, setIsAdmin}),
+    React.createElement(Header, {page, setPage, scrolled, isAdmin, setIsAdmin: setAdmin}),
     page === "home" && React.createElement(React.Fragment, null,
       React.createElement(Hero, {setPage, setSearchFilters: setSf}),
       React.createElement(FeaturedSection, {properties: props, setPage, setSelectedProp: setSelProp, favs, toggleFav, isAdmin}),
@@ -2179,7 +2185,7 @@ function App() {
     page === "detail" && selProp && React.createElement(DetailPage, {property: selProp, setPage, properties: props, setSelectedProp: setSelProp, favs, toggleFav, isAdmin}),
     page === "about" && React.createElement(AboutPage),
     page === "contact" && React.createElement(ContactPage),
-    page === "login" && React.createElement(AdminLogin, {setIsAdmin, setPage, showToast}),
+    page === "login" && React.createElement(AdminLogin, {setIsAdmin: setAdmin, setPage, showToast}),
     page === "admin" && isAdmin && React.createElement(AdminPanel, {properties: props, setProperties: setProps, showToast}),
     page !== "admin" && React.createElement(FooterComp, {setPage}),
     React.createElement("button", {className: "wpp-float", onClick: openWpp, title: "WhatsApp"}, I.wpp),
