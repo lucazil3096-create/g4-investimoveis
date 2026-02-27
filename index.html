@@ -1130,7 +1130,7 @@ const INITIAL_PROPS = [
     price:180000, showPrice:true, area:450, bedrooms:0, bathrooms:0, garages:0,
     city:"Mamborê", neighborhood:"Centro", address:"Rua Marechal Deodoro, S/N",
     lat:-24.32, lng:-52.525,
-    description:"Terreno plano e bem localizado no centro da cidade. Medidas 15x30m, ideal para construção residencial ou comercial. Toda infraestrutura urbana: água, luz, esgoto, asfalto. Documentação completa. Aceita financiamento bancário.",
+    description:"Terreno plano e bem localizado no centro da cidade. Medidas 15x30m, ideal para construção residencial ou comercial. Toda infraestrutura urbana: água, luz, esgoto, asfalto. Documentação completa.",
     features:["Plano","Asfalto","Água Encanada","Esgoto","Escritura","Documentação OK","Perto do Centro","Financiável"],
     rooms:[],
     images:["https://images.unsplash.com/photo-1500382017468-9049fed747ef?w=800&h=500&fit=crop","https://images.unsplash.com/photo-1628624747186-a941c476b7ef?w=800&h=500&fit=crop"],
@@ -1338,7 +1338,6 @@ function FeaturedSection({properties, setPage, setSelectedProp, favs, toggleFav,
 function ServicesStrip() {
   const items = [
     {icon: I.key, title: "Compra & Venda", desc: "Assessoria completa na compra e venda do seu imóvel com segurança jurídica."},
-    {icon: I.dollar, title: "Financiamento", desc: "Ajudamos você a encontrar as melhores condições de financiamento."},
     {icon: I.shield, title: "Avaliação", desc: "Avaliação profissional de mercado para seu imóvel com precisão."},
     {icon: I.star, title: "Consultoria", desc: "Orientação especializada para investimentos imobiliários na região."},
   ];
@@ -1373,7 +1372,7 @@ function AboutHome({setPage}) {
         React.createElement("p", null, "A G4 Investimóveis é referência no mercado imobiliário de Mamborê, Campo Mourão e toda região centro-oeste do Paraná. Atuamos com compra e venda de imóveis, oferecendo atendimento personalizado e transparente."),
         React.createElement("p", null, "Sob a direção de ", OWNER, " (CRECI ", CRECI, "), garantimos segurança jurídica e as melhores condições em cada negociação."),
         React.createElement("div", {className: "about-highlights"},
-          [{icon: I.shield, text: "Segurança Jurídica"}, {icon: I.star, text: "Atendimento Premium"}, {icon: I.handshake, text: "Negociação Transparente"}, {icon: I.dollar, text: "Financiamento Facilitado"}].map((h, i) =>
+          [{icon: I.shield, text: "Segurança Jurídica"}, {icon: I.star, text: "Atendimento Premium"}, {icon: I.handshake, text: "Negociação Transparente"}].map((h, i) =>
             React.createElement("div", {key: i, className: "about-hl"},
               React.createElement("div", {className: "about-hl-icon"}, h.icon),
               React.createElement("span", null, h.text)
@@ -1592,7 +1591,7 @@ function AboutPage() {
     React.createElement("h2", {className: "section-title", style:{marginBottom:28}}, "G4 ", React.createElement("em", null, "Investimóveis")),
     React.createElement("p", {style:{color:"var(--text-light)", lineHeight:1.9, marginBottom:20, fontSize:".95rem"}}, "Com sede em Mamborê/PR, a G4 Investimóveis atua em toda a região centro-oeste do Paraná, oferecendo um novo conceito em negócios imobiliários. Somos especializados em compra e venda de imóveis residenciais, comerciais e rurais."),
     React.createElement("p", {style:{color:"var(--text-light)", lineHeight:1.9, marginBottom:20, fontSize:".95rem"}}, "Sob a responsabilidade de ", OWNER, " — CRECI ", CRECI, " — garantimos atendimento personalizado, segurança jurídica em todas as transações e as melhores condições do mercado. Nossa missão é transformar sonhos em realidade, conectando pessoas ao imóvel ideal."),
-    React.createElement("p", {style:{color:"var(--text-light)", lineHeight:1.9, marginBottom:32, fontSize:".95rem"}}, "Oferecemos também assessoria completa em financiamentos, avaliações de mercado e consultoria para investidores. Entre em contato e descubra como podemos ajudar você."),
+    React.createElement("p", {style:{color:"var(--text-light)", lineHeight:1.9, marginBottom:32, fontSize:".95rem"}}, "Oferecemos também assessoria completa em avaliações de mercado e consultoria para investidores. Entre em contato e descubra como podemos ajudar você."),
     React.createElement("div", {style:{display:"grid", gridTemplateColumns:"repeat(auto-fit,minmax(220px,1fr))", gap:20}},
       [{icon:I.shield,t:"Segurança Total",d:"Documentação verificada em cada transação"},{icon:I.star,t:"Atendimento VIP",d:"Acompanhamento personalizado do início ao fim"},{icon:I.dollar,t:"Melhores Condições",d:"Negociação transparente com as melhores taxas"},{icon:I.key,t:"Chave na Mão",d:"Processo simplificado para você ter seu imóvel"}].map((c,i) =>
         React.createElement("div", {key:i, style:{textAlign:"center", padding:28, background:"var(--bg-card)", borderRadius:"var(--radius)", border:"1px solid var(--border-light)"}},
