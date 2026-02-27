@@ -1643,7 +1643,23 @@ function AdminLogin({setIsAdmin, setPage, showToast}) {
   const [u, setU] = useState("");
   const [p, setP] = useState("");
   const [err, setErr] = useState("");
-  const login = () => { if (u === "admin" && p === "luizao3030") { setIsAdmin(true); setPage("admin"); showToast("Bem-vindo ao painel!", "success"); } else setErr("Usuário ou senha incorretos"); };
+  const [loading, setLoading] = useState(false);
+  async function sha256(text) {
+    const data = new TextEncoder().encode(text);
+    const buf = await crypto.subtle.digest('SHA-256', data);
+    return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2,'0')).join('');
+  }
+  const login = async () => {
+    setLoading(true); setErr("");
+    try {
+      const hU = await sha256(u.trim().toLowerCase());
+      const hP = await sha256(p.trim());
+      if (hU === "8c6976e5b5410415bde908bd4dee15dfb167a9c873fc4bb8a81f6f2ab448a918" && hP === "023524ebec344e1a0134d1d96ab9985fbd7b664ed8e58ef49030f4ad647edb70") {
+        setIsAdmin(true); setPage("admin"); showToast("Bem-vindo ao painel!", "success");
+      } else { setErr("Usuário ou senha incorretos"); }
+    } catch(e) { setErr("Erro ao verificar credenciais"); }
+    setLoading(false);
+  };
   return React.createElement("div", {className: "login-page fade-in"},
     React.createElement("div", {className: "login-card"},
       React.createElement("img", {src: LOGO_SRC, alt: "G4", className: "login-logo"}),
@@ -1652,11 +1668,12 @@ function AdminLogin({setIsAdmin, setPage, showToast}) {
       err && React.createElement("div", {className: "login-err"}, err),
       React.createElement("input", {className: "login-input", placeholder: "Usuário", value: u, onChange: e => setU(e.target.value), onKeyDown: e => e.key === 'Enter' && login()}),
       React.createElement("input", {className: "login-input", type: "password", placeholder: "Senha", value: p, onChange: e => setP(e.target.value), onKeyDown: e => e.key === 'Enter' && login()}),
-      React.createElement("button", {className: "login-btn", onClick: login}, "Entrar"),
+      React.createElement("button", {className: "login-btn", onClick: login, disabled: loading}, loading ? "Verificando..." : "Entrar"),
       React.createElement("p", {style:{marginTop:20,fontSize:".76rem",color:"var(--text-light)"}}, "Acesso restrito ao administrador")
     )
   );
 }
+
 
 // ===== ADMIN PANEL =====
 function AdminPanel({properties, setProperties, showToast}) {
