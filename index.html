@@ -1980,7 +1980,17 @@ function PropForm({property, onSave, onCancel}) {
       React.createElement("div", {className: "af-group"}, React.createElement("label", {className: "af-label"}, "Negócio *"), React.createElement("select", {className: "af-select", value: f.transaction, onChange: e => upd("transaction", e.target.value)}, TRANSACTIONS.map(t => React.createElement("option", {key:t, value:t}, t)))),
 
       ST({icon: I.dollar, title: "Preço", sub: "Defina o valor e se ele ficará visível para visitantes"}),
-      React.createElement("div", {className: "af-group"}, React.createElement("label", {className: "af-label"}, "Valor (R$) *"), React.createElement("input", {className: "af-input", type: "number", value: f.price||"", onChange: e => upd("price", +e.target.value), placeholder: "350000", style:{fontSize:"1.1rem",fontWeight:700}})),
+      React.createElement("div", {className: "af-group"}, React.createElement("label", {className: "af-label"}, "Valor (R$) *"),
+        React.createElement("input", {className: "af-input", type: "text", inputMode: "numeric",
+          value: f.price ? Number(f.price).toLocaleString("pt-BR") : "",
+          onChange: e => {
+            const raw = e.target.value.replace(/\D/g, "");
+            upd("price", parseInt(raw || "0", 10));
+          },
+          placeholder: "Ex: 650000", style:{fontSize:"1.1rem",fontWeight:700}
+        }),
+        f.price > 0 && React.createElement("div", {style:{fontSize:".82rem",color:"var(--primary)",fontWeight:700,marginTop:4}}, fmtCurrency(f.price))
+      ),
       React.createElement("div", {className: "af-group", style:{display:"flex",alignItems:"flex-end"}},
         React.createElement("div", {style:{background: f.showPrice ? "rgba(22,163,74,.08)" : "rgba(212,160,18,.08)", borderRadius:"var(--radius-sm)", padding:"16px 20px", width:"100%", border: f.showPrice ? "1px solid rgba(22,163,74,.2)" : "1px solid rgba(212,160,18,.2)"}},
           React.createElement("label", {className: "af-check", style:{marginBottom:4}}, React.createElement("input", {type:"checkbox", checked:f.showPrice, onChange:e=>upd("showPrice",e.target.checked)}), React.createElement("strong",null, f.showPrice ? " Preço VISÍVEL" : " Preço OCULTO")),
