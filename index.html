@@ -2418,6 +2418,30 @@ function AdminPanel({properties, setProperties, showToast, settings, viewsMap}) 
     setAdminSort(val);
     try { localStorage.setItem("g4_admin_sort", val); } catch(e) {}
   };
+  // Filtros do painel
+  const [fType, setFType] = useState("");
+  const [fTransaction, setFTransaction] = useState("");
+  const [fCity, setFCity] = useState("");
+  const [fMinPrice, setFMinPrice] = useState("");
+  const [fMaxPrice, setFMaxPrice] = useState("");
+  const [fSearch, setFSearch] = useState("");
+  const clearFilters = () => { setFType(""); setFTransaction(""); setFCity(""); setFMinPrice(""); setFMaxPrice(""); setFSearch(""); };
+  const hasFilters = fType || fTransaction || fCity || fMinPrice || fMaxPrice || fSearch;
+  const applyAdminFilters = (arr) => {
+    return arr.filter(p => {
+      if (fType && p.type !== fType) return false;
+      if (fTransaction && p.transaction !== fTransaction) return false;
+      if (fCity && (p.city || "").toLowerCase() !== fCity.toLowerCase()) return false;
+      if (fMinPrice && (p.price || 0) < +fMinPrice) return false;
+      if (fMaxPrice && (p.price || 0) > +fMaxPrice) return false;
+      if (fSearch) {
+        const q = fSearch.toLowerCase();
+        const hay = ((p.title || "") + " " + (p.reference || "") + " " + (p.neighborhood || "") + " " + (p.description || "")).toLowerCase();
+        if (!hay.includes(q)) return false;
+      }
+      return true;
+    });
+  };
   // Modo seleção de imóveis pra cliente
   const [selectMode, setSelectMode] = useState(false);
   const [selectedIds, setSelectedIds] = useState([]);
@@ -2471,9 +2495,11 @@ function AdminPanel({properties, setProperties, showToast, settings, viewsMap}) 
     if (adminSort === "title-asc") return (a,b) => (a.title||"").localeCompare(b.title||"");
     return (a,b) => refNumA(b) - refNumA(a); // ref-desc default (mais novo primeiro)
   })();
-  const activeProps = properties.filter(p=>p.active&&!p.sold).sort(sortFn);
-  const soldProps = properties.filter(p=>p.sold).sort(sortFn);
-  const inactiveProps = properties.filter(p=>!p.active&&!p.sold).sort(sortFn);
+  const activeProps = applyAdminFilters(properties.filter(p=>p.active&&!p.sold)).sort(sortFn);
+  const soldProps = applyAdminFilters(properties.filter(p=>p.sold)).sort(sortFn);
+  const inactiveProps = applyAdminFilters(properties.filter(p=>!p.active&&!p.sold)).sort(sortFn);
+  // Pra dropdown de cidades, lista as cidades existentes
+  const cityOptions = Array.from(new Set(properties.map(p => p.city).filter(Boolean))).sort();
   const del = async id => {
     const prev = properties;
     setProperties(p => p.filter(x => x.id !== id));
@@ -2618,25 +2644,65 @@ function AdminPanel({properties, setProperties, showToast, settings, viewsMap}) 
           React.createElement("h1", {className: "admin-page-title"}, "Todos os Imóveis"),
           React.createElement("span", {style:{fontSize:".9rem", color:"var(--text-light)"}}, activeProps.length, " imóvel(is) ativo(s)")
         ),
-        React.createElement("div", {style:{display:"flex", gap:10, alignItems:"center", marginBottom:20, flexWrap:"wrap", padding:"12px 16px", background:"white", borderRadius:10, border:"1px solid var(--border)"}},
-          React.createElement("span", {style:{fontSize:".85rem", color:"var(--text)", fontWeight:700, whiteSpace:"nowrap"}}, "🔀 Ordenar por:"),
-          React.createElement("select", {value: adminSort, onChange: e => changeAdminSort(e.target.value), className: "af-input", style:{height:40, padding:"0 14px", minWidth:240, fontSize:".88rem", fontWeight:600, marginBottom:0, flex:"0 1 auto"}},
-            React.createElement("option", {value:"ref-desc"}, "📅 Mais novos (Ref. ↓)"),
-            React.createElement("option", {value:"ref-asc"}, "📜 Mais antigos (Ref. ↑)"),
-            React.createElement("option", {value:"price-asc"}, "💰 Menor preço"),
-            React.createElement("option", {value:"price-desc"}, "💵 Maior preço"),
-            React.createElement("option", {value:"area-desc"}, "📐 Maior área"),
-            React.createElement("option", {value:"title-asc"}, "🔤 Nome (A→Z)")
-          ),
-          React.createElement("div", {style:{marginLeft:"auto", display:"flex", gap:8, alignItems:"center"}},
+        React.createElement("div", {style:{marginBottom:20, padding:"16px 18px", background:"white", borderRadius:10, border:"1px solid var(--border)"}},
+          // Linha 1: busca + ordenação + botão de seleção
+          React.createElement("div", {style:{display:"flex", gap:10, alignItems:"center", flexWrap:"wrap", marginBottom:12}},
+            React.createElement("input", {className:"af-input", value: fSearch, onChange: e => setFSearch(e.target.value), placeholder:"🔍 Buscar por título, referência, bairro...", style:{height:40, fontSize:".88rem", marginBottom:0, flex:"1 1 200px", minWidth:200}}),
+            React.createElement("select", {value: adminSort, onChange: e => changeAdminSort(e.target.value), className: "af-input", style:{height:40, padding:"0 14px", minWidth:200, fontSize:".88rem", fontWeight:600, marginBottom:0}},
+              React.createElement("option", {value:"ref-desc"}, "📅 Mais novos (Ref. ↓)"),
+              React.createElement("option", {value:"ref-asc"}, "📜 Mais antigos (Ref. ↑)"),
+              React.createElement("option", {value:"price-asc"}, "💰 Menor preço"),
+              React.createElement("option", {value:"price-desc"}, "💵 Maior preço"),
+              React.createElement("option", {value:"area-desc"}, "📐 Maior área"),
+              React.createElement("option", {value:"title-asc"}, "🔤 Nome (A→Z)")
+            ),
             !selectMode ?
-              React.createElement("button", {className:"btn-red", onClick: () => setSelectMode(true), style:{padding:"10px 20px", fontSize:".88rem"}}, "📤 Selecionar pra Cliente") :
+              React.createElement("button", {className:"btn-red", onClick: () => setSelectMode(true), style:{padding:"10px 20px", fontSize:".88rem", whiteSpace:"nowrap"}}, "📤 Selecionar pra Cliente") :
               React.createElement(React.Fragment, null,
                 React.createElement("span", {style:{fontSize:".85rem", fontWeight:700, color:"var(--red)"}}, selectedIds.length, " selecionado(s)"),
-                React.createElement("button", {className:"btn-red", onClick: () => setShowSendModal(true), disabled: selectedIds.length === 0, style:{padding:"10px 20px", fontSize:".88rem", opacity: selectedIds.length === 0 ? .4 : 1}}, "✉️ Enviar Link"),
+                React.createElement("button", {className:"btn-red", onClick: () => setShowSendModal(true), disabled: selectedIds.length === 0, style:{padding:"10px 20px", fontSize:".88rem", opacity: selectedIds.length === 0 ? .4 : 1, whiteSpace:"nowrap"}}, "✉️ Enviar Link"),
                 React.createElement("button", {className:"btn-outline-sm", onClick: clearSelection, style:{padding:"10px 16px", fontSize:".85rem"}}, "Cancelar")
               )
-          )
+          ),
+          // Linha 2: filtros (tipo, transação, cidade, faixa preço)
+          React.createElement("div", {style:{display:"grid", gridTemplateColumns:"repeat(auto-fit, minmax(150px, 1fr))", gap:10, alignItems:"end"}},
+            React.createElement("div", null,
+              React.createElement("label", {style:{fontSize:".72rem", fontWeight:700, color:"var(--text-light)", textTransform:"uppercase", letterSpacing:".05em", display:"block", marginBottom:4}}, "🏠 Tipo"),
+              React.createElement("select", {value: fType, onChange: e => setFType(e.target.value), className:"af-input", style:{height:38, fontSize:".85rem", marginBottom:0, width:"100%"}},
+                React.createElement("option", {value:""}, "Todos"),
+                TYPES.map(t => React.createElement("option", {key:t, value:t}, t))
+              )
+            ),
+            React.createElement("div", null,
+              React.createElement("label", {style:{fontSize:".72rem", fontWeight:700, color:"var(--text-light)", textTransform:"uppercase", letterSpacing:".05em", display:"block", marginBottom:4}}, "💼 Transação"),
+              React.createElement("select", {value: fTransaction, onChange: e => setFTransaction(e.target.value), className:"af-input", style:{height:38, fontSize:".85rem", marginBottom:0, width:"100%"}},
+                React.createElement("option", {value:""}, "Todas"),
+                React.createElement("option", {value:"Venda"}, "Venda"),
+                React.createElement("option", {value:"Aluguel"}, "Aluguel"),
+                React.createElement("option", {value:"Temporada"}, "Temporada")
+              )
+            ),
+            React.createElement("div", null,
+              React.createElement("label", {style:{fontSize:".72rem", fontWeight:700, color:"var(--text-light)", textTransform:"uppercase", letterSpacing:".05em", display:"block", marginBottom:4}}, "📍 Cidade"),
+              React.createElement("select", {value: fCity, onChange: e => setFCity(e.target.value), className:"af-input", style:{height:38, fontSize:".85rem", marginBottom:0, width:"100%"}},
+                React.createElement("option", {value:""}, "Todas"),
+                cityOptions.map(c => React.createElement("option", {key:c, value:c}, c))
+              )
+            ),
+            React.createElement("div", null,
+              React.createElement("label", {style:{fontSize:".72rem", fontWeight:700, color:"var(--text-light)", textTransform:"uppercase", letterSpacing:".05em", display:"block", marginBottom:4}}, "💰 Preço mín."),
+              React.createElement("input", {className:"af-input", type:"number", value: fMinPrice, onChange: e => setFMinPrice(e.target.value), placeholder:"Ex: 100000", style:{height:38, fontSize:".85rem", marginBottom:0, width:"100%"}})
+            ),
+            React.createElement("div", null,
+              React.createElement("label", {style:{fontSize:".72rem", fontWeight:700, color:"var(--text-light)", textTransform:"uppercase", letterSpacing:".05em", display:"block", marginBottom:4}}, "💵 Preço máx."),
+              React.createElement("input", {className:"af-input", type:"number", value: fMaxPrice, onChange: e => setFMaxPrice(e.target.value), placeholder:"Ex: 500000", style:{height:38, fontSize:".85rem", marginBottom:0, width:"100%"}})
+            ),
+            hasFilters && React.createElement("div", null,
+              React.createElement("label", {style:{fontSize:".72rem", display:"block", marginBottom:4, opacity:0}}, " "),
+              React.createElement("button", {className:"btn-outline-sm", onClick: clearFilters, style:{height:38, fontSize:".82rem", width:"100%", whiteSpace:"nowrap"}}, "✕ Limpar filtros")
+            )
+          ),
+          hasFilters && React.createElement("div", {style:{marginTop:10, fontSize:".82rem", color:"var(--red)", fontWeight:700}}, "🎯 ", activeProps.length, " imóvel(is) corresponde(m) aos filtros")
         ),
         activeProps.length === 0 ?
           React.createElement("div", {style:{textAlign:"center",padding:"80px 24px",background:"white",borderRadius:"var(--radius-lg)",border:"1px solid var(--border)"}},
