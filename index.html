@@ -616,13 +616,21 @@ a { text-decoration: none; color: inherit; }
 }
 .lightbox-img { max-width: 94vw; max-height: 88vh; object-fit: contain; user-select: none; }
 .lightbox-close {
-  position: absolute; top: 20px; right: 24px; width: 48px; height: 48px;
-  background: rgba(255,255,255,.1); border: none; border-radius: 50%; cursor: pointer;
+  position: absolute; top: 20px; right: 24px; width: 54px; height: 54px;
+  background: rgba(220,38,38,.95); border: 2px solid white; border-radius: 50%; cursor: pointer;
   color: white; display: flex; align-items: center; justify-content: center;
-  transition: background .2s; z-index: 2;
+  transition: all .2s; z-index: 10; box-shadow: 0 4px 14px rgba(0,0,0,.5);
 }
-.lightbox-close:hover { background: rgba(255,255,255,.22); }
-.lightbox-close svg { width: 24px; height: 24px; }
+.lightbox-close:hover { background: rgba(220,38,38,1); transform: scale(1.08); }
+.lightbox-close:active { transform: scale(.95); }
+.lightbox-close svg { width: 28px; height: 28px; stroke-width: 3; }
+.lightbox-hint {
+  position: absolute; top: 24px; left: 50%; transform: translateX(-50%);
+  background: rgba(0,0,0,.55); color: rgba(255,255,255,.85); padding: 6px 14px;
+  border-radius: 16px; font-size: .78rem; letter-spacing: .03em;
+  pointer-events: none; display: none;
+}
+@media (hover: none) and (pointer: coarse) { .lightbox-hint { display: block; } }
 .lightbox-nav {
   position: absolute; top: 50%; transform: translateY(-50%);
   width: 56px; height: 56px; background: rgba(255,255,255,.1); border: none;
@@ -1884,6 +1892,21 @@ function DetailPage({property: p, setPage, properties, setSelectedProp, favs, to
   const canSeePrice = p.showPrice || isAdmin;
   const prevImg = () => setCi(i => (i - 1 + p.images.length) % p.images.length);
   const nextImg = () => setCi(i => (i + 1) % p.images.length);
+  const touchStartX = useRef(0);
+  const touchStartY = useRef(0);
+  const onTouchStart = (e) => {
+    if (!e.touches || !e.touches[0]) return;
+    touchStartX.current = e.touches[0].clientX;
+    touchStartY.current = e.touches[0].clientY;
+  };
+  const onTouchEnd = (e) => {
+    if (!e.changedTouches || !e.changedTouches[0]) return;
+    const dx = e.changedTouches[0].clientX - touchStartX.current;
+    const dy = e.changedTouches[0].clientY - touchStartY.current;
+    if (Math.abs(dx) > 50 && Math.abs(dx) > Math.abs(dy) && p.images.length > 1) {
+      if (dx > 0) prevImg(); else nextImg();
+    }
+  };
 
   // Conta visualização (uma vez por sessão por imóvel)
   useEffect(() => {
@@ -1945,15 +1968,16 @@ function DetailPage({property: p, setPage, properties, setSelectedProp, favs, to
 
   return React.createElement("div", {className: "detail-page fade-in"},
     React.createElement("button", {className: "detail-back", onClick: () => setPage("properties")}, I.chevL, " Voltar aos imóveis"),
-    lightbox && p.images.length > 0 && React.createElement("div", {className: "lightbox", onClick: () => setLightbox(false)},
-      React.createElement("button", {className: "lightbox-close", onClick: (e) => { e.stopPropagation(); setLightbox(false); }, title: "Fechar (Esc)"}, I.close),
+    lightbox && p.images.length > 0 && React.createElement("div", {className: "lightbox", onClick: () => setLightbox(false), onTouchStart: onTouchStart, onTouchEnd: onTouchEnd},
+      React.createElement("button", {className: "lightbox-close", onClick: (e) => { e.stopPropagation(); setLightbox(false); }, title: "Fechar (Esc)", "aria-label":"Fechar"}, I.close),
       p.images.length > 1 && React.createElement("button", {className: "lightbox-nav left", onClick: (e) => { e.stopPropagation(); prevImg(); }, title: "Anterior"}, I.chevL),
-      React.createElement("img", {className: "lightbox-img", src: p.images[ci], alt: p.title, onClick: (e) => e.stopPropagation()}),
+      React.createElement("img", {className: "lightbox-img", src: p.images[ci], alt: p.title, onClick: (e) => e.stopPropagation(), onTouchStart: onTouchStart, onTouchEnd: onTouchEnd, draggable: false}),
       p.images.length > 1 && React.createElement("button", {className: "lightbox-nav right", onClick: (e) => { e.stopPropagation(); nextImg(); }, title: "Próxima"}, I.chevR),
-      p.images.length > 1 && React.createElement("div", {className: "lightbox-counter"}, ci + 1, " / ", p.images.length)
+      p.images.length > 1 && React.createElement("div", {className: "lightbox-counter"}, ci + 1, " / ", p.images.length),
+      p.images.length > 1 && React.createElement("div", {className: "lightbox-hint"}, "← Arraste para navegar →")
     ),
-    React.createElement("div", {className: "detail-gallery", style: p.reserved ? {border:"3px solid #dc2626"} : {}},
-      React.createElement("img", {src: p.images[ci], alt: p.title, style: p.reserved ? {filter:"brightness(.8)"} : {}, onClick: () => p.images.length > 0 && setLightbox(true), title: "Clique para ampliar"}),
+    React.createElement("div", {className: "detail-gallery", style: p.reserved ? {border:"3px solid #dc2626"} : {}, onTouchStart: onTouchStart, onTouchEnd: onTouchEnd},
+      React.createElement("img", {src: p.images[ci], alt: p.title, style: p.reserved ? {filter:"brightness(.8)"} : {}, onClick: () => p.images.length > 0 && setLightbox(true), title: "Clique para ampliar", draggable: false}),
       p.reserved && React.createElement("div", {style:{position:"absolute",top:20,left:20,zIndex:5,background:"linear-gradient(135deg,#dc2626,#b91c1c)",color:"white",padding:"10px 24px",borderRadius:8,fontSize:".85rem",fontWeight:900,letterSpacing:".1em",boxShadow:"0 4px 16px rgba(220,38,38,.4)",display:"flex",alignItems:"center",gap:8}}, "⚡ IMÓVEL RESERVADO"),
       p.images.length > 1 && React.createElement(React.Fragment, null,
         React.createElement("button", {className: "gal-nav left", onClick: () => setCi(i => (i-1+p.images.length)%p.images.length)}, I.chevL),
