@@ -695,6 +695,11 @@ body.lightbox-open .filters-bar { display: none !important; }
 .dt-spec-label { font-size: .76rem; color: var(--text-light); }
 .dt-section-title { font-family: var(--font-display); font-size: 1.7rem; letter-spacing: .04em; text-transform: uppercase; margin-bottom: 16px; }
 .dt-desc { color: var(--text-light); line-height: 1.9; margin-bottom: 36px; }
+.dt-desc p { margin: 0 0 4px 0; }
+.dt-desc .dt-desc-title { color: var(--red); font-weight: 800; letter-spacing: .03em; margin-top: 14px; margin-bottom: 6px; text-transform: uppercase; }
+.dt-desc .dt-desc-title:first-child { margin-top: 0; }
+.dt-desc .dt-desc-label { color: var(--red); font-weight: 700; }
+.dt-desc .dt-desc-spacer { height: 10px; }
 .dt-features { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-bottom: 36px; }
 .dt-feat {
   display: flex; align-items: center; gap: 10px; font-size: .9rem; color: var(--text-light);
@@ -2055,7 +2060,31 @@ function DetailPage({property: p, setPage, properties, setSelectedProp, favs, to
           )
         ),
         React.createElement("h3", {className: "dt-section-title"}, "Descrição"),
-        React.createElement("p", {className: "dt-desc"}, p.description),
+        React.createElement("div", {className: "dt-desc"}, (p.description || "").split(/\r?\n/).map((line, i) => {
+          const t = line.trim();
+          if (!t) return React.createElement("div", {key: i, className: "dt-desc-spacer"});
+          // Título: linha toda em maiúscula sem ":"
+          if (t === t.toUpperCase() && t.length > 2 && !t.includes(':') && /[A-ZÁÀÂÃÉÊÍÓÔÕÚÇ]/.test(t)) {
+            return React.createElement("p", {key: i, className: "dt-desc-title"}, t);
+          }
+          // Linha com label antes de ":"
+          // Suporta inicio "- " (lista) e "*" (bullet)
+          let prefix = "";
+          let body = t;
+          if (body.startsWith("- ") || body.startsWith("* ")) { prefix = body.slice(0,2); body = body.slice(2); }
+          else if (body.startsWith("-") || body.startsWith("*")) { prefix = body[0] + " "; body = body.slice(1).trim(); }
+          const colonIdx = body.indexOf(':');
+          if (colonIdx > 0 && colonIdx < body.length) {
+            const label = body.slice(0, colonIdx + 1);
+            const rest = body.slice(colonIdx + 1);
+            return React.createElement("p", {key: i},
+              prefix,
+              React.createElement("span", {className: "dt-desc-label"}, label),
+              rest
+            );
+          }
+          return React.createElement("p", {key: i}, prefix + body);
+        })),
         React.createElement("h3", {className: "dt-section-title"}, "Características"),
         React.createElement("div", {className: "dt-features"}, p.features.map(f => React.createElement("div", {key: f, className: "dt-feat"}, React.createElement("div", {className: "dt-feat-check"}, I.check), f))),
         React.createElement("div", {className: "dt-map-wrap"},
