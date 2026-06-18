@@ -2391,6 +2391,13 @@ function AdminLogin({setIsAdmin, setPage, showToast}) {
 
 // ===== ADMIN PANEL =====
 function AdminPanel({properties, setProperties, showToast, settings, viewsMap}) {
+  const [adminSort, setAdminSort] = useState(() => {
+    try { return localStorage.getItem("g4_admin_sort") || "ref-desc"; } catch(e) { return "ref-desc"; }
+  });
+  const changeAdminSort = (val) => {
+    setAdminSort(val);
+    try { localStorage.setItem("g4_admin_sort", val); } catch(e) {}
+  };
   const vMap = viewsMap || {};
   const [ap, setAp] = useState("dashboard");
   const [editProp, setEditProp] = useState(null);
@@ -2403,10 +2410,17 @@ function AdminPanel({properties, setProperties, showToast, settings, viewsMap}) 
   const soldCount = properties.filter(p=>p.sold).length;
   const inactiveCount = properties.filter(p=>!p.active&&!p.sold).length;
   const refNumA = (p) => { const r = parseInt(String(p.reference || "").replace(/\D/g,""), 10); return isNaN(r) ? 0 : r; };
-  const byRef = (a,b) => refNumA(b) - refNumA(a);
-  const activeProps = properties.filter(p=>p.active&&!p.sold).sort(byRef);
-  const soldProps = properties.filter(p=>p.sold).sort(byRef);
-  const inactiveProps = properties.filter(p=>!p.active&&!p.sold).sort(byRef);
+  const sortFn = (() => {
+    if (adminSort === "ref-asc") return (a,b) => refNumA(a) - refNumA(b);
+    if (adminSort === "price-asc") return (a,b) => (a.price||0) - (b.price||0);
+    if (adminSort === "price-desc") return (a,b) => (b.price||0) - (a.price||0);
+    if (adminSort === "area-desc") return (a,b) => (b.area||0) - (a.area||0);
+    if (adminSort === "title-asc") return (a,b) => (a.title||"").localeCompare(b.title||"");
+    return (a,b) => refNumA(b) - refNumA(a); // ref-desc default (mais novo primeiro)
+  })();
+  const activeProps = properties.filter(p=>p.active&&!p.sold).sort(sortFn);
+  const soldProps = properties.filter(p=>p.sold).sort(sortFn);
+  const inactiveProps = properties.filter(p=>!p.active&&!p.sold).sort(sortFn);
   const del = async id => {
     const prev = properties;
     setProperties(p => p.filter(x => x.id !== id));
@@ -2546,7 +2560,21 @@ function AdminPanel({properties, setProperties, showToast, settings, viewsMap}) 
         ),
         React.createElement("div", {style:{overflowX:"auto"}}, React.createElement("table", {className: "a-table"}, React.createElement("thead", null, React.createElement("tr", null, ["Foto","Imóvel","Tipo","Cidade","Preço","Views","Visível","Reserva","Status","Ações"].map(h => React.createElement("th", {key:h}, h)))), React.createElement("tbody", null, activeProps.slice(0,5).map(p => React.createElement(TableRow, {key:p.id, p})))))
       ) : ap === 'list' ? React.createElement(React.Fragment, null,
-        React.createElement("div", {className: "admin-top"}, React.createElement("h1", {className: "admin-page-title"}, "Todos os Imóveis"), React.createElement("button", {className: "btn-red", onClick: openNew, style:{padding:"14px 28px",fontSize:".95rem"}}, I.plus, " Adicionar Novo Imóvel")),
+        React.createElement("div", {className: "admin-top"},
+          React.createElement("h1", {className: "admin-page-title"}, "Todos os Imóveis"),
+          React.createElement("div", {style:{display:"flex", gap:12, alignItems:"center", flexWrap:"wrap"}},
+            React.createElement("label", {style:{fontSize:".82rem", color:"var(--text-light)", fontWeight:600}}, "Ordenar:"),
+            React.createElement("select", {value: adminSort, onChange: e => changeAdminSort(e.target.value), className: "af-input", style:{height:42, padding:"0 14px", minWidth:200, fontSize:".88rem", fontWeight:600, marginBottom:0}},
+              React.createElement("option", {value:"ref-desc"}, "📅 Mais novos (Ref. ↓)"),
+              React.createElement("option", {value:"ref-asc"}, "📜 Mais antigos (Ref. ↑)"),
+              React.createElement("option", {value:"price-asc"}, "💰 Menor preço"),
+              React.createElement("option", {value:"price-desc"}, "💵 Maior preço"),
+              React.createElement("option", {value:"area-desc"}, "📐 Maior área"),
+              React.createElement("option", {value:"title-asc"}, "🔤 Nome (A→Z)")
+            ),
+            React.createElement("button", {className: "btn-red", onClick: openNew, style:{padding:"14px 28px",fontSize:".95rem"}}, I.plus, " Adicionar Novo Imóvel")
+          )
+        ),
         activeProps.length === 0 ?
           React.createElement("div", {style:{textAlign:"center",padding:"80px 24px",background:"white",borderRadius:"var(--radius-lg)",border:"1px solid var(--border)"}},
             React.createElement("div", {style:{fontSize:48,marginBottom:16}}, "🏠"),
