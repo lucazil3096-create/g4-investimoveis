@@ -129,7 +129,7 @@ a { text-decoration: none; color: inherit; }
 .feat-slide-spec svg { width: 16px; height: 16px; }
 .feat-slide-bottom { display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
 .feat-slide-price { font-family: var(--font-num); font-size: 2.4rem; font-weight: 900; color: white; letter-spacing: -.02em; text-shadow: 0 2px 12px rgba(0,0,0,.4); }
-.feat-slide-price-hidden { font-style: italic; font-size: 1.2rem; color: rgba(255,255,255,.8); }
+.feat-slide-price-hidden { font-size: 1.4rem; color: white; font-weight: 900; letter-spacing: .05em; text-shadow: 0 2px 12px rgba(0,0,0,.5); }
 .feat-slide-cta {
   background: white; color: var(--text); border: none; padding: 14px 28px; border-radius: 50px;
   font-weight: 700; font-size: .95rem; cursor: pointer; display: flex; align-items: center; gap: 6px;
@@ -411,7 +411,7 @@ a { text-decoration: none; color: inherit; }
   color: var(--red-dark); margin-bottom: 6px; letter-spacing: -.02em;
 }
 .card-price-sub { font-size: .78rem; color: var(--text-light); font-weight: 400; }
-.card-price-hidden { font-size: .9rem; color: var(--text-light); font-style: italic; }
+.card-price-hidden { font-size: 1rem; color: var(--red); font-weight: 800; letter-spacing: .04em; text-transform: uppercase; }
 .card-title {
   font-size: 1.05rem; font-weight: 600; margin-bottom: 8px;
   line-height: 1.35; color: var(--text);
@@ -677,7 +677,7 @@ body.lightbox-open .filters-bar { display: none !important; }
   color: var(--gold-light); letter-spacing: -.02em;
 }
 .dt-price-label { color: rgba(255,255,255,.5); font-size: .85rem; margin-top: 4px; }
-.dt-price-consult { color: rgba(255,255,255,.7); font-size: 1.1rem; font-style: italic; }
+.dt-price-consult { color: white; font-size: 1.8rem; font-weight: 900; letter-spacing: .06em; text-transform: uppercase; }
 .dt-specs {
   display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 20px;
   margin-bottom: 36px; padding: 24px 16px; background: var(--bg-card); border-radius: var(--radius);
@@ -1639,7 +1639,7 @@ function PropCard({p, onClick, favs, toggleFav, isAdmin}) {
     React.createElement("div", {className: "card-body"},
       canSeePrice ?
         React.createElement("div", {className: "card-price"}, fmtCurrency(p.price), p.transaction === "Aluguel" ? React.createElement("span", {className: "card-price-sub"}, " /mês") : null) :
-        React.createElement("div", {className: "card-price-hidden"}, "Consulte o valor"),
+        React.createElement("div", {className: "card-price-hidden"}, "VALOR SOB CONSULTA"),
       React.createElement("div", {className: "card-title"}, p.title),
       React.createElement("div", {className: "card-location"}, I.pin, " ", p.neighborhood, ", ", p.city),
       React.createElement("div", {className: "card-divider"}),
@@ -1707,7 +1707,7 @@ function FeaturedSection({properties, setPage, setSelectedProp, favs, toggleFav,
         React.createElement("div", {className: "feat-slide-bottom"},
           canSeePrice
             ? React.createElement("div", {className: "feat-slide-price"}, fmtCurrency(p.price), p.transaction === "Aluguel" && React.createElement("span", {style:{fontSize:".6em", opacity:.7}}, " /mês"))
-            : React.createElement("div", {className: "feat-slide-price-hidden"}, "Consulte"),
+            : React.createElement("div", {className: "feat-slide-price-hidden"}, "VALOR SOB CONSULTA"),
           React.createElement("button", {className: "feat-slide-cta", onClick: (e) => { e.stopPropagation(); goDetail(); }}, "Ver detalhes ", I.chevR)
         )
       ),
@@ -2014,7 +2014,7 @@ function DetailPage({property: p, setPage, properties, setSelectedProp, favs, to
             p.priceReduced && p.oldPrice > p.price && React.createElement("div", {style:{fontSize:"1rem", color:"rgba(255,255,255,.5)", textDecoration:"line-through", marginBottom:4}}, "De ", fmtCurrency(p.oldPrice)),
             React.createElement("div", {className: "dt-price-val"}, fmtCurrency(p.price), p.transaction === "Aluguel" ? "/mês" : ""),
             React.createElement("div", {className: "dt-price-label"}, p.transaction, !p.showPrice && isAdmin ? " — Preço oculto para visitantes" : "")
-          ) : React.createElement("div", {className: "dt-price-consult"}, "Valor sob consulta — entre em contato")
+          ) : React.createElement("div", {className: "dt-price-consult"}, "VALOR SOB CONSULTA")
         ),
         React.createElement("div", {className: "dt-specs"},
           p.bedrooms > 0 && React.createElement("div", {className: "dt-spec"},
