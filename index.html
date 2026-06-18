@@ -3563,6 +3563,15 @@ function App() {
     }
   }, [props]);
 
+  // Deep link admin: /admin, ?admin=1 ou #admin abrem a tela de login
+  useEffect(() => {
+    const path = (window.location.pathname || "").toLowerCase();
+    const hash = (window.location.hash || "").toLowerCase();
+    const params = new URLSearchParams(window.location.search);
+    const wantsAdmin = path.includes("/admin") || hash.includes("admin") || params.get("admin") === "1" || params.has("admin");
+    if (wantsAdmin && !isAdmin) setPage("login");
+  }, []);
+
   // Listener em tempo real: qualquer mudança no Firestore aparece na hora
   useEffect(() => {
     if (FIREBASE_CONFIG.apiKey === "COLE_SUA_API_KEY_AQUI") {
