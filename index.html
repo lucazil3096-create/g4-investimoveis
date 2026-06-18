@@ -1316,6 +1316,26 @@ const FB = {
     try { await db.collection("settings").doc("site").set(data, {merge: true}); return {ok: true}; }
     catch(e) { console.error("Save settings error:", e); return {ok: false, error: fbErrMsg(e)}; }
   },
+  async saveSelection(selection) {
+    if (!initFirebase()) return {ok: false, error: "Firebase desconectado"};
+    try {
+      await db.collection("selections").doc(selection.id).set({
+        clientName: selection.clientName || "",
+        message: selection.message || "",
+        agentName: selection.agentName || "",
+        propertyIds: selection.propertyIds || [],
+        createdAt: selection.createdAt || new Date().toISOString()
+      });
+      return {ok: true};
+    } catch(e) { console.error("Save selection error:", e); return {ok: false, error: fbErrMsg(e)}; }
+  },
+  async getSelection(id) {
+    if (!initFirebase() || !id) return null;
+    try {
+      const snap = await db.collection("selections").doc(id).get();
+      return snap.exists ? snap.data() : null;
+    } catch(e) { console.error("Get selection error:", e); return null; }
+  },
   async incrementViews(propId) {
     if (!initFirebase() || !propId) return;
     try {
@@ -2398,6 +2418,39 @@ function AdminPanel({properties, setProperties, showToast, settings, viewsMap}) 
     setAdminSort(val);
     try { localStorage.setItem("g4_admin_sort", val); } catch(e) {}
   };
+  // Modo seleção de imóveis pra cliente
+  const [selectMode, setSelectMode] = useState(false);
+  const [selectedIds, setSelectedIds] = useState([]);
+  const [showSendModal, setShowSendModal] = useState(false);
+  const [clientName, setClientName] = useState("");
+  const [clientPhone, setClientPhone] = useState("");
+  const [clientMsg, setClientMsg] = useState("");
+  const [sending, setSending] = useState(false);
+  const toggleSelect = (id) => {
+    setSelectedIds(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]);
+  };
+  const clearSelection = () => { setSelectedIds([]); setSelectMode(false); };
+  const sendSelection = async () => {
+    if (!clientName.trim()) { showToast("Digite o nome do cliente", "error"); return; }
+    if (selectedIds.length === 0) { showToast("Selecione pelo menos 1 imóvel", "error"); return; }
+    setSending(true);
+    const id = (window.crypto && crypto.randomUUID) ? crypto.randomUUID() : ("sel-" + Date.now().toString(36) + Math.random().toString(36).slice(2,8));
+    const sel = {
+      id, clientName: clientName.trim(), message: clientMsg.trim(), agentName: settings && settings.ownerName || "",
+      propertyIds: selectedIds, createdAt: new Date().toISOString()
+    };
+    const res = await FB.saveSelection(sel);
+    setSending(false);
+    if (!res.ok) { showToast("Erro ao gerar link: " + (res.error || ""), "error"); return; }
+    const link = `${window.location.origin}/cliente/${id}`;
+    const msg = `${clientMsg.trim() || `Olá ${clientName.trim()}! Aqui estão os imóveis que selecionei pra você.`}\n\n📋 Seleção de imóveis: ${link}\n\nQualquer dúvida, estou à disposição!`;
+    const phone = (clientPhone || "").replace(/\D/g,"");
+    const wppUrl = phone ? `https://wa.me/${phone}?text=${encodeURIComponent(msg)}` : `https://wa.me/?text=${encodeURIComponent(msg)}`;
+    window.open(wppUrl, "_blank");
+    showToast("Link enviado! ✓", "success");
+    setShowSendModal(false); clearSelection();
+    setClientName(""); setClientPhone(""); setClientMsg("");
+  };
   const vMap = viewsMap || {};
   const [ap, setAp] = useState("dashboard");
   const [editProp, setEditProp] = useState(null);
@@ -2487,7 +2540,8 @@ function AdminPanel({properties, setProperties, showToast, settings, viewsMap}) 
     showToast("Salvo!","success");
   };
 
-  const TableRow = ({p, minimal}) => React.createElement("tr", {key: p.id, style: p.sold ? {background:"rgba(30,41,59,.04)",opacity:.75} : p.reserved ? {background:"rgba(220,38,38,.04)"} : {}},
+  const TableRow = ({p, minimal}) => React.createElement("tr", {key: p.id, style: Object.assign({}, p.sold ? {background:"rgba(30,41,59,.04)",opacity:.75} : p.reserved ? {background:"rgba(220,38,38,.04)"} : {}, selectMode && selectedIds.includes(p.id) ? {background:"rgba(196,30,30,.10)", outline:"2px solid var(--red)"} : {}, selectMode ? {cursor:"pointer"} : {}), onClick: selectMode ? () => toggleSelect(p.id) : undefined},
+    selectMode && React.createElement("td", {style:{width:36, textAlign:"center"}}, React.createElement("input", {type:"checkbox", checked: selectedIds.includes(p.id), onChange: () => toggleSelect(p.id), onClick: e => e.stopPropagation(), style:{width:18, height:18, accentColor:"var(--red)", cursor:"pointer"}})),
     React.createElement("td", null, React.createElement("div", {style:{position:"relative",display:"inline-block"}}, React.createElement("img", {className: "a-table-img", src: p.images[0] || "https://via.placeholder.com/64x46", alt: "", style: p.sold ? {filter:"saturate(.2)"} : {}}), p.reserved && !p.sold && React.createElement("div", {style:{position:"absolute",bottom:-2,left:0,right:0,background:"linear-gradient(135deg,#dc2626,#b91c1c)",color:"white",textAlign:"center",fontSize:".52rem",fontWeight:900,padding:"1px 0",letterSpacing:".06em"}}, "RESERVADO"), p.sold && React.createElement("div", {style:{position:"absolute",bottom:-2,left:0,right:0,background:"linear-gradient(135deg,#1e293b,#334155)",color:"white",textAlign:"center",fontSize:".52rem",fontWeight:900,padding:"1px 0",letterSpacing:".06em"}}, "VENDIDO"))),
     React.createElement("td", {style:{fontWeight:600,maxWidth:180}}, p.title),
     React.createElement("td", null, p.type),
@@ -2573,6 +2627,15 @@ function AdminPanel({properties, setProperties, showToast, settings, viewsMap}) 
             React.createElement("option", {value:"price-desc"}, "💵 Maior preço"),
             React.createElement("option", {value:"area-desc"}, "📐 Maior área"),
             React.createElement("option", {value:"title-asc"}, "🔤 Nome (A→Z)")
+          ),
+          React.createElement("div", {style:{marginLeft:"auto", display:"flex", gap:8, alignItems:"center"}},
+            !selectMode ?
+              React.createElement("button", {className:"btn-red", onClick: () => setSelectMode(true), style:{padding:"10px 20px", fontSize:".88rem"}}, "📤 Selecionar pra Cliente") :
+              React.createElement(React.Fragment, null,
+                React.createElement("span", {style:{fontSize:".85rem", fontWeight:700, color:"var(--red)"}}, selectedIds.length, " selecionado(s)"),
+                React.createElement("button", {className:"btn-red", onClick: () => setShowSendModal(true), disabled: selectedIds.length === 0, style:{padding:"10px 20px", fontSize:".88rem", opacity: selectedIds.length === 0 ? .4 : 1}}, "✉️ Enviar Link"),
+                React.createElement("button", {className:"btn-outline-sm", onClick: clearSelection, style:{padding:"10px 16px", fontSize:".85rem"}}, "Cancelar")
+              )
           )
         ),
         activeProps.length === 0 ?
@@ -2582,7 +2645,7 @@ function AdminPanel({properties, setProperties, showToast, settings, viewsMap}) 
             React.createElement("p", {style:{color:"var(--text-light)",marginBottom:24}}, "Comece adicionando seu primeiro imóvel ao catálogo"),
             React.createElement("button", {className: "btn-red", onClick: openNew, style:{padding:"16px 36px",fontSize:"1rem"}}, I.plus, " Cadastrar Primeiro Imóvel")
           ) :
-          React.createElement("div", {style:{overflowX:"auto"}}, React.createElement("table", {className: "a-table"}, React.createElement("thead", null, React.createElement("tr", null, ["Foto","Imóvel","Tipo","Cidade","Preço","Views","Visível","Reserva","Status","Ações"].map(h => React.createElement("th", {key:h}, h)))), React.createElement("tbody", null, activeProps.map(p => React.createElement(TableRow, {key:p.id, p})))))
+          React.createElement("div", {style:{overflowX:"auto"}}, React.createElement("table", {className: "a-table"}, React.createElement("thead", null, React.createElement("tr", null, (selectMode ? ["",  "Foto","Imóvel","Tipo","Cidade","Preço","Views","Visível","Reserva","Status","Ações"] : ["Foto","Imóvel","Tipo","Cidade","Preço","Views","Visível","Reserva","Status","Ações"]).map((h,i) => React.createElement("th", {key:i}, h)))), React.createElement("tbody", null, activeProps.map(p => React.createElement(TableRow, {key:p.id, p})))))
 
       ) : ap === 'sold' ? React.createElement(React.Fragment, null,
         React.createElement("div", {className: "admin-top"},
@@ -2610,7 +2673,36 @@ function AdminPanel({properties, setProperties, showToast, settings, viewsMap}) 
           ) :
           React.createElement("div", {style:{overflowX:"auto"}}, React.createElement("table", {className: "a-table"}, React.createElement("thead", null, React.createElement("tr", null, ["Foto","Imóvel","Tipo","Cidade","Preço","Views","Status","Ações"].map(h => React.createElement("th", {key:h}, h)))), React.createElement("tbody", null, inactiveProps.map(p => React.createElement(TableRow, {key:p.id, p, minimal:true})))))
 
-      ) : React.createElement(SettingsPanel, {settings, showToast})
+      ) : React.createElement(SettingsPanel, {settings, showToast}),
+      // Modal de envio de seleção pro cliente
+      showSendModal && React.createElement("div", {style:{position:"fixed", inset:0, background:"rgba(0,0,0,.65)", zIndex:9999, display:"flex", alignItems:"center", justifyContent:"center", padding:20}, onClick: () => setShowSendModal(false)},
+        React.createElement("div", {style:{background:"white", borderRadius:14, maxWidth:520, width:"100%", padding:0, maxHeight:"90vh", overflow:"auto", boxShadow:"0 20px 60px rgba(0,0,0,.4)"}, onClick: e => e.stopPropagation()},
+          React.createElement("div", {style:{padding:"22px 26px", background:"linear-gradient(135deg, var(--red), var(--red-dark))", color:"white", borderRadius:"14px 14px 0 0"}},
+            React.createElement("h3", {style:{margin:0, fontSize:"1.25rem", fontWeight:800, marginBottom:4}}, "📤 Enviar seleção pro cliente"),
+            React.createElement("p", {style:{margin:0, fontSize:".85rem", opacity:.9}}, selectedIds.length, " imóvel(is) selecionado(s)")
+          ),
+          React.createElement("div", {style:{padding:"22px 26px"}},
+            React.createElement("div", {className:"af-group", style:{marginBottom:14}},
+              React.createElement("label", {className:"af-label"}, "Nome do cliente *"),
+              React.createElement("input", {className:"af-input", value: clientName, onChange: e => setClientName(e.target.value), placeholder:"Ex: João Silva", style:{marginBottom:0}})
+            ),
+            React.createElement("div", {className:"af-group", style:{marginBottom:14}},
+              React.createElement("label", {className:"af-label"}, "WhatsApp do cliente (opcional)"),
+              React.createElement("input", {className:"af-input", value: clientPhone, onChange: e => setClientPhone(e.target.value), placeholder:"Ex: 44999180685 (só números, com DDD)", style:{marginBottom:0}}),
+              React.createElement("p", {style:{fontSize:".72rem", color:"var(--text-light)", marginTop:4}}, "Se preencher, abre o WhatsApp direto pro número. Senão, abre pra escolher o contato.")
+            ),
+            React.createElement("div", {className:"af-group", style:{marginBottom:18}},
+              React.createElement("label", {className:"af-label"}, "Mensagem personalizada (opcional)"),
+              React.createElement("textarea", {className:"af-input af-textarea", value: clientMsg, onChange: e => setClientMsg(e.target.value), placeholder:`Ex: Olá ${clientName || "João"}! Separei esses imóveis pensando em você. Dá uma olhada!`, style:{marginBottom:0, minHeight:80}}),
+              React.createElement("p", {style:{fontSize:".72rem", color:"var(--text-light)", marginTop:4}}, "Se deixar vazio, usa uma mensagem padrão.")
+            ),
+            React.createElement("div", {style:{display:"flex", gap:10, justifyContent:"flex-end"}},
+              React.createElement("button", {className:"btn-outline-sm", onClick: () => setShowSendModal(false), style:{padding:"12px 24px"}}, "Cancelar"),
+              React.createElement("button", {className:"btn-red", onClick: sendSelection, disabled: sending || !clientName.trim(), style:{padding:"12px 28px", fontWeight:700, opacity: (sending || !clientName.trim()) ? .5 : 1}}, sending ? "Gerando..." : "🚀 Gerar link + abrir WhatsApp")
+            )
+          )
+        )
+      )
     )
   );
 }
@@ -3686,6 +3778,47 @@ function FooterComp({setPage, settings}) {
   );
 }
 
+// ===== PAGINA DO CLIENTE (selecao personalizada) =====
+function ClientPage({selection, properties, settings, setSelectedProp, setPage, favs, toggleFav, isAdmin}) {
+  const s = settings || DEFAULT_SETTINGS;
+  const sel = selection || {};
+  const list = (sel.propertyIds || []).map(id => properties.find(p => p.id === id)).filter(Boolean);
+  const wpp = (s.whatsappNumber || WHATSAPP);
+  const openWppClient = () => {
+    const msg = `Olá! Vi a seleção de imóveis que você me enviou e gostaria de mais informações.\n\nMeu nome: ${sel.clientName || ""}`;
+    window.open(`https://wa.me/${wpp}?text=${encodeURIComponent(msg)}`, "_blank");
+  };
+  const goDetail = p => { setSelectedProp(p); setPage("detail"); };
+  if (!sel.propertyIds) {
+    return React.createElement("div", {style:{padding:"140px 24px 80px", textAlign:"center", minHeight:"60vh"}},
+      React.createElement("h2", {style:{fontFamily:"var(--font-display)", fontSize:"2rem", marginBottom:12}}, "Seleção não encontrada"),
+      React.createElement("p", {style:{color:"var(--text-light)", marginBottom:24}}, "Esse link de seleção não existe, expirou ou foi removido."),
+      React.createElement("button", {className:"btn-red", onClick: () => setPage("home"), style:{padding:"14px 28px"}}, "Ir pra página inicial")
+    );
+  }
+  return React.createElement("div", {style:{padding:"110px 0 80px"}},
+    React.createElement("div", {style:{maxWidth:"var(--max-w)", margin:"0 auto", padding:"0 28px"}},
+      React.createElement("div", {style:{background:"linear-gradient(135deg, var(--red), var(--red-dark))", color:"white", padding:"36px 32px", borderRadius:"var(--radius-lg)", marginBottom:32, boxShadow:"0 12px 36px rgba(196,30,30,.25)"}},
+        React.createElement("div", {style:{fontSize:".82rem", fontWeight:700, letterSpacing:".15em", textTransform:"uppercase", opacity:.85, marginBottom:8}}, "✨ Seleção personalizada"),
+        React.createElement("h1", {style:{fontFamily:"var(--font-display)", fontSize:"2.4rem", fontWeight:400, letterSpacing:".03em", textTransform:"uppercase", marginBottom:12}}, "Olá", sel.clientName ? `, ${sel.clientName}` : "", "!"),
+        React.createElement("p", {style:{fontSize:"1.02rem", lineHeight:1.7, marginBottom:16, opacity:.95, whiteSpace:"pre-wrap"}}, sel.message || `Selecionei estes ${list.length} imóveis pensando em você. Dá uma olhada e me chama no WhatsApp pra qualquer dúvida!`),
+        React.createElement("div", {style:{display:"flex", gap:12, flexWrap:"wrap", alignItems:"center"}},
+          React.createElement("button", {onClick: openWppClient, style:{background:"white", color:"var(--red)", border:"none", padding:"12px 24px", borderRadius:8, fontWeight:800, fontSize:".92rem", cursor:"pointer", display:"flex", alignItems:"center", gap:8, boxShadow:"0 4px 14px rgba(0,0,0,.15)"}}, I.wpp, "Falar no WhatsApp"),
+          React.createElement("div", {style:{fontSize:".88rem", opacity:.85}}, "📋 ", React.createElement("strong", null, list.length), " imóvel(is) selecionado(s)")
+        )
+      ),
+      list.length === 0 ?
+        React.createElement("div", {style:{textAlign:"center", padding:"60px 24px"}},
+          React.createElement("h3", null, "Nenhum imóvel disponível"),
+          React.createElement("p", {style:{color:"var(--text-light)"}}, "Os imóveis dessa seleção foram removidos. Entre em contato!")
+        ) :
+        React.createElement("div", {className: "properties-grid"},
+          list.map(p => React.createElement(PropCard, {key: p.id, p, onClick: goDetail, favs, toggleFav, isAdmin, settings}))
+        )
+    )
+  );
+}
+
 // ===== MAIN APP =====
 function App() {
   const [page, setPage] = useState("home");
@@ -3697,6 +3830,8 @@ function App() {
     return [];
   });
   const [selProp, setSelProp] = useState(null);
+  const [clientSel, setClientSel] = useState(null);
+  const [clientSelId, setClientSelId] = useState(null);
   const [isAdmin, setIsAdmin] = useState(() => {
     try { return sessionStorage.getItem("g4_admin") === "true"; } catch(e) { return false; }
   });
@@ -3777,13 +3912,14 @@ function App() {
   }, []);
 
   // Mapeia page → URL amigável
-  const pathFromPage = (pg, prop) => {
+  const pathFromPage = (pg, prop, cliId) => {
     if (pg === "properties") return "/imoveis";
     if (pg === "about") return "/sobre";
     if (pg === "contact") return "/contato";
     if (pg === "privacy") return "/privacidade";
     if (pg === "login" || pg === "admin") return "/admin";
     if (pg === "detail" && prop) return `/imovel/${prop.id}`;
+    if (pg === "client" && cliId) return `/cliente/${cliId}`;
     return "/";
   };
 
@@ -3799,6 +3935,18 @@ function App() {
       if (propId && props.length > 0) {
         const target = props.find(x => x.id === propId);
         if (target) { setSelProp(target); setPage("detail"); return; }
+      }
+    }
+    // /cliente/ID — pagina personalizada do cliente
+    if (path.startsWith("/cliente/")) {
+      const cliId = path.slice("/cliente/".length).replace(/\/$/, "");
+      if (cliId) {
+        setClientSelId(cliId);
+        setPage("client");
+        FB.getSelection(cliId).then(sel => {
+          if (sel) setClientSel(sel); else setClientSel({propertyIds: null});
+        });
+        return;
       }
     }
     // ?p=ID (compatível com links antigos)
@@ -3819,11 +3967,11 @@ function App() {
 
   // Sincroniza URL quando muda de página
   useEffect(() => {
-    const newPath = pathFromPage(page, selProp);
+    const newPath = pathFromPage(page, selProp, clientSelId);
     if (window.location.pathname !== newPath) {
       try { window.history.pushState({page, propId: selProp ? selProp.id : null}, "", newPath); } catch(e) {}
     }
-  }, [page, selProp]);
+  }, [page, selProp, clientSelId]);
 
   // Botão voltar do navegador
   useEffect(() => {
@@ -3833,6 +3981,15 @@ function App() {
         const propId = path.slice("/imovel/".length).replace(/\/$/, "");
         const target = props.find(x => x.id === propId);
         if (target) { setSelProp(target); setPage("detail"); return; }
+      }
+      if (path.startsWith("/cliente/")) {
+        const cliId = path.slice("/cliente/".length).replace(/\/$/, "");
+        if (cliId) {
+          setClientSelId(cliId);
+          setPage("client");
+          FB.getSelection(cliId).then(sel => { if (sel) setClientSel(sel); else setClientSel({propertyIds: null}); });
+          return;
+        }
       }
       if (path === "/imoveis") setPage("properties");
       else if (path === "/sobre") setPage("about");
@@ -3908,6 +4065,7 @@ function App() {
     ),
     page === "properties" && React.createElement(PropertiesPage, {properties: props, searchFilters: sf, setSearchFilters: setSf, setSelectedProp: setSelProp, setPage, favs, toggleFav, isAdmin, settings}),
     page === "detail" && selProp && React.createElement(DetailPage, {property: selProp, setPage, properties: props, setSelectedProp: setSelProp, favs, toggleFav, isAdmin, settings}),
+    page === "client" && React.createElement(ClientPage, {selection: clientSel, properties: props, settings, setSelectedProp: setSelProp, setPage, favs, toggleFav, isAdmin}),
     page === "about" && React.createElement(React.Fragment, null, React.createElement("div", {className: `page-offset ${isAdmin ? 'has-admin-bar' : ''}`}), React.createElement(AboutPage)),
     page === "privacy" && React.createElement(React.Fragment, null, React.createElement("div", {className: `page-offset ${isAdmin ? 'has-admin-bar' : ''}`}), React.createElement(PrivacyPage)),
     page === "contact" && React.createElement(React.Fragment, null, React.createElement("div", {className: `page-offset ${isAdmin ? 'has-admin-bar' : ''}`}), React.createElement(ContactPage, {settings})),
