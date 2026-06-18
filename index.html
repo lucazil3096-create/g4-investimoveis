@@ -1737,7 +1737,8 @@ function PropCard({p, onClick, favs, toggleFav, isAdmin, settings}) {
 // ===== FEATURED SECTION =====
 function FeaturedSection({properties, setPage, setSelectedProp, favs, toggleFav, isAdmin, settings}) {
   const s = settings || DEFAULT_SETTINGS;
-  const featured = properties.filter(p => p.featured && p.active && !p.sold);
+  const refNumF = (p) => { const r = parseInt(String(p.reference || "").replace(/\D/g,""), 10); return isNaN(r) ? 0 : r; };
+  const featured = properties.filter(p => p.featured && p.active && !p.sold).sort((a,b) => refNumF(b) - refNumF(a));
   const [idx, setIdx] = useState(0);
   const [paused, setPaused] = useState(false);
 
@@ -1895,10 +1896,19 @@ function PropertiesPage({properties, searchFilters, setSearchFilters, setSelecte
   if (f.minPrice) result = result.filter(p => p.price >= +f.minPrice);
   if (f.maxPrice) result = result.filter(p => p.price <= +f.maxPrice);
   if (f.bedrooms) result = result.filter(p => p.bedrooms >= +f.bedrooms);
+  const refNum = (p) => {
+    const r = parseInt(String(p.reference || "").replace(/\D/g,""), 10);
+    return isNaN(r) ? 0 : r;
+  };
   if (sortBy === "price-asc") result.sort((a,b) => a.price - b.price);
   else if (sortBy === "price-desc") result.sort((a,b) => b.price - a.price);
   else if (sortBy === "area") result.sort((a,b) => b.area - a.area);
-  else result.sort((a,b) => new Date(b.createdAt) - new Date(a.createdAt));
+  else result.sort((a,b) => {
+    // Ordena por referência (maior = mais novo), e fallback por createdAt
+    const diff = refNum(b) - refNum(a);
+    if (diff !== 0) return diff;
+    return new Date(b.createdAt) - new Date(a.createdAt);
+  });
 
   const goDetail = p => { setSelectedProp(p); setPage("detail"); };
 
@@ -2392,9 +2402,11 @@ function AdminPanel({properties, setProperties, showToast, settings, viewsMap}) 
   const reserved = properties.filter(p=>p.reserved&&!p.sold).length;
   const soldCount = properties.filter(p=>p.sold).length;
   const inactiveCount = properties.filter(p=>!p.active&&!p.sold).length;
-  const activeProps = properties.filter(p=>p.active&&!p.sold);
-  const soldProps = properties.filter(p=>p.sold);
-  const inactiveProps = properties.filter(p=>!p.active&&!p.sold);
+  const refNumA = (p) => { const r = parseInt(String(p.reference || "").replace(/\D/g,""), 10); return isNaN(r) ? 0 : r; };
+  const byRef = (a,b) => refNumA(b) - refNumA(a);
+  const activeProps = properties.filter(p=>p.active&&!p.sold).sort(byRef);
+  const soldProps = properties.filter(p=>p.sold).sort(byRef);
+  const inactiveProps = properties.filter(p=>!p.active&&!p.sold).sort(byRef);
   const del = async id => {
     const prev = properties;
     setProperties(p => p.filter(x => x.id !== id));
