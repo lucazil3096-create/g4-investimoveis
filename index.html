@@ -2562,16 +2562,17 @@ function AdminPanel({properties, setProperties, showToast, settings, viewsMap}) 
       ) : ap === 'list' ? React.createElement(React.Fragment, null,
         React.createElement("div", {className: "admin-top"},
           React.createElement("h1", {className: "admin-page-title"}, "Todos os Imóveis"),
-          React.createElement("div", {style:{display:"flex", gap:10, alignItems:"center"}},
-            React.createElement("label", {style:{fontSize:".82rem", color:"var(--text-light)", fontWeight:600, whiteSpace:"nowrap"}}, "Ordenar por:"),
-            React.createElement("select", {value: adminSort, onChange: e => changeAdminSort(e.target.value), className: "af-input", style:{height:42, padding:"0 14px", minWidth:220, fontSize:".88rem", fontWeight:600, marginBottom:0}},
-              React.createElement("option", {value:"ref-desc"}, "📅 Mais novos (Ref. ↓)"),
-              React.createElement("option", {value:"ref-asc"}, "📜 Mais antigos (Ref. ↑)"),
-              React.createElement("option", {value:"price-asc"}, "💰 Menor preço"),
-              React.createElement("option", {value:"price-desc"}, "💵 Maior preço"),
-              React.createElement("option", {value:"area-desc"}, "📐 Maior área"),
-              React.createElement("option", {value:"title-asc"}, "🔤 Nome (A→Z)")
-            )
+          React.createElement("span", {style:{fontSize:".9rem", color:"var(--text-light)"}}, activeProps.length, " imóvel(is) ativo(s)")
+        ),
+        React.createElement("div", {style:{display:"flex", gap:10, alignItems:"center", marginBottom:20, flexWrap:"wrap", padding:"12px 16px", background:"white", borderRadius:10, border:"1px solid var(--border)"}},
+          React.createElement("span", {style:{fontSize:".85rem", color:"var(--text)", fontWeight:700, whiteSpace:"nowrap"}}, "🔀 Ordenar por:"),
+          React.createElement("select", {value: adminSort, onChange: e => changeAdminSort(e.target.value), className: "af-input", style:{height:40, padding:"0 14px", minWidth:240, fontSize:".88rem", fontWeight:600, marginBottom:0, flex:"0 1 auto"}},
+            React.createElement("option", {value:"ref-desc"}, "📅 Mais novos (Ref. ↓)"),
+            React.createElement("option", {value:"ref-asc"}, "📜 Mais antigos (Ref. ↑)"),
+            React.createElement("option", {value:"price-asc"}, "💰 Menor preço"),
+            React.createElement("option", {value:"price-desc"}, "💵 Maior preço"),
+            React.createElement("option", {value:"area-desc"}, "📐 Maior área"),
+            React.createElement("option", {value:"title-asc"}, "🔤 Nome (A→Z)")
           )
         ),
         activeProps.length === 0 ?
