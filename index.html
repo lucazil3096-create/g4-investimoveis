@@ -2066,11 +2066,14 @@ function DetailPage({property: p, setPage, properties, setSelectedProp, favs, to
             ))
           )
         ),
+        p.features && p.features.length > 0 && React.createElement(React.Fragment, null,
+          React.createElement("h3", {className: "dt-section-title"}, "Características"),
+          React.createElement("div", {className: "dt-features"}, p.features.map(f => React.createElement("div", {key: f, className: "dt-feat"}, React.createElement("div", {className: "dt-feat-check"}, I.check), f)))
+        ),
         React.createElement("h3", {className: "dt-section-title"}, "Descrição do imóvel"),
         React.createElement("div", {className: "dt-desc"},
           // Campos fixos no topo
           (p.posicionamento || p.tipoConstrucao || p.localizacaoLote) && React.createElement("div", {className: "dt-desc-fixed"},
-            React.createElement("p", {className: "dt-desc-title"}, "Sobre o imóvel"),
             p.posicionamento && React.createElement("p", null, "- ", React.createElement("span", {className: "dt-desc-label"}, "Posicionamento:"), " ", p.posicionamento),
             p.tipoConstrucao && React.createElement("p", null, "- ", React.createElement("span", {className: "dt-desc-label"}, "Tipo de construção:"), " ", p.tipoConstrucao),
             p.localizacaoLote && React.createElement("p", null, "- ", React.createElement("span", {className: "dt-desc-label"}, "Localização:"), " ", p.localizacaoLote)
@@ -2101,8 +2104,6 @@ function DetailPage({property: p, setPage, properties, setSelectedProp, favs, to
           // Aviso fixo no rodapé
           React.createElement("div", {className: "dt-desc-aviso"}, "⚠️ Valor sujeito a alteração sem aviso prévio.")
         ),
-        React.createElement("h3", {className: "dt-section-title"}, "Características"),
-        React.createElement("div", {className: "dt-features"}, p.features.map(f => React.createElement("div", {key: f, className: "dt-feat"}, React.createElement("div", {className: "dt-feat-check"}, I.check), f))),
         React.createElement("div", {className: "dt-map-wrap"},
           React.createElement("h3", {className: "dt-section-title"}, "Localização"),
           React.createElement("div", {className: "dt-map-toggles"},
