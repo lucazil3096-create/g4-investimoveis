@@ -1434,6 +1434,11 @@ let ALL_FEATURES = ["Piscina","Churrasqueira","Garagem","Quintal","Área de Serv
 
 const DEFAULT_SETTINGS = {
   logoUrl: "",
+  watermarkEnabled: true,
+  watermarkUrl: "",
+  watermarkOpacity: 35,
+  watermarkSize: 22,
+  watermarkPosition: "br",
   heroTag: "G4 Investimóveis — Referência em Negócios Imobiliários",
   heroTitle: "Encontre o imóvel",
   heroTitleHighlight: "ideal para você",
@@ -1485,6 +1490,49 @@ const DEFAULT_SETTINGS = {
 
 const genId = () => Math.random().toString(36).substr(2,9);
 const fmtCurrency = v => new Intl.NumberFormat("pt-BR",{style:"currency",currency:"BRL"}).format(v);
+
+// Helper: aplica marca d'agua sobre uma imagem.
+// Use no lugar de <img>: WmImg({src, alt, settings, prop, imgStyle, imgClass, wrapStyle, wrapClass})
+function WmImg(props) {
+  const { src, alt, settings, prop, onClick, imgStyle, imgClass, wrapStyle, wrapClass, title, loading } = props;
+  const s = settings || {};
+  // Se a propriedade existe e tem watermark === false, desliga. Default: ligado.
+  const propOn = !prop || prop.watermark !== false;
+  const settingsOn = s.watermarkEnabled !== false;
+  const wmUrl = s.watermarkUrl || s.logoUrl;
+  const showWm = propOn && settingsOn && wmUrl;
+  const pos = s.watermarkPosition || "br";
+  const opacity = ((s.watermarkOpacity != null ? s.watermarkOpacity : 35) / 100);
+  const size = (s.watermarkSize != null ? s.watermarkSize : 22);
+  const posStyle = {};
+  if (pos === "br") { posStyle.bottom = "5%"; posStyle.right = "5%"; }
+  else if (pos === "bl") { posStyle.bottom = "5%"; posStyle.left = "5%"; }
+  else if (pos === "tr") { posStyle.top = "5%"; posStyle.right = "5%"; }
+  else if (pos === "tl") { posStyle.top = "5%"; posStyle.left = "5%"; }
+  else if (pos === "center") { posStyle.top = "50%"; posStyle.left = "50%"; posStyle.transform = "translate(-50%,-50%)"; }
+  return React.createElement("div", {
+    className: "wm-wrap " + (wrapClass || ""),
+    style: Object.assign({position:"relative", display:"block", overflow:"hidden"}, wrapStyle || {}),
+    onClick: onClick
+  },
+    React.createElement("img", {src, alt, className: imgClass, style: imgStyle, loading, title, draggable: false}),
+    showWm && React.createElement("img", {
+      src: wmUrl,
+      alt: "",
+      className: "wm-overlay",
+      "aria-hidden": "true",
+      draggable: false,
+      style: Object.assign({
+        position: "absolute",
+        width: size + "%",
+        maxWidth: "60%",
+        opacity: opacity,
+        pointerEvents: "none",
+        filter: "drop-shadow(0 2px 6px rgba(0,0,0,.5))"
+      }, posStyle)
+    })
+  );
+}
 
 const INITIAL_PROPS = [];
 
@@ -1630,12 +1678,12 @@ function Hero({setPage, setSearchFilters, properties, settings}) {
 }
 
 // ===== PROPERTY CARD =====
-function PropCard({p, onClick, favs, toggleFav, isAdmin}) {
+function PropCard({p, onClick, favs, toggleFav, isAdmin, settings}) {
   const isFav = favs.includes(p.id);
   const canSeePrice = p.showPrice || isAdmin;
   return React.createElement("div", {className: `property-card ${p.reserved ? 'is-reserved' : ''}`, onClick: () => onClick(p)},
     React.createElement("div", {className: "card-img-wrap"},
-      React.createElement("img", {src: p.images[0], alt: p.title, loading: "lazy"}),
+      React.createElement(WmImg, {src: p.images[0], alt: p.title, loading: "lazy", settings, prop: p, wrapStyle:{width:"100%", height:"100%"}, imgStyle:{width:"100%", height:"100%", objectFit:"cover"}}),
       React.createElement("div", {className: "card-overlay"}),
       p.reserved && React.createElement("div", {className: "reserved-ribbon"}),
       p.reference && React.createElement("div", {className: "card-ref"}, "Ref.: ", p.reference),
@@ -1700,7 +1748,7 @@ function FeaturedSection({properties, setPage, setSelectedProp, favs, toggleFav,
       React.createElement("button", {className: "view-all-btn", onClick: () => setPage("properties")}, "Ver todos os imóveis ", I.chevR)
     ),
     React.createElement("div", {className: "feat-slide", onMouseEnter:()=>setPaused(true), onMouseLeave:()=>setPaused(false), onClick: goDetail},
-      React.createElement("img", {key: p.id + "-img", className: "feat-slide-img", src: p.images && p.images[0], alt: p.title}),
+      React.createElement(WmImg, {key: p.id + "-img", src: p.images && p.images[0], alt: p.title, settings, prop: p, imgClass:"feat-slide-img", imgStyle:{width:"100%", height:"100%", objectFit:"cover"}, wrapStyle:{position:"absolute", inset:0}}),
       React.createElement("div", {className: "feat-slide-overlay"}),
       React.createElement("div", {className: "feat-slide-badges"},
         React.createElement("span", {className: "badge badge-type"}, p.type),
@@ -1802,7 +1850,7 @@ function CtaBanner({settings}) {
 }
 
 // ===== PROPERTIES PAGE =====
-function PropertiesPage({properties, searchFilters, setSearchFilters, setSelectedProp, setPage, favs, toggleFav, isAdmin}) {
+function PropertiesPage({properties, searchFilters, setSearchFilters, setSelectedProp, setPage, favs, toggleFav, isAdmin, settings}) {
   const [viewMode, setViewMode] = useState("grid");
   const [sortBy, setSortBy] = useState("recent");
   const [f, setF] = useState({type: searchFilters.type || "", transaction: searchFilters.transaction || "", city: searchFilters.city || "", neighborhood: searchFilters.neighborhood || "", minPrice: "", maxPrice: "", bedrooms: "", ref: ""});
@@ -1872,9 +1920,9 @@ function PropertiesPage({properties, searchFilters, setSearchFilters, setSelecte
         React.createElement("div", {className: "no-data"}, React.createElement("h3", null, "Nenhum imóvel encontrado"), React.createElement("p", null, "Tente ajustar os filtros")) :
         React.createElement("div", {className: viewMode === 'grid' ? 'properties-grid' : 'properties-list'},
           result.map(p => viewMode === 'grid' ?
-            React.createElement(PropCard, {key: p.id, p, onClick: goDetail, favs, toggleFav, isAdmin}) :
+            React.createElement(PropCard, {key: p.id, p, onClick: goDetail, favs, toggleFav, isAdmin, settings}) :
             React.createElement("div", {key: p.id, className: "property-list-card", onClick: () => goDetail(p), style: p.reserved ? {borderColor:"#dc2626",borderWidth:2} : {}},
-              React.createElement("div", {className: "list-card-img", style:{position:"relative"}}, React.createElement("img", {src: p.images[0], alt: p.title, style: p.reserved ? {filter:"brightness(.7) saturate(.6)"} : {}}), p.reserved && React.createElement("div", {style:{position:"absolute",top:12,left:12}}, React.createElement("span", {className:"list-reserved-tag"}, "⚡ RESERVADO"))),
+              React.createElement("div", {className: "list-card-img", style:{position:"relative"}}, React.createElement(WmImg, {src: p.images[0], alt: p.title, settings, prop: p, imgStyle: p.reserved ? {filter:"brightness(.7) saturate(.6)", width:"100%", height:"100%", objectFit:"cover"} : {width:"100%", height:"100%", objectFit:"cover"}, wrapStyle:{width:"100%", height:"100%"}}), p.reserved && React.createElement("div", {style:{position:"absolute",top:12,left:12,zIndex:5}}, React.createElement("span", {className:"list-reserved-tag"}, "⚡ RESERVADO"))),
               React.createElement("div", {className: "list-card-body"},
                 React.createElement("div", {className: "list-card-top"},
                   React.createElement("div", null,
@@ -1902,7 +1950,7 @@ function PropertiesPage({properties, searchFilters, setSearchFilters, setSelecte
 }
 
 // ===== PROPERTY DETAIL =====
-function DetailPage({property: p, setPage, properties, setSelectedProp, favs, toggleFav, isAdmin}) {
+function DetailPage({property: p, setPage, properties, setSelectedProp, favs, toggleFav, isAdmin, settings}) {
   const [ci, setCi] = useState(0);
   const [mapMode, setMapMode] = useState("map");
   const [lightbox, setLightbox] = useState(false);
@@ -1993,13 +2041,13 @@ function DetailPage({property: p, setPage, properties, setSelectedProp, favs, to
     lightbox && p.images.length > 0 && React.createElement("div", {className: "lightbox", onClick: () => setLightbox(false), onTouchStart: onTouchStart, onTouchEnd: onTouchEnd},
       React.createElement("button", {className: "lightbox-close", onClick: (e) => { e.stopPropagation(); setLightbox(false); }, title: "Fechar (Esc)", "aria-label":"Fechar"}, I.close),
       p.images.length > 1 && React.createElement("button", {className: "lightbox-nav left", onClick: (e) => { e.stopPropagation(); prevImg(); }, title: "Anterior"}, I.chevL),
-      React.createElement("img", {className: "lightbox-img", src: p.images[ci], alt: p.title, onClick: (e) => e.stopPropagation(), onTouchStart: onTouchStart, onTouchEnd: onTouchEnd, draggable: false}),
+      React.createElement(WmImg, {src: p.images[ci], alt: p.title, settings, prop: p, onClick: (e) => e.stopPropagation(), wrapClass: "lightbox-img-wrap", wrapStyle:{maxWidth:"94vw", maxHeight:"88vh", display:"flex", alignItems:"center", justifyContent:"center"}, imgClass:"lightbox-img", imgStyle:{maxWidth:"94vw", maxHeight:"88vh", objectFit:"contain", userSelect:"none"}}),
       p.images.length > 1 && React.createElement("button", {className: "lightbox-nav right", onClick: (e) => { e.stopPropagation(); nextImg(); }, title: "Próxima"}, I.chevR),
       p.images.length > 1 && React.createElement("div", {className: "lightbox-counter"}, ci + 1, " / ", p.images.length),
       p.images.length > 1 && React.createElement("div", {className: "lightbox-hint"}, "← Arraste para navegar →")
     ),
     React.createElement("div", {className: "detail-gallery", style: p.reserved ? {border:"3px solid #dc2626"} : {}, onTouchStart: onTouchStart, onTouchEnd: onTouchEnd},
-      React.createElement("img", {src: p.images[ci], alt: p.title, style: p.reserved ? {filter:"brightness(.8)"} : {}, onClick: () => p.images.length > 0 && setLightbox(true), title: "Clique para ampliar", draggable: false}),
+      React.createElement(WmImg, {src: p.images[ci], alt: p.title, settings, prop: p, imgStyle: Object.assign({width:"100%", height:"100%", objectFit:"cover", cursor:"zoom-in"}, p.reserved ? {filter:"brightness(.8)"} : {}), wrapStyle:{width:"100%", height:"100%"}, onClick: () => p.images.length > 0 && setLightbox(true), title: "Clique para ampliar"}),
       p.reserved && React.createElement("div", {style:{position:"absolute",top:20,left:20,zIndex:5,background:"linear-gradient(135deg,#dc2626,#b91c1c)",color:"white",padding:"10px 24px",borderRadius:8,fontSize:".85rem",fontWeight:900,letterSpacing:".1em",boxShadow:"0 4px 16px rgba(220,38,38,.4)",display:"flex",alignItems:"center",gap:8}}, "⚡ IMÓVEL RESERVADO"),
       p.images.length > 1 && React.createElement(React.Fragment, null,
         React.createElement("button", {className: "gal-nav left", onClick: () => setCi(i => (i-1+p.images.length)%p.images.length)}, I.chevL),
@@ -2383,7 +2431,7 @@ function AdminPanel({properties, setProperties, showToast, settings, viewsMap}) 
       const max = nums.length > 0 ? Math.max(...nums) : 0;
       return String(max + 1).padStart(3, "0");
     })();
-    setEditProp({id:genId(),reference:nextRef,title:"",type:"Casa",transaction:"Venda",price:0,oldPrice:0,priceReduced:false,showPrice:true,area:0,builtArea:0,bedrooms:0,suites:0,bathrooms:0,garages:0,city:"",neighborhood:"",address:"",number:"",lat:"",lng:"",streetHeading:0,streetPitch:0,description:"",posicionamento:"",tipoConstrucao:"",localizacaoLote:"",features:[],rooms:[],images:[],sold:false,reserved:false,featured:false,active:true,createdAt:new Date().toISOString().split("T")[0]});
+    setEditProp({id:genId(),reference:nextRef,title:"",type:"Casa",transaction:"Venda",price:0,oldPrice:0,priceReduced:false,showPrice:true,watermark:true,area:0,builtArea:0,bedrooms:0,suites:0,bathrooms:0,garages:0,city:"",neighborhood:"",address:"",number:"",lat:"",lng:"",streetHeading:0,streetPitch:0,description:"",posicionamento:"",tipoConstrucao:"",localizacaoLote:"",features:[],rooms:[],images:[],sold:false,reserved:false,featured:false,active:true,createdAt:new Date().toISOString().split("T")[0]});
     setShowForm(true);
   };
   const save = async prop => {
@@ -2576,6 +2624,7 @@ function SettingsPanel({settings, showToast}) {
   const logoFileRef = useRef(null);
   const heroBgFileRef = useRef(null);
   const aboutImgFileRef = useRef(null);
+  const watermarkFileRef = useRef(null);
   useEffect(() => {
     setS(settings || DEFAULT_SETTINGS);
     setSavedSnapshot(settings || DEFAULT_SETTINGS);
@@ -2678,6 +2727,32 @@ function SettingsPanel({settings, showToast}) {
         Field({key:"cname", label:"Nome da empresa", k:"companyName", placeholder:"G4 Investimóveis"}),
         Field({key:"owner", label:"Nome do responsável", k:"ownerName", placeholder:"Luiz Fernando Raiffer de Oliveira"}),
         Field({key:"creci", label:"CRECI", k:"creci", placeholder:"F30864"})
+      ]}),
+      Sec({title: "💧 Marca d'água nas fotos", children: [
+        React.createElement("div", {key:"wm-on", className:"af-group full", style:{background: s.watermarkEnabled !== false ? "rgba(196,30,30,.06)" : "rgba(212,160,18,.08)", padding:"14px 18px", borderRadius:8, border: s.watermarkEnabled !== false ? "1px solid rgba(196,30,30,.18)" : "1px solid rgba(212,160,18,.2)"}},
+          React.createElement("label", {className:"af-check"},
+            React.createElement("input", {type:"checkbox", checked: s.watermarkEnabled !== false, onChange: e => upd("watermarkEnabled", e.target.checked)}),
+            React.createElement("strong", null, " Aplicar marca d'água por padrão em todos os imóveis")
+          ),
+          React.createElement("p", {style:{fontSize:".78rem", color:"var(--text-light)", marginLeft:30, marginTop:4}}, "Pode ser desativada individualmente em cada imóvel no campo do anúncio.")
+        ),
+        ImgField({key:"wmimg", label:"Imagem da marca d'água (deixe vazio pra usar a logo)", k:"watermarkUrl", fileRef: watermarkFileRef, preview: true, help:"PNG transparente recomendado. Se vazio, usa a logo principal."}),
+        React.createElement("div", {key:"wm-op", className:"af-group"},
+          React.createElement("label", {className:"af-label"}, "Opacidade da marca d'água: ", React.createElement("strong", {style:{color:"var(--red)"}}, (s.watermarkOpacity != null ? s.watermarkOpacity : 35), "%")),
+          React.createElement("input", {type:"range", min:5, max:100, step:5, value: (s.watermarkOpacity != null ? s.watermarkOpacity : 35), onChange: e => upd("watermarkOpacity", +e.target.value), style:{width:"100%"}})
+        ),
+        React.createElement("div", {key:"wm-sz", className:"af-group"},
+          React.createElement("label", {className:"af-label"}, "Tamanho (% da foto): ", React.createElement("strong", {style:{color:"var(--red)"}}, (s.watermarkSize != null ? s.watermarkSize : 22), "%")),
+          React.createElement("input", {type:"range", min:8, max:60, step:2, value: (s.watermarkSize != null ? s.watermarkSize : 22), onChange: e => upd("watermarkSize", +e.target.value), style:{width:"100%"}})
+        ),
+        React.createElement("div", {key:"wm-pos", className:"af-group full"},
+          React.createElement("label", {className:"af-label"}, "Posição da marca d'água"),
+          React.createElement("div", {style:{display:"flex", gap:8, flexWrap:"wrap"}},
+            [{v:"br",l:"↘ Inferior direito"},{v:"bl",l:"↙ Inferior esquerdo"},{v:"tr",l:"↗ Superior direito"},{v:"tl",l:"↖ Superior esquerdo"},{v:"center",l:"⊙ Centro"}].map(o =>
+              React.createElement("button", {key:o.v, className: (s.watermarkPosition || "br") === o.v ? "btn-red" : "btn-outline-sm", onClick: () => upd("watermarkPosition", o.v), style:{padding:"8px 14px", fontSize:".85rem"}}, o.l)
+            )
+          )
+        )
       ]}),
       Sec({title: "📞 Contatos (telefones, email, endereço)", children: [
         Field({key:"wpp", label:"WhatsApp principal (com DDI, só números)", k:"whatsappNumber", placeholder:"5544999180685", help:"Formato: 55 + DDD + número. Ex: 5544999180685"}),
@@ -3409,7 +3484,14 @@ function PropForm({property, onSave, onCancel, showToast, existingNeighborhoods,
             React.createElement("div", {style:{marginBottom:8,color:"var(--red)"}}, I.photo),
             React.createElement("p", {style:{fontWeight:700}}, "Clique para enviar fotos"),
             React.createElement("p", {style:{fontSize:".8rem",opacity:.6}}, "ou cole URLs acima")
-          )
+          ),
+        React.createElement("div", {style:{marginTop:18, padding:"14px 18px", background: (f.watermark !== false) ? "rgba(196,30,30,.06)" : "rgba(212,160,18,.08)", borderRadius:8, border: (f.watermark !== false) ? "1px solid rgba(196,30,30,.18)" : "1px solid rgba(212,160,18,.2)"}},
+          React.createElement("label", {className: "af-check", style:{marginBottom:6}},
+            React.createElement("input", {type:"checkbox", checked: f.watermark !== false, onChange:e=>upd("watermark", e.target.checked)}),
+            React.createElement("strong",null, (f.watermark !== false) ? " 💧 Marca d'água ATIVADA neste imóvel" : " ⚠️ Marca d'água DESATIVADA neste imóvel")
+          ),
+          React.createElement("p", {style:{fontSize:".76rem",color:"var(--text-light)",marginLeft:30}}, (f.watermark !== false) ? "As fotos terão a logo sobreposta (configurada nas opções gerais)" : "As fotos serão exibidas sem nenhuma marca")
+        )
       ),
 
       ST({icon: I.check, title: "Características", sub: "Selecione ou adicione novas características personalizadas"}),
@@ -3742,8 +3824,8 @@ function App() {
       React.createElement(AboutHome, {setPage, settings}),
       React.createElement(CtaBanner, {settings})
     ),
-    page === "properties" && React.createElement(PropertiesPage, {properties: props, searchFilters: sf, setSearchFilters: setSf, setSelectedProp: setSelProp, setPage, favs, toggleFav, isAdmin}),
-    page === "detail" && selProp && React.createElement(DetailPage, {property: selProp, setPage, properties: props, setSelectedProp: setSelProp, favs, toggleFav, isAdmin}),
+    page === "properties" && React.createElement(PropertiesPage, {properties: props, searchFilters: sf, setSearchFilters: setSf, setSelectedProp: setSelProp, setPage, favs, toggleFav, isAdmin, settings}),
+    page === "detail" && selProp && React.createElement(DetailPage, {property: selProp, setPage, properties: props, setSelectedProp: setSelProp, favs, toggleFav, isAdmin, settings}),
     page === "about" && React.createElement(React.Fragment, null, React.createElement("div", {className: `page-offset ${isAdmin ? 'has-admin-bar' : ''}`}), React.createElement(AboutPage)),
     page === "privacy" && React.createElement(React.Fragment, null, React.createElement("div", {className: `page-offset ${isAdmin ? 'has-admin-bar' : ''}`}), React.createElement(PrivacyPage)),
     page === "contact" && React.createElement(React.Fragment, null, React.createElement("div", {className: `page-offset ${isAdmin ? 'has-admin-bar' : ''}`}), React.createElement(ContactPage, {settings})),
