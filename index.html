@@ -694,12 +694,19 @@ body.lightbox-open .filters-bar { display: none !important; }
 .dt-spec-val strong { font-weight: 700; }
 .dt-spec-label { font-size: .76rem; color: var(--text-light); }
 .dt-section-title { font-family: var(--font-display); font-size: 1.7rem; letter-spacing: .04em; text-transform: uppercase; margin-bottom: 16px; }
-.dt-desc { color: var(--text-light); line-height: 1.9; margin-bottom: 36px; }
-.dt-desc p { margin: 0 0 4px 0; }
-.dt-desc .dt-desc-title { color: var(--red); font-weight: 800; letter-spacing: .03em; margin-top: 14px; margin-bottom: 6px; text-transform: uppercase; }
+.dt-desc { color: var(--text); line-height: 1.85; margin-bottom: 36px; font-size: .98rem; }
+.dt-desc p { margin: 0 0 6px 0; color: var(--text); }
+.dt-desc .dt-desc-title { color: var(--red); font-weight: 800; letter-spacing: .03em; margin-top: 14px; margin-bottom: 8px; text-transform: uppercase; font-size: 1.02rem; }
 .dt-desc .dt-desc-title:first-child { margin-top: 0; }
 .dt-desc .dt-desc-label { color: var(--red); font-weight: 700; }
 .dt-desc .dt-desc-spacer { height: 10px; }
+.dt-desc .dt-desc-fixed { margin-bottom: 18px; }
+.dt-desc .dt-desc-free { margin-bottom: 18px; }
+.dt-desc-aviso {
+  margin-top: 20px; padding: 14px 18px; background: linear-gradient(135deg, rgba(196,30,30,.08), rgba(196,30,30,.03));
+  border-left: 4px solid var(--red); border-radius: 6px;
+  color: var(--red-dark); font-weight: 700; font-size: .92rem; letter-spacing: .02em;
+}
 .dt-features { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-bottom: 36px; }
 .dt-feat {
   display: flex; align-items: center; gap: 10px; font-size: .9rem; color: var(--text-light);
@@ -2059,32 +2066,41 @@ function DetailPage({property: p, setPage, properties, setSelectedProp, favs, to
             ))
           )
         ),
-        React.createElement("h3", {className: "dt-section-title"}, "Descrição"),
-        React.createElement("div", {className: "dt-desc"}, (p.description || "").split(/\r?\n/).map((line, i) => {
-          const t = line.trim();
-          if (!t) return React.createElement("div", {key: i, className: "dt-desc-spacer"});
-          // Título: linha toda em maiúscula sem ":"
-          if (t === t.toUpperCase() && t.length > 2 && !t.includes(':') && /[A-ZÁÀÂÃÉÊÍÓÔÕÚÇ]/.test(t)) {
-            return React.createElement("p", {key: i, className: "dt-desc-title"}, t);
-          }
-          // Linha com label antes de ":"
-          // Suporta inicio "- " (lista) e "*" (bullet)
-          let prefix = "";
-          let body = t;
-          if (body.startsWith("- ") || body.startsWith("* ")) { prefix = body.slice(0,2); body = body.slice(2); }
-          else if (body.startsWith("-") || body.startsWith("*")) { prefix = body[0] + " "; body = body.slice(1).trim(); }
-          const colonIdx = body.indexOf(':');
-          if (colonIdx > 0 && colonIdx < body.length) {
-            const label = body.slice(0, colonIdx + 1);
-            const rest = body.slice(colonIdx + 1);
-            return React.createElement("p", {key: i},
-              prefix,
-              React.createElement("span", {className: "dt-desc-label"}, label),
-              rest
-            );
-          }
-          return React.createElement("p", {key: i}, prefix + body);
-        })),
+        React.createElement("h3", {className: "dt-section-title"}, "Descrição do imóvel"),
+        React.createElement("div", {className: "dt-desc"},
+          // Campos fixos no topo
+          (p.posicionamento || p.tipoConstrucao || p.localizacaoLote) && React.createElement("div", {className: "dt-desc-fixed"},
+            React.createElement("p", {className: "dt-desc-title"}, "Sobre o imóvel"),
+            p.posicionamento && React.createElement("p", null, "- ", React.createElement("span", {className: "dt-desc-label"}, "Posicionamento:"), " ", p.posicionamento),
+            p.tipoConstrucao && React.createElement("p", null, "- ", React.createElement("span", {className: "dt-desc-label"}, "Tipo de construção:"), " ", p.tipoConstrucao),
+            p.localizacaoLote && React.createElement("p", null, "- ", React.createElement("span", {className: "dt-desc-label"}, "Localização:"), " ", p.localizacaoLote)
+          ),
+          // Descrição livre
+          p.description && React.createElement("div", {className: "dt-desc-free"}, (p.description || "").split(/\r?\n/).map((line, i) => {
+            const t = line.trim();
+            if (!t) return React.createElement("div", {key: i, className: "dt-desc-spacer"});
+            if (t === t.toUpperCase() && t.length > 2 && !t.includes(':') && /[A-ZÁÀÂÃÉÊÍÓÔÕÚÇ]/.test(t)) {
+              return React.createElement("p", {key: i, className: "dt-desc-title"}, t);
+            }
+            let prefix = "";
+            let body = t;
+            if (body.startsWith("- ") || body.startsWith("* ")) { prefix = body.slice(0,2); body = body.slice(2); }
+            else if (body.startsWith("-") || body.startsWith("*")) { prefix = body[0] + " "; body = body.slice(1).trim(); }
+            const colonIdx = body.indexOf(':');
+            if (colonIdx > 0 && colonIdx < body.length) {
+              const label = body.slice(0, colonIdx + 1);
+              const rest = body.slice(colonIdx + 1);
+              return React.createElement("p", {key: i},
+                prefix,
+                React.createElement("span", {className: "dt-desc-label"}, label),
+                rest
+              );
+            }
+            return React.createElement("p", {key: i}, prefix + body);
+          })),
+          // Aviso fixo no rodapé
+          React.createElement("div", {className: "dt-desc-aviso"}, "⚠️ Valor sujeito a alteração sem aviso prévio.")
+        ),
         React.createElement("h3", {className: "dt-section-title"}, "Características"),
         React.createElement("div", {className: "dt-features"}, p.features.map(f => React.createElement("div", {key: f, className: "dt-feat"}, React.createElement("div", {className: "dt-feat-check"}, I.check), f))),
         React.createElement("div", {className: "dt-map-wrap"},
@@ -2366,7 +2382,7 @@ function AdminPanel({properties, setProperties, showToast, settings, viewsMap}) 
       const max = nums.length > 0 ? Math.max(...nums) : 0;
       return String(max + 1).padStart(3, "0");
     })();
-    setEditProp({id:genId(),reference:nextRef,title:"",type:"Casa",transaction:"Venda",price:0,oldPrice:0,priceReduced:false,showPrice:true,area:0,builtArea:0,bedrooms:0,suites:0,bathrooms:0,garages:0,city:"",neighborhood:"",address:"",number:"",lat:"",lng:"",streetHeading:0,streetPitch:0,description:"",features:[],rooms:[],images:[],sold:false,reserved:false,featured:false,active:true,createdAt:new Date().toISOString().split("T")[0]});
+    setEditProp({id:genId(),reference:nextRef,title:"",type:"Casa",transaction:"Venda",price:0,oldPrice:0,priceReduced:false,showPrice:true,area:0,builtArea:0,bedrooms:0,suites:0,bathrooms:0,garages:0,city:"",neighborhood:"",address:"",number:"",lat:"",lng:"",streetHeading:0,streetPitch:0,description:"",posicionamento:"",tipoConstrucao:"",localizacaoLote:"",features:[],rooms:[],images:[],sold:false,reserved:false,featured:false,active:true,createdAt:new Date().toISOString().split("T")[0]});
     setShowForm(true);
   };
   const save = async prop => {
@@ -3283,7 +3299,11 @@ function PropForm({property, onSave, onCancel, showToast, existingNeighborhoods,
       React.createElement("div", {className: "af-group"}, React.createElement("label", {className: "af-label"}, "Suítes"), React.createElement("input", {className: "af-input", type:"number", value:f.suites||"", onChange:e=>upd("suites",+e.target.value), placeholder:"0", max: f.bedrooms || undefined, title: "Quantos dos quartos são suítes (com banheiro próprio)"})),
       React.createElement("div", {className: "af-group"}, React.createElement("label", {className: "af-label"}, "Banheiros"), React.createElement("input", {className: "af-input", type:"number", value:f.bathrooms||"", onChange:e=>upd("bathrooms",+e.target.value), placeholder:"0"})),
       React.createElement("div", {className: "af-group"}, React.createElement("label", {className: "af-label"}, "Vagas Garagem"), React.createElement("input", {className: "af-input", type:"number", value:f.garages||"", onChange:e=>upd("garages",+e.target.value), placeholder:"0"})),
-      React.createElement("div", {className: "af-group full"}, React.createElement("label", {className: "af-label"}, "Descrição *"), React.createElement("textarea", {className: "af-input af-textarea", value:f.description, onChange:e=>upd("description",e.target.value), placeholder:"Descreva detalhadamente: acabamento, estrutura, diferenciais, vizinhança...", style:{minHeight:150}})),
+      ST({icon: I.area, title: "Informações fixas do imóvel", sub: "Campos que sempre aparecem destacados na descrição. Deixe vazio se não tiver."}),
+      React.createElement("div", {className: "af-group"}, React.createElement("label", {className: "af-label"}, "Posicionamento"), React.createElement("input", {className: "af-input", type:"text", value:f.posicionamento||"", onChange:e=>upd("posicionamento",e.target.value), placeholder:"Ex: Norte/Oeste"})),
+      React.createElement("div", {className: "af-group"}, React.createElement("label", {className: "af-label"}, "Tipo de construção"), React.createElement("input", {className: "af-input", type:"text", value:f.tipoConstrucao||"", onChange:e=>upd("tipoConstrucao",e.target.value), placeholder:"Ex: Alvenaria"})),
+      React.createElement("div", {className: "af-group"}, React.createElement("label", {className: "af-label"}, "Localização (Lote/Quadra)"), React.createElement("input", {className: "af-input", type:"text", value:f.localizacaoLote||"", onChange:e=>upd("localizacaoLote",e.target.value), placeholder:"Ex: L. 01 - Q. 04"})),
+      React.createElement("div", {className: "af-group full"}, React.createElement("label", {className: "af-label"}, "Descrição (texto livre)"), React.createElement("textarea", {className: "af-input af-textarea", value:f.description, onChange:e=>upd("description",e.target.value), placeholder:"Texto livre — diferenciais, vizinhança, mensagem extra...\n\nEx: Faça hoje mesmo uma visita, vale a pena conferir!", style:{minHeight:150}})),
 
       ST({icon: I.grid, title: "Cômodos", sub: "Adicione os cômodos. Clique nos botões rápidos ou digite manualmente. Edite os nomes a qualquer momento."}),
       React.createElement("div", {className: "af-group full"},
