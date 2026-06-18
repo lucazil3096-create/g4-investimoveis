@@ -1522,21 +1522,34 @@ function WmImg(props) {
     onClick: onClick
   },
     React.createElement("img", {src, alt, className: imgClass, style: imgStyle, loading, title, draggable: false}),
-    showWm && React.createElement("img", {
-      src: wmUrl,
-      alt: "",
+    showWm && React.createElement("div", {
       className: "wm-overlay",
       "aria-hidden": "true",
-      draggable: false,
       style: Object.assign({
         position: "absolute",
         width: size + "%",
-        maxWidth: "60%",
+        height: size + "%",
         opacity: opacity,
         pointerEvents: "none",
-        filter: "drop-shadow(0 2px 6px rgba(0,0,0,.5))"
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center"
       }, posStyle)
-    })
+    },
+      React.createElement("img", {
+        src: wmUrl,
+        alt: "",
+        draggable: false,
+        style: {
+          maxWidth: "100%",
+          maxHeight: "100%",
+          width: "auto",
+          height: "auto",
+          objectFit: "contain",
+          filter: "drop-shadow(0 2px 6px rgba(0,0,0,.5))"
+        }
+      })
+    )
   );
 }
 
