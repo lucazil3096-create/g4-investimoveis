@@ -422,9 +422,9 @@ a { text-decoration: none; color: inherit; }
 }
 .card-location svg { width: 15px; height: 15px; flex-shrink: 0; color: var(--red); }
 .card-divider { height: 1px; background: var(--border-light); margin-bottom: 16px; }
-.card-features { display: flex; gap: 18px; }
+.card-features { display: flex; gap: 14px; flex-wrap: wrap; row-gap: 8px; }
 .card-feat {
-  display: flex; align-items: center; gap: 6px; font-size: .82rem; color: var(--text-light);
+  display: flex; align-items: center; gap: 6px; font-size: .82rem; color: var(--text-light); white-space: nowrap;
 }
 .card-feat svg { width: 16px; height: 16px; color: var(--red); opacity: .7; }
 .card-feat strong { color: var(--text); font-weight: 600; }
@@ -1648,8 +1648,8 @@ function PropCard({p, onClick, favs, toggleFav, isAdmin}) {
         p.suites > 0 && React.createElement("div", {className: "card-feat"}, I.bed, " ", React.createElement("strong", null, p.suites), p.suites === 1 ? " Suíte" : " Suítes"),
         p.bathrooms > 0 && React.createElement("div", {className: "card-feat"}, I.bath, " ", React.createElement("strong", null, p.bathrooms), " Ban."),
         p.garages > 0 && React.createElement("div", {className: "card-feat"}, I.car, " ", React.createElement("strong", null, p.garages), " Vagas"),
-        p.area > 0 && React.createElement("div", {className: "card-feat", title:"Área do terreno"}, I.area, " ", React.createElement("strong", null, p.area), "m² terr."),
-        p.builtArea > 0 && React.createElement("div", {className: "card-feat", title:"Área construída"}, I.area, " ", React.createElement("strong", null, p.builtArea), "m² const.")
+        p.area > 0 && React.createElement("div", {className: "card-feat", title:"Área do terreno"}, I.area, " ", React.createElement("strong", null, p.area), " m² ter."),
+        p.builtArea > 0 && React.createElement("div", {className: "card-feat", title:"Área construída"}, I.area, " ", React.createElement("strong", null, p.builtArea), " m² con.")
       )
     )
   );
@@ -1878,8 +1878,8 @@ function PropertiesPage({properties, searchFilters, setSearchFilters, setSelecte
         p.suites > 0 && React.createElement("div", {className: "card-feat"}, I.bed, " ", React.createElement("strong", null, p.suites), p.suites === 1 ? " Suíte" : " Suítes"),
                   p.bathrooms > 0 && React.createElement("div", {className: "card-feat"}, I.bath, " ", React.createElement("strong", null, p.bathrooms), " Ban."),
                   p.garages > 0 && React.createElement("div", {className: "card-feat"}, I.car, " ", React.createElement("strong", null, p.garages), " Vagas"),
-                  p.area > 0 && React.createElement("div", {className: "card-feat", title:"Terreno"}, I.area, " ", React.createElement("strong", null, p.area), "m² terr."),
-                  p.builtArea > 0 && React.createElement("div", {className: "card-feat", title:"Construída"}, I.area, " ", React.createElement("strong", null, p.builtArea), "m² const.")
+                  p.area > 0 && React.createElement("div", {className: "card-feat", title:"Terreno"}, I.area, " ", React.createElement("strong", null, p.area), " m² ter."),
+                  p.builtArea > 0 && React.createElement("div", {className: "card-feat", title:"Construída"}, I.area, " ", React.createElement("strong", null, p.builtArea), " m² con.")
                 )
               )
             )
