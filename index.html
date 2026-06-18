@@ -1505,11 +1505,17 @@ function WmImg(props) {
   const opacity = ((s.watermarkOpacity != null ? s.watermarkOpacity : 35) / 100);
   const size = (s.watermarkSize != null ? s.watermarkSize : 22);
   const posStyle = {};
-  if (pos === "br") { posStyle.bottom = "5%"; posStyle.right = "5%"; }
-  else if (pos === "bl") { posStyle.bottom = "5%"; posStyle.left = "5%"; }
-  else if (pos === "tr") { posStyle.top = "5%"; posStyle.right = "5%"; }
-  else if (pos === "tl") { posStyle.top = "5%"; posStyle.left = "5%"; }
+  const pad = "4%";
+  if (pos === "br") { posStyle.bottom = pad; posStyle.right = pad; }
+  else if (pos === "bl") { posStyle.bottom = pad; posStyle.left = pad; }
+  else if (pos === "tr") { posStyle.top = pad; posStyle.right = pad; }
+  else if (pos === "tl") { posStyle.top = pad; posStyle.left = pad; }
+  else if (pos === "tc") { posStyle.top = pad; posStyle.left = "50%"; posStyle.transform = "translateX(-50%)"; }
+  else if (pos === "bc") { posStyle.bottom = pad; posStyle.left = "50%"; posStyle.transform = "translateX(-50%)"; }
+  else if (pos === "cl") { posStyle.top = "50%"; posStyle.left = pad; posStyle.transform = "translateY(-50%)"; }
+  else if (pos === "cr") { posStyle.top = "50%"; posStyle.right = pad; posStyle.transform = "translateY(-50%)"; }
   else if (pos === "center") { posStyle.top = "50%"; posStyle.left = "50%"; posStyle.transform = "translate(-50%,-50%)"; }
+  else { posStyle.bottom = pad; posStyle.right = pad; } // fallback
   return React.createElement("div", {
     className: "wm-wrap " + (wrapClass || ""),
     style: Object.assign({position:"relative", display:"block", overflow:"hidden"}, wrapStyle || {}),
@@ -2736,22 +2742,45 @@ function SettingsPanel({settings, showToast}) {
           ),
           React.createElement("p", {style:{fontSize:".78rem", color:"var(--text-light)", marginLeft:30, marginTop:4}}, "Pode ser desativada individualmente em cada imóvel no campo do anúncio.")
         ),
+        // Preview ao vivo
+        React.createElement("div", {key:"wm-preview", className:"af-group full", style:{background:"#1a1a1a", padding:"16px", borderRadius:10, marginBottom:4}},
+          React.createElement("p", {style:{fontSize:".78rem", color:"rgba(255,255,255,.65)", marginBottom:10, fontWeight:700, letterSpacing:".04em", textTransform:"uppercase"}}, "🔍 Preview ao vivo — ajusta os sliders abaixo e veja o resultado"),
+          React.createElement(WmImg, {
+            src: s.heroBgImage || "https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?w=1200&q=80",
+            alt: "Preview",
+            settings: s,
+            prop: {watermark: s.watermarkEnabled !== false},
+            wrapStyle: {width:"100%", aspectRatio:"16/9", borderRadius:8, overflow:"hidden", maxWidth:600, margin:"0 auto", display:"block"},
+            imgStyle: {width:"100%", height:"100%", objectFit:"cover"}
+          })
+        ),
         ImgField({key:"wmimg", label:"Imagem da marca d'água (deixe vazio pra usar a logo)", k:"watermarkUrl", fileRef: watermarkFileRef, preview: true, help:"PNG transparente recomendado. Se vazio, usa a logo principal."}),
         React.createElement("div", {key:"wm-op", className:"af-group"},
           React.createElement("label", {className:"af-label"}, "Opacidade da marca d'água: ", React.createElement("strong", {style:{color:"var(--red)"}}, (s.watermarkOpacity != null ? s.watermarkOpacity : 35), "%")),
-          React.createElement("input", {type:"range", min:5, max:100, step:5, value: (s.watermarkOpacity != null ? s.watermarkOpacity : 35), onChange: e => upd("watermarkOpacity", +e.target.value), style:{width:"100%"}})
+          React.createElement("input", {type:"range", min:5, max:100, step:1, value: (s.watermarkOpacity != null ? s.watermarkOpacity : 35), onChange: e => upd("watermarkOpacity", +e.target.value), style:{width:"100%"}})
         ),
         React.createElement("div", {key:"wm-sz", className:"af-group"},
           React.createElement("label", {className:"af-label"}, "Tamanho (% da foto): ", React.createElement("strong", {style:{color:"var(--red)"}}, (s.watermarkSize != null ? s.watermarkSize : 22), "%")),
-          React.createElement("input", {type:"range", min:8, max:60, step:2, value: (s.watermarkSize != null ? s.watermarkSize : 22), onChange: e => upd("watermarkSize", +e.target.value), style:{width:"100%"}})
+          React.createElement("input", {type:"range", min:5, max:80, step:1, value: (s.watermarkSize != null ? s.watermarkSize : 22), onChange: e => upd("watermarkSize", +e.target.value), style:{width:"100%"}})
         ),
         React.createElement("div", {key:"wm-pos", className:"af-group full"},
           React.createElement("label", {className:"af-label"}, "Posição da marca d'água"),
-          React.createElement("div", {style:{display:"flex", gap:8, flexWrap:"wrap"}},
-            [{v:"br",l:"↘ Inferior direito"},{v:"bl",l:"↙ Inferior esquerdo"},{v:"tr",l:"↗ Superior direito"},{v:"tl",l:"↖ Superior esquerdo"},{v:"center",l:"⊙ Centro"}].map(o =>
-              React.createElement("button", {key:o.v, className: (s.watermarkPosition || "br") === o.v ? "btn-red" : "btn-outline-sm", onClick: () => upd("watermarkPosition", o.v), style:{padding:"8px 14px", fontSize:".85rem"}}, o.l)
+          React.createElement("div", {style:{display:"grid", gridTemplateColumns:"repeat(3, 1fr)", gap:6, maxWidth:280}},
+            [
+              {v:"tl",l:"↖", t:"Superior esq."},
+              {v:"tc",l:"↑", t:"Superior centro"},
+              {v:"tr",l:"↗", t:"Superior dir."},
+              {v:"cl",l:"←", t:"Centro esq."},
+              {v:"center",l:"⊙", t:"Centro"},
+              {v:"cr",l:"→", t:"Centro dir."},
+              {v:"bl",l:"↙", t:"Inferior esq."},
+              {v:"bc",l:"↓", t:"Inferior centro"},
+              {v:"br",l:"↘", t:"Inferior dir."}
+            ].map(o =>
+              React.createElement("button", {key:o.v, className: (s.watermarkPosition || "br") === o.v ? "btn-red" : "btn-outline-sm", onClick: () => upd("watermarkPosition", o.v), title:o.t, style:{padding:"12px 0", fontSize:"1.2rem", fontWeight:900, lineHeight:1}}, o.l)
             )
-          )
+          ),
+          React.createElement("p", {style:{fontSize:".74rem", color:"var(--text-light)", marginTop:8}}, "Selecionada: ", React.createElement("strong", null, {tl:"Superior esquerdo",tc:"Superior centro",tr:"Superior direito",cl:"Centro esquerdo",center:"Centro",cr:"Centro direito",bl:"Inferior esquerdo",bc:"Inferior centro",br:"Inferior direito"}[s.watermarkPosition || "br"]))
         )
       ]}),
       Sec({title: "📞 Contatos (telefones, email, endereço)", children: [
