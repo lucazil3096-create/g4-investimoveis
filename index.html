@@ -1941,7 +1941,7 @@ function DetailPage({property: p, setPage, properties, setSelectedProp, favs, to
   }, [p.id]);
 
   // Compartilhamento
-  const shareUrl = `${window.location.origin}${window.location.pathname}?p=${p.id}`;
+  const shareUrl = `${window.location.origin}/imovel/${p.id}`;
   const shareTitle = `${p.title} — ${p.city}/PR`;
   const sharePrice = canSeePrice ? `\nValor: ${fmtCurrency(p.price)}${p.transaction === "Aluguel" ? "/mês" : ""}` : "";
   const shareText = `${shareTitle}${sharePrice}\n${shareUrl}`;
@@ -3553,24 +3553,74 @@ function App() {
     return () => { clearTimeout(t); if (window.__fbAuthUnsub) window.__fbAuthUnsub(); };
   }, []);
 
-  // Deep link: se a URL tem ?p=propId, abre direto o detalhe do imóvel
-  useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    const propId = params.get("p");
-    if (propId && props.length > 0) {
-      const target = props.find(x => x.id === propId);
-      if (target) { setSelProp(target); setPage("detail"); }
-    }
-  }, [props]);
+  // Mapeia page → URL amigável
+  const pathFromPage = (pg, prop) => {
+    if (pg === "properties") return "/imoveis";
+    if (pg === "about") return "/sobre";
+    if (pg === "contact") return "/contato";
+    if (pg === "privacy") return "/privacidade";
+    if (pg === "login" || pg === "admin") return "/admin";
+    if (pg === "detail" && prop) return `/imovel/${prop.id}`;
+    return "/";
+  };
 
-  // Deep link admin: /admin, ?admin=1 ou #admin abrem a tela de login
+  // Detecta URL inicial e abre a página correta
   useEffect(() => {
     const path = (window.location.pathname || "").toLowerCase();
-    const hash = (window.location.hash || "").toLowerCase();
     const params = new URLSearchParams(window.location.search);
+    const hash = (window.location.hash || "").toLowerCase();
+
+    // /imovel/ID
+    if (path.startsWith("/imovel/")) {
+      const propId = path.slice("/imovel/".length).replace(/\/$/, "");
+      if (propId && props.length > 0) {
+        const target = props.find(x => x.id === propId);
+        if (target) { setSelProp(target); setPage("detail"); return; }
+      }
+    }
+    // ?p=ID (compatível com links antigos)
+    const oldP = params.get("p");
+    if (oldP && props.length > 0) {
+      const target = props.find(x => x.id === oldP);
+      if (target) { setSelProp(target); setPage("detail"); return; }
+    }
+    // Rotas simples
+    if (path === "/imoveis") { setPage("properties"); return; }
+    if (path === "/sobre") { setPage("about"); return; }
+    if (path === "/contato") { setPage("contact"); return; }
+    if (path === "/privacidade") { setPage("privacy"); return; }
+    // Admin
     const wantsAdmin = path.includes("/admin") || hash.includes("admin") || params.get("admin") === "1" || params.has("admin");
-    if (wantsAdmin && !isAdmin) setPage("login");
-  }, []);
+    if (wantsAdmin && !isAdmin) { setPage("login"); return; }
+  }, [props]);
+
+  // Sincroniza URL quando muda de página
+  useEffect(() => {
+    const newPath = pathFromPage(page, selProp);
+    if (window.location.pathname !== newPath) {
+      try { window.history.pushState({page, propId: selProp ? selProp.id : null}, "", newPath); } catch(e) {}
+    }
+  }, [page, selProp]);
+
+  // Botão voltar do navegador
+  useEffect(() => {
+    const onPop = () => {
+      const path = (window.location.pathname || "").toLowerCase();
+      if (path.startsWith("/imovel/")) {
+        const propId = path.slice("/imovel/".length).replace(/\/$/, "");
+        const target = props.find(x => x.id === propId);
+        if (target) { setSelProp(target); setPage("detail"); return; }
+      }
+      if (path === "/imoveis") setPage("properties");
+      else if (path === "/sobre") setPage("about");
+      else if (path === "/contato") setPage("contact");
+      else if (path === "/privacidade") setPage("privacy");
+      else if (path === "/admin") setPage(isAdmin ? "admin" : "login");
+      else setPage("home");
+    };
+    window.addEventListener("popstate", onPop);
+    return () => window.removeEventListener("popstate", onPop);
+  }, [props, isAdmin]);
 
   // Listener em tempo real: qualquer mudança no Firestore aparece na hora
   useEffect(() => {
