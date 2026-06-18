@@ -1648,7 +1648,8 @@ function PropCard({p, onClick, favs, toggleFav, isAdmin}) {
         p.suites > 0 && React.createElement("div", {className: "card-feat"}, I.bed, " ", React.createElement("strong", null, p.suites), p.suites === 1 ? " Suíte" : " Suítes"),
         p.bathrooms > 0 && React.createElement("div", {className: "card-feat"}, I.bath, " ", React.createElement("strong", null, p.bathrooms), " Ban."),
         p.garages > 0 && React.createElement("div", {className: "card-feat"}, I.car, " ", React.createElement("strong", null, p.garages), " Vagas"),
-        React.createElement("div", {className: "card-feat"}, I.area, " ", React.createElement("strong", null, p.area), "m²")
+        p.area > 0 && React.createElement("div", {className: "card-feat", title:"Área do terreno"}, I.area, " ", React.createElement("strong", null, p.area), "m² terr."),
+        p.builtArea > 0 && React.createElement("div", {className: "card-feat", title:"Área construída"}, I.area, " ", React.createElement("strong", null, p.builtArea), "m² const.")
       )
     )
   );
@@ -1702,7 +1703,8 @@ function FeaturedSection({properties, setPage, setSelectedProp, favs, toggleFav,
           p.bedrooms > 0 && React.createElement("div", {className: "feat-slide-spec"}, I.bed, " ", React.createElement("strong", null, p.bedrooms), " ", p.bedrooms === 1 ? "Quarto" : "Quartos", p.suites > 0 ? ` (${p.suites} ${p.suites === 1 ? 'suíte' : 'suítes'})` : ""),
           p.bathrooms > 0 && React.createElement("div", {className: "feat-slide-spec"}, I.bath, " ", React.createElement("strong", null, p.bathrooms), " ", p.bathrooms === 1 ? "Banheiro" : "Banheiros"),
           p.garages > 0 && React.createElement("div", {className: "feat-slide-spec"}, I.car, " ", React.createElement("strong", null, p.garages), " ", p.garages === 1 ? "Vaga" : "Vagas"),
-          p.area > 0 && React.createElement("div", {className: "feat-slide-spec"}, I.area, " ", React.createElement("strong", null, p.area.toLocaleString("pt-BR")), " m²")
+          p.area > 0 && React.createElement("div", {className: "feat-slide-spec", title:"Área do terreno"}, I.area, " ", React.createElement("strong", null, p.area.toLocaleString("pt-BR")), " m² terreno"),
+          p.builtArea > 0 && React.createElement("div", {className: "feat-slide-spec", title:"Área construída"}, I.area, " ", React.createElement("strong", null, p.builtArea.toLocaleString("pt-BR")), " m² const.")
         ),
         React.createElement("div", {className: "feat-slide-bottom"},
           canSeePrice
@@ -1876,7 +1878,8 @@ function PropertiesPage({properties, searchFilters, setSearchFilters, setSelecte
         p.suites > 0 && React.createElement("div", {className: "card-feat"}, I.bed, " ", React.createElement("strong", null, p.suites), p.suites === 1 ? " Suíte" : " Suítes"),
                   p.bathrooms > 0 && React.createElement("div", {className: "card-feat"}, I.bath, " ", React.createElement("strong", null, p.bathrooms), " Ban."),
                   p.garages > 0 && React.createElement("div", {className: "card-feat"}, I.car, " ", React.createElement("strong", null, p.garages), " Vagas"),
-                  React.createElement("div", {className: "card-feat"}, I.area, " ", React.createElement("strong", null, p.area), "m²")
+                  p.area > 0 && React.createElement("div", {className: "card-feat", title:"Terreno"}, I.area, " ", React.createElement("strong", null, p.area), "m² terr."),
+                  p.builtArea > 0 && React.createElement("div", {className: "card-feat", title:"Construída"}, I.area, " ", React.createElement("strong", null, p.builtArea), "m² const.")
                 )
               )
             )
@@ -2035,7 +2038,11 @@ function DetailPage({property: p, setPage, properties, setSelectedProp, favs, to
           ),
           p.area > 0 && React.createElement("div", {className: "dt-spec"},
             React.createElement("div", {className: "dt-spec-icon"}, I.area),
-            React.createElement("div", {className: "dt-spec-val"}, React.createElement("strong", null, p.area.toLocaleString("pt-BR")), " m² (Construída)")
+            React.createElement("div", {className: "dt-spec-val"}, React.createElement("strong", null, p.area.toLocaleString("pt-BR")), " m² (Terreno)")
+          ),
+          p.builtArea > 0 && React.createElement("div", {className: "dt-spec"},
+            React.createElement("div", {className: "dt-spec-icon"}, I.area),
+            React.createElement("div", {className: "dt-spec-val"}, React.createElement("strong", null, p.builtArea.toLocaleString("pt-BR")), " m² (Construída)")
           )
         ),
         p.rooms && p.rooms.length > 0 && React.createElement(React.Fragment, null,
@@ -2330,7 +2337,7 @@ function AdminPanel({properties, setProperties, showToast, settings, viewsMap}) 
       const max = nums.length > 0 ? Math.max(...nums) : 0;
       return String(max + 1).padStart(3, "0");
     })();
-    setEditProp({id:genId(),reference:nextRef,title:"",type:"Casa",transaction:"Venda",price:0,oldPrice:0,priceReduced:false,showPrice:true,area:0,bedrooms:0,suites:0,bathrooms:0,garages:0,city:"",neighborhood:"",address:"",number:"",lat:"",lng:"",streetHeading:0,streetPitch:0,description:"",features:[],rooms:[],images:[],sold:false,reserved:false,featured:false,active:true,createdAt:new Date().toISOString().split("T")[0]});
+    setEditProp({id:genId(),reference:nextRef,title:"",type:"Casa",transaction:"Venda",price:0,oldPrice:0,priceReduced:false,showPrice:true,area:0,builtArea:0,bedrooms:0,suites:0,bathrooms:0,garages:0,city:"",neighborhood:"",address:"",number:"",lat:"",lng:"",streetHeading:0,streetPitch:0,description:"",features:[],rooms:[],images:[],sold:false,reserved:false,featured:false,active:true,createdAt:new Date().toISOString().split("T")[0]});
     setShowForm(true);
   };
   const save = async prop => {
@@ -3241,7 +3248,8 @@ function PropForm({property, onSave, onCancel, showToast, existingNeighborhoods,
       ),
 
       ST({icon: I.area, title: "Detalhes"}),
-      React.createElement("div", {className: "af-group"}, React.createElement("label", {className: "af-label"}, "Área Total (m²)"), React.createElement("input", {className: "af-input", type:"number", value:f.area||"", onChange:e=>upd("area",+e.target.value), placeholder:"250"})),
+      React.createElement("div", {className: "af-group"}, React.createElement("label", {className: "af-label"}, "Área Total do Terreno (m²)"), React.createElement("input", {className: "af-input", type:"number", value:f.area||"", onChange:e=>upd("area",+e.target.value), placeholder:"Ex: 250"})),
+      React.createElement("div", {className: "af-group"}, React.createElement("label", {className: "af-label"}, "Área Construída (m²)"), React.createElement("input", {className: "af-input", type:"number", value:f.builtArea||"", onChange:e=>upd("builtArea",+e.target.value), placeholder:"Ex: 120", title:"Área da construção (casa em si)"})),
       React.createElement("div", {className: "af-group"}, React.createElement("label", {className: "af-label"}, "Quartos (total)"), React.createElement("input", {className: "af-input", type:"number", value:f.bedrooms||"", onChange:e=>upd("bedrooms",+e.target.value), placeholder:"0"})),
       React.createElement("div", {className: "af-group"}, React.createElement("label", {className: "af-label"}, "Suítes"), React.createElement("input", {className: "af-input", type:"number", value:f.suites||"", onChange:e=>upd("suites",+e.target.value), placeholder:"0", max: f.bedrooms || undefined, title: "Quantos dos quartos são suítes (com banheiro próprio)"})),
       React.createElement("div", {className: "af-group"}, React.createElement("label", {className: "af-label"}, "Banheiros"), React.createElement("input", {className: "af-input", type:"number", value:f.bathrooms||"", onChange:e=>upd("bathrooms",+e.target.value), placeholder:"0"})),
