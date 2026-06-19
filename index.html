@@ -2111,6 +2111,7 @@ function DetailPage({property: p, setPage, properties, setSelectedProp, favs, to
     React.createElement("div", {className: "detail-gallery", style: p.reserved ? {border:"3px solid #dc2626"} : {}, onTouchStart: onTouchStart, onTouchEnd: onTouchEnd},
       React.createElement(WmImg, {src: p.images[ci], alt: p.title, settings, prop: p, imgStyle: Object.assign({width:"100%", height:"100%", objectFit:"cover", cursor:"zoom-in"}, p.reserved ? {filter:"brightness(.8)"} : {}), wrapStyle:{width:"100%", height:"100%"}, onClick: () => p.images.length > 0 && setLightbox(true), title: "Clique para ampliar"}),
       p.reserved && React.createElement("div", {style:{position:"absolute",top:20,left:20,zIndex:5,background:"linear-gradient(135deg,#dc2626,#b91c1c)",color:"white",padding:"10px 24px",borderRadius:8,fontSize:".85rem",fontWeight:900,letterSpacing:".1em",boxShadow:"0 4px 16px rgba(220,38,38,.4)",display:"flex",alignItems:"center",gap:8}}, "⚡ IMÓVEL RESERVADO"),
+      isAdmin && React.createElement("button", {className: "no-print", onClick: (e) => { e.stopPropagation(); setPresentMode(true); }, title:"Apresentar imóvel em tela cheia (admin)", style:{position:"absolute", top:20, right:20, zIndex:6, background:"linear-gradient(135deg, #1e293b, #334155)", color:"white", border:"2px solid rgba(255,255,255,.7)", padding:"10px 18px", borderRadius:10, fontWeight:800, cursor:"pointer", fontSize:".88rem", display:"inline-flex", alignItems:"center", gap:8, boxShadow:"0 6px 18px rgba(0,0,0,.45)", letterSpacing:".02em"}}, "📺 Apresentar"),
       p.images.length > 1 && React.createElement(React.Fragment, null,
         React.createElement("button", {className: "gal-nav left", onClick: () => setCi(i => (i-1+p.images.length)%p.images.length)}, I.chevL),
         React.createElement("button", {className: "gal-nav right", onClick: () => setCi(i => (i+1)%p.images.length)}, I.chevR)
@@ -2272,8 +2273,7 @@ function DetailPage({property: p, setPage, properties, setSelectedProp, favs, to
                 )
               )
             ),
-            React.createElement("button", {className: "btn-sm btn-outline-sm no-print", onClick: doPrint, title:"Imprimir ou salvar como PDF"}, "🖨️ Imprimir"),
-            isAdmin && React.createElement("button", {className: "btn-sm no-print", onClick: () => setPresentMode(true), title:"Modo apresentação em tela cheia", style:{background:"linear-gradient(135deg, #1e293b, #334155)", color:"white", border:"none", padding:"8px 16px", borderRadius:8, fontWeight:700, cursor:"pointer", fontSize:".85rem", display:"inline-flex", alignItems:"center", gap:6, boxShadow:"0 4px 12px rgba(0,0,0,.2)"}}, "📺 Apresentar")
+            React.createElement("button", {className: "btn-sm btn-outline-sm no-print", onClick: doPrint, title:"Imprimir ou salvar como PDF"}, "🖨️ Imprimir")
           )
         )
       )
