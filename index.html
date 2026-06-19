@@ -2539,6 +2539,44 @@ function AdminPanel({properties, setProperties, showToast, settings, viewsMap}) 
     if (!res.ok) { setProperties(prev => prev.map(x => x.id===id ? {...x, sold:p.sold, active:p.active, reserved:p.reserved} : x)); showToast("Erro: " + res.error, "error"); return; }
     showToast("Status atualizado!","success");
   };
+  // Renomear bairro em todos os imoveis que usam
+  const renameNeighborhood = async (oldName, newName) => {
+    const oldT = (oldName || "").trim(); const newT = (newName || "").trim();
+    if (!oldT || !newT || oldT === newT) return {ok:false, error:"Nome inválido"};
+    const affected = properties.filter(p => (p.neighborhood || "").trim() === oldT);
+    setProperties(prev => prev.map(x => (x.neighborhood || "").trim() === oldT ? {...x, neighborhood: newT} : x));
+    try {
+      for (const p of affected) {
+        const res = await FB.updateField(p.id, "neighborhood", newT);
+        if (!res.ok) throw new Error(res.error || "Erro ao salvar");
+      }
+      showToast(`Bairro renomeado em ${affected.length} imóvel(is)`, "success");
+      return {ok:true, count: affected.length};
+    } catch(e) {
+      setProperties(prev => prev.map(x => (x.neighborhood || "").trim() === newT ? {...x, neighborhood: oldT} : x));
+      showToast("Erro: " + (e.message || e), "error");
+      return {ok:false, error: e.message};
+    }
+  };
+  // Apagar bairro (limpa o campo em todos os imoveis que usam)
+  const deleteNeighborhood = async (name) => {
+    const t = (name || "").trim();
+    if (!t) return {ok:false};
+    const affected = properties.filter(p => (p.neighborhood || "").trim() === t);
+    setProperties(prev => prev.map(x => (x.neighborhood || "").trim() === t ? {...x, neighborhood: ""} : x));
+    try {
+      for (const p of affected) {
+        const res = await FB.updateField(p.id, "neighborhood", "");
+        if (!res.ok) throw new Error(res.error || "Erro ao salvar");
+      }
+      showToast(`Bairro removido de ${affected.length} imóvel(is)`, "success");
+      return {ok:true, count: affected.length};
+    } catch(e) {
+      setProperties(prev => prev.map(x => x.id && affected.some(a => a.id === x.id) ? {...x, neighborhood: t} : x));
+      showToast("Erro: " + (e.message || e), "error");
+      return {ok:false, error: e.message};
+    }
+  };
   const downloadPhotos = (p) => {
     if (!p.images || p.images.length === 0) { showToast("Nenhuma foto para baixar","error"); return; }
     p.images.forEach((img, i) => {
@@ -2605,7 +2643,7 @@ function AdminPanel({properties, setProperties, showToast, settings, viewsMap}) 
       React.createElement("div", {className: "admin-side-label"}, "Sistema"),
       React.createElement("button", {className: "admin-side-link", onClick:()=>{setShowForm(false);setAp("settings")}}, I.settings, " Configurações")
     ),
-    React.createElement("main", {className: "admin-main"}, React.createElement(PropForm, {property: editProp, onSave: save, onCancel: ()=>{setShowForm(false);setEditProp(null)}, showToast, existingNeighborhoods: [...new Set(properties.map(x => (x.neighborhood||"").trim()).filter(Boolean))].sort(), existingTypes: [...new Set(properties.map(x => (x.type||"").trim()).filter(Boolean))], existingCities: [...new Set(properties.map(x => (x.city||"").trim()).filter(Boolean))]}))
+    React.createElement("main", {className: "admin-main"}, React.createElement(PropForm, {property: editProp, onSave: save, onCancel: ()=>{setShowForm(false);setEditProp(null)}, showToast, existingNeighborhoods: [...new Set(properties.map(x => (x.neighborhood||"").trim()).filter(Boolean))].sort(), existingTypes: [...new Set(properties.map(x => (x.type||"").trim()).filter(Boolean))], existingCities: [...new Set(properties.map(x => (x.city||"").trim()).filter(Boolean))], allProperties: properties, onRenameNeighborhood: renameNeighborhood, onDeleteNeighborhood: deleteNeighborhood}))
   );
 
   return React.createElement("div", {className: "admin-wrap fade-in"},
@@ -3357,7 +3395,82 @@ function MapPicker({f, upd, showToast}) {
   );
 }
 
-function PropForm({property, onSave, onCancel, showToast, existingNeighborhoods, existingTypes, existingCities}) {
+function BairroManager({bairros, properties, onRename, onDelete, onCurrentBairroChange, onClose}) {
+  const [editing, setEditing] = useState(null); // {old, value}
+  const [busy, setBusy] = useState(false);
+  const countBy = bairros.reduce((acc, b) => {
+    acc[b] = properties.filter(p => (p.neighborhood || "").trim() === b).length;
+    return acc;
+  }, {});
+  const startEdit = (b) => setEditing({old: b, value: b});
+  const cancelEdit = () => setEditing(null);
+  const saveEdit = async () => {
+    if (!editing) return;
+    const newName = (editing.value || "").trim();
+    if (!newName || newName === editing.old) { cancelEdit(); return; }
+    if (bairros.includes(newName)) {
+      if (!confirm(`O bairro "${newName}" já existe. Quer juntar "${editing.old}" com "${newName}"? Todos os imóveis vão usar "${newName}".`)) return;
+    }
+    setBusy(true);
+    const res = await onRename(editing.old, newName);
+    setBusy(false);
+    if (res && res.ok) {
+      onCurrentBairroChange && onCurrentBairroChange(editing.old, newName);
+      cancelEdit();
+    }
+  };
+  const doDelete = async (b) => {
+    const count = countBy[b] || 0;
+    if (count > 0) {
+      if (!confirm(`O bairro "${b}" está em ${count} imóvel(is). Excluir vai limpar o campo "bairro" nesses imóveis. Continuar?`)) return;
+    } else {
+      if (!confirm(`Excluir o bairro "${b}"?`)) return;
+    }
+    setBusy(true);
+    const res = await onDelete(b);
+    setBusy(false);
+    if (res && res.ok) onCurrentBairroChange && onCurrentBairroChange(b, "");
+  };
+  return React.createElement("div", {style:{position:"fixed", inset:0, background:"rgba(0,0,0,.65)", zIndex:9999, display:"flex", alignItems:"center", justifyContent:"center", padding:20}, onClick: onClose},
+    React.createElement("div", {style:{background:"white", borderRadius:14, maxWidth:520, width:"100%", maxHeight:"86vh", overflow:"auto", boxShadow:"0 20px 60px rgba(0,0,0,.4)"}, onClick: e => e.stopPropagation()},
+      React.createElement("div", {style:{padding:"22px 26px", background:"linear-gradient(135deg, var(--red), var(--red-dark))", color:"white", borderRadius:"14px 14px 0 0", position:"sticky", top:0}},
+        React.createElement("div", {style:{display:"flex", justifyContent:"space-between", alignItems:"center"}},
+          React.createElement("div", null,
+            React.createElement("h3", {style:{margin:0, fontSize:"1.2rem", fontWeight:800}}, "📍 Gerenciar bairros"),
+            React.createElement("p", {style:{margin:0, fontSize:".82rem", opacity:.9, marginTop:4}}, bairros.length, " bairro(s) cadastrado(s)")
+          ),
+          React.createElement("button", {onClick: onClose, style:{background:"rgba(255,255,255,.2)", border:"none", color:"white", width:32, height:32, borderRadius:"50%", cursor:"pointer", fontSize:"1.2rem", fontWeight:700}}, "✕")
+        )
+      ),
+      React.createElement("div", {style:{padding:"16px 20px"}},
+        bairros.length === 0 ?
+          React.createElement("p", {style:{textAlign:"center", color:"var(--text-light)", padding:"20px"}}, "Nenhum bairro cadastrado ainda.") :
+          bairros.map(b => {
+            const isEditing = editing && editing.old === b;
+            const count = countBy[b] || 0;
+            return React.createElement("div", {key: b, style:{display:"flex", alignItems:"center", gap:8, padding:"12px 0", borderBottom:"1px solid var(--border-light)"}},
+              isEditing ?
+                React.createElement(React.Fragment, null,
+                  React.createElement("input", {className:"af-input", value: editing.value, onChange: e => setEditing({...editing, value: e.target.value}), onKeyDown: e => e.key === 'Enter' && saveEdit(), autoFocus: true, style:{flex:1, marginBottom:0, height:38}}),
+                  React.createElement("button", {className:"btn-red", onClick: saveEdit, disabled: busy, style:{padding:"8px 14px", fontSize:".82rem"}}, busy ? "..." : "✓ Salvar"),
+                  React.createElement("button", {className:"btn-outline-sm", onClick: cancelEdit, style:{padding:"8px 12px", fontSize:".82rem"}}, "Cancelar")
+                ) :
+                React.createElement(React.Fragment, null,
+                  React.createElement("div", {style:{flex:1}},
+                    React.createElement("div", {style:{fontWeight:600, fontSize:".95rem"}}, b),
+                    React.createElement("div", {style:{fontSize:".74rem", color:"var(--text-light)"}}, count, " imóvel(is) usa(m)")
+                  ),
+                  React.createElement("button", {onClick: () => startEdit(b), title:"Renomear", style:{background:"rgba(196,30,30,.08)", border:"none", width:34, height:34, borderRadius:8, cursor:"pointer", color:"var(--red)", fontSize:"1rem"}}, "✏️"),
+                  React.createElement("button", {onClick: () => doDelete(b), title:"Excluir", style:{background:"rgba(220,38,38,.08)", border:"none", width:34, height:34, borderRadius:8, cursor:"pointer", color:"#dc2626", fontSize:"1rem"}}, "🗑️")
+                )
+            );
+          })
+      )
+    )
+  );
+}
+
+function PropForm({property, onSave, onCancel, showToast, existingNeighborhoods, existingTypes, existingCities, allProperties, onRenameNeighborhood, onDeleteNeighborhood}) {
   const allTypes = [...new Set([...TYPES, ...(existingTypes || [])])].sort();
   const allCities = [...new Set([...CITIES, ...(existingCities || [])])].sort();
   const [f, setF] = useState({...property, rooms: property.rooms || [], features: property.features || []});
@@ -3372,6 +3485,7 @@ function PropForm({property, onSave, onCancel, showToast, existingNeighborhoods,
     if (!cur) return false;
     return !(existingNeighborhoods || []).includes(cur);
   });
+  const [showBairroManager, setShowBairroManager] = useState(false);
   const [addingType, setAddingType] = useState(() => {
     const cur = property && property.type ? property.type.trim() : "";
     if (!cur) return false;
@@ -3674,7 +3788,10 @@ function PropForm({property, onSave, onCancel, showToast, existingNeighborhoods,
             )
       ),
       React.createElement("div", {className: "af-group"},
-        React.createElement("label", {className: "af-label"}, "Bairro"),
+        React.createElement("label", {className: "af-label", style:{display:"flex", justifyContent:"space-between", alignItems:"center"}},
+          React.createElement("span", null, "Bairro"),
+          existingNeighborhoods && existingNeighborhoods.length > 0 && onRenameNeighborhood && React.createElement("button", {type:"button", onClick: () => setShowBairroManager(true), title:"Gerenciar bairros (editar/excluir)", style:{background:"none", border:"none", color:"var(--red)", fontSize:".78rem", fontWeight:700, cursor:"pointer", padding:0, textDecoration:"underline"}}, "⚙ Gerenciar bairros")
+        ),
         (addingBairro || !existingNeighborhoods || existingNeighborhoods.length === 0)
           ? React.createElement("div", {style:{display:"flex", gap:6}},
               React.createElement("input", {className: "af-input", value:f.neighborhood, onChange:e=>upd("neighborhood",e.target.value), placeholder:"Digite o novo bairro", style:{flex:1, marginBottom:0}, autoFocus: true}),
@@ -3688,6 +3805,15 @@ function PropForm({property, onSave, onCancel, showToast, existingNeighborhoods,
               React.createElement("button", {type:"button", className:"btn-red", onClick:()=>{setAddingBairro(true); upd("neighborhood", "");}, title:"Adicionar novo bairro", style:{padding:"10px 16px", whiteSpace:"nowrap"}}, "+ Novo")
             )
       ),
+      // Modal de gerenciamento de bairros
+      showBairroManager && React.createElement(BairroManager, {
+        bairros: existingNeighborhoods,
+        properties: allProperties || [],
+        onRename: onRenameNeighborhood,
+        onDelete: onDeleteNeighborhood,
+        onCurrentBairroChange: (oldN, newN) => { if ((f.neighborhood || "").trim() === oldN) upd("neighborhood", newN); },
+        onClose: () => setShowBairroManager(false)
+      }),
       React.createElement("div", {className: "af-group"}, React.createElement("label", {className: "af-label"}, "Endereço (Rua/Avenida)"), React.createElement("input", {className: "af-input", value:f.address, onChange:e=>upd("address",e.target.value), placeholder:"Ex: Av. Brasil, Rua das Flores"})),
       React.createElement("div", {className: "af-group"}, React.createElement("label", {className: "af-label"}, "Número"), React.createElement("input", {className: "af-input", value:f.number||"", onChange:e=>upd("number",e.target.value), placeholder:"Ex: 1205 ou s/n"})),
 
