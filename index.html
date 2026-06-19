@@ -1499,7 +1499,7 @@ const DEFAULT_SETTINGS = {
   ctaSubtitle: "Anuncie conosco e alcance centenas de compradores qualificados. Avaliação gratuita!",
   ctaButton1: "Fale no WhatsApp",
   ctaButton2: "Avaliação Gratuita",
-  hideCtaButton2: false,
+  hideCtaButton2: true,
   companyName: "G4 Investimóveis",
   ownerName: "Luiz Fernando Raiffer de Oliveira",
   creci: "F30864",
@@ -1895,7 +1895,7 @@ function CtaBanner({settings}) {
       ),
       React.createElement("div", {className: "cta-buttons"},
         React.createElement("button", {className: "cta-btn-white", onClick: openWpp}, I.wpp, " ", (s.ctaButton1 && String(s.ctaButton1).trim()) || "Fale no WhatsApp"),
-        !s.hideCtaButton2 && React.createElement("button", {className: "cta-btn-outline", onClick: openWpp}, (s.ctaButton2 && String(s.ctaButton2).trim()) || "Avaliação Gratuita")
+        s.hideCtaButton2 === false && (s.ctaButton2 && String(s.ctaButton2).trim()) && React.createElement("button", {className: "cta-btn-outline", onClick: openWpp}, String(s.ctaButton2).trim())
       )
     )
   );
