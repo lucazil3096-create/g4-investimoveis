@@ -1954,8 +1954,8 @@ function PropertiesPage({properties, searchFilters, setSearchFilters, setSelecte
           React.createElement("select", {className: "f-select", value: f.transaction, onChange: e => upd("transaction", e.target.value)}, React.createElement("option", {value:""}, "Negócio"), TRANSACTIONS.map(t => React.createElement("option", {key:t, value:t}, t))),
           React.createElement("select", {className: "f-select", value: f.city, onChange: e => upd("city", e.target.value)}, React.createElement("option", {value:""}, "Cidade"), CITIES.map(c => React.createElement("option", {key:c, value:c}, c))),
           availableNeighborhoods.length > 0 && React.createElement("select", {className: "f-select", value: f.neighborhood, onChange: e => upd("neighborhood", e.target.value)}, React.createElement("option", {value:""}, "Bairro"), availableNeighborhoods.map(n => React.createElement("option", {key:n, value:n}, n))),
-          React.createElement("input", {className: "f-input", type: "number", placeholder: "Preço Mín.", value: f.minPrice, onChange: e => upd("minPrice", e.target.value)}),
-          React.createElement("input", {className: "f-input", type: "number", placeholder: "Preço Máx.", value: f.maxPrice, onChange: e => upd("maxPrice", e.target.value)}),
+          React.createElement("input", {className: "f-input", type: "text", inputMode: "numeric", placeholder: "Preço Mín.", value: f.minPrice ? Number(f.minPrice).toLocaleString("pt-BR") : "", onChange: e => upd("minPrice", e.target.value.replace(/\D/g,""))}),
+          React.createElement("input", {className: "f-input", type: "text", inputMode: "numeric", placeholder: "Preço Máx.", value: f.maxPrice ? Number(f.maxPrice).toLocaleString("pt-BR") : "", onChange: e => upd("maxPrice", e.target.value.replace(/\D/g,""))}),
           React.createElement("select", {className: "f-select", value: f.bedrooms, onChange: e => upd("bedrooms", e.target.value), style:{minWidth:100}}, React.createElement("option", {value:""}, "Quartos"), [1,2,3,4,5].map(n => React.createElement("option", {key:n, value:n}, n+"+"))),
           React.createElement("button", {className: "f-clear", onClick: clear}, "Limpar")
         )
@@ -2746,11 +2746,11 @@ function AdminPanel({properties, setProperties, showToast, settings, viewsMap}) 
             ),
             React.createElement("div", null,
               React.createElement("label", {style:{fontSize:".72rem", fontWeight:700, color:"var(--text-light)", textTransform:"uppercase", letterSpacing:".05em", display:"block", marginBottom:4}}, "💰 Preço mín."),
-              React.createElement("input", {className:"af-input", type:"number", value: fMinPrice, onChange: e => setFMinPrice(e.target.value), placeholder:"Ex: 100000", style:{height:38, fontSize:".85rem", marginBottom:0, width:"100%"}})
+              React.createElement("input", {className:"af-input", type:"text", inputMode:"numeric", value: fMinPrice ? Number(fMinPrice).toLocaleString("pt-BR") : "", onChange: e => { const raw = e.target.value.replace(/\D/g,""); setFMinPrice(raw); }, placeholder:"Ex: 100.000", style:{height:38, fontSize:".85rem", marginBottom:0, width:"100%"}})
             ),
             React.createElement("div", null,
               React.createElement("label", {style:{fontSize:".72rem", fontWeight:700, color:"var(--text-light)", textTransform:"uppercase", letterSpacing:".05em", display:"block", marginBottom:4}}, "💵 Preço máx."),
-              React.createElement("input", {className:"af-input", type:"number", value: fMaxPrice, onChange: e => setFMaxPrice(e.target.value), placeholder:"Ex: 500000", style:{height:38, fontSize:".85rem", marginBottom:0, width:"100%"}})
+              React.createElement("input", {className:"af-input", type:"text", inputMode:"numeric", value: fMaxPrice ? Number(fMaxPrice).toLocaleString("pt-BR") : "", onChange: e => { const raw = e.target.value.replace(/\D/g,""); setFMaxPrice(raw); }, placeholder:"Ex: 500.000", style:{height:38, fontSize:".85rem", marginBottom:0, width:"100%"}})
             ),
             hasFilters && React.createElement("div", null,
               React.createElement("label", {style:{fontSize:".72rem", display:"block", marginBottom:4, opacity:0}}, " "),
