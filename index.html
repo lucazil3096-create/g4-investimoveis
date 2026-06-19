@@ -3671,6 +3671,7 @@ function InstagramPostMaker({property, settings, onClose, showToast}) {
   const drawModern = async (ctx) => {
     const propImg = await loadImg(imgUrl);
     const logoImg = await loadImg(logo);
+    const isStory = H > 1500;
 
     // Fundo
     ctx.fillStyle = t.bg;
@@ -3680,10 +3681,10 @@ function InstagramPostMaker({property, settings, onClose, showToast}) {
     ctx.fillStyle = t.primary;
     ctx.fillRect(0, 0, W, 60);
 
-    // Foto com bordas arredondadas
+    // Foto com bordas arredondadas — altura reduzida pra conteúdo caber
     const photoX = 60, photoY = 80;
     const photoW = W - 120;
-    const photoH = Math.round(H * 0.55);
+    const photoH = Math.round(H * (isStory ? 0.52 : 0.42));
     if (propImg) {
       ctx.save();
       roundRect(ctx, photoX, photoY, photoW, photoH, 24);
@@ -3716,60 +3717,66 @@ function InstagramPostMaker({property, settings, onClose, showToast}) {
     }
 
     // === Conteúdo abaixo da foto ===
-    let y = photoY + photoH + 30;
+    // Layout ancorado no rodapé (garante que TUDO cabe)
     const padX = 60;
+    const footerY = H - 70;
+    const priceH = (highlightBadge === "price_drop" && oldPriceStr) ? 130 : 90;
+    const priceY = footerY - priceH - 20;
+    const dividerY = priceY - 30;
+
+    let y = photoY + photoH + (isStory ? 60 : 24);
 
     // Logo + Badge VENDA na mesma linha
+    const logoH = isStory ? 90 : 60;
     if (logoImg) {
-      const logoH = 70;
       const logoW = logoImg.width * (logoH / logoImg.height);
       ctx.drawImage(logoImg, padX, y, logoW, logoH);
     }
-
-    // Badge VENDA (pill formato)
     const transText = (p.transaction || "VENDA").toUpperCase();
-    ctx.font = "800 26px Arial, Helvetica, sans-serif";
+    const badgeFontSize = isStory ? 32 : 24;
+    ctx.font = `800 ${badgeFontSize}px Arial, Helvetica, sans-serif`;
     const tw = ctx.measureText(transText).width;
-    const bw = tw + 48, bh = 48;
-    roundRect(ctx, W - bw - padX, y + 11, bw, bh, 24);
+    const bw = tw + 44, bh = isStory ? 58 : 44;
+    roundRect(ctx, W - bw - padX, y + (logoH - bh) / 2, bw, bh, bh / 2);
     ctx.fillStyle = t.primary;
     ctx.fill();
     ctx.fillStyle = "#fff";
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
-    ctx.fillText(transText, W - bw/2 - padX, y + 11 + bh/2);
+    ctx.fillText(transText, W - bw/2 - padX, y + (logoH - bh) / 2 + bh / 2);
 
-    y += 100;
+    y += logoH + (isStory ? 40 : 22);
 
     // Título
     ctx.fillStyle = "#fff";
-    ctx.font = "800 58px Arial, Helvetica, sans-serif";
+    const titleFontSize = isStory ? 72 : 48;
+    ctx.font = `800 ${titleFontSize}px Arial, Helvetica, sans-serif`;
     ctx.textAlign = "left";
     ctx.textBaseline = "top";
     ctx.fillText((p.title || "Imóvel").toUpperCase(), padX, y);
-    y += 76;
+    y += titleFontSize + 14;
 
     // Localização
-    ctx.font = "400 28px Arial, Helvetica, sans-serif";
+    const locFontSize = isStory ? 30 : 24;
+    ctx.font = `400 ${locFontSize}px Arial, Helvetica, sans-serif`;
     ctx.globalAlpha = 0.85;
     const locText = "📍 " + [p.neighborhood, p.city].filter(Boolean).join(" — ") + (p.city ? "/PR" : "");
     ctx.fillText(locText, padX, y);
     ctx.globalAlpha = 1;
-    y += 52;
+    y += locFontSize + (isStory ? 28 : 18);
 
     // Features (chips com borda colorida)
-    ctx.font = "700 20px Arial, Helvetica, sans-serif";
+    const chipFontSize = isStory ? 24 : 18;
+    ctx.font = `700 ${chipFontSize}px Arial, Helvetica, sans-serif`;
     let fx = padX;
-    const chipH = 42, chipPad = 16;
+    const chipH = isStory ? 48 : 38, chipPad = 16;
     for (const feat of features) {
       const fw = ctx.measureText(feat).width + chipPad * 2;
       if (fx + fw > W - padX) { fx = padX; y += chipH + 10; }
-      // Borda
       roundRect(ctx, fx, y, fw, chipH, 8);
       ctx.strokeStyle = t.accent;
       ctx.lineWidth = 2;
       ctx.stroke();
-      // Fundo levemente transparente
       ctx.fillStyle = "rgba(255,255,255,0.05)";
       ctx.fill();
       ctx.fillStyle = "#fff";
@@ -3777,27 +3784,27 @@ function InstagramPostMaker({property, settings, onClose, showToast}) {
       ctx.fillText(feat, fx + chipPad, y + chipH/2);
       fx += fw + 10;
     }
-    y += chipH + 28;
+    // (y depois das chips não usado — preço fica ancorado embaixo)
 
+    // === Bloco INVESTIMENTO / Preço — ancorado embaixo ===
     // Linha divisória
     ctx.strokeStyle = t.accent;
     ctx.lineWidth = 3;
     ctx.beginPath();
-    ctx.moveTo(padX, y);
-    ctx.lineTo(W - padX, y);
+    ctx.moveTo(padX, dividerY);
+    ctx.lineTo(W - padX, dividerY);
     ctx.stroke();
-    y += 24;
 
-    // INVESTIMENTO (label) + preço à esquerda, Telefone + Ref à direita
+    // Label INVESTIMENTO
     ctx.textBaseline = "top";
     ctx.textAlign = "left";
     ctx.fillStyle = t.accent;
-    ctx.font = "700 22px Arial, Helvetica, sans-serif";
-    ctx.fillText("INVESTIMENTO", padX, y);
+    ctx.font = `700 ${isStory ? 26 : 20}px Arial, Helvetica, sans-serif`;
+    ctx.fillText("INVESTIMENTO", padX, dividerY + 14);
 
-    let pricelineY = y + 32;
+    let pricelineY = dividerY + (isStory ? 50 : 42);
     if (highlightBadge === "price_drop" && oldPriceStr) {
-      ctx.font = "700 26px Arial, Helvetica, sans-serif";
+      ctx.font = `700 ${isStory ? 30 : 22}px Arial, Helvetica, sans-serif`;
       ctx.fillStyle = "#fff";
       ctx.globalAlpha = 0.6;
       const oldT = "DE " + oldPriceStr;
@@ -3806,27 +3813,27 @@ function InstagramPostMaker({property, settings, onClose, showToast}) {
       ctx.strokeStyle = "#fff";
       ctx.lineWidth = 2;
       ctx.beginPath();
-      ctx.moveTo(padX, pricelineY + 14);
-      ctx.lineTo(padX + oldW, pricelineY + 14);
+      ctx.moveTo(padX, pricelineY + (isStory ? 16 : 12));
+      ctx.lineTo(padX + oldW, pricelineY + (isStory ? 16 : 12));
       ctx.stroke();
       ctx.globalAlpha = 1;
-      pricelineY += 36;
+      pricelineY += isStory ? 40 : 30;
     }
 
-    ctx.font = `800 ${showPriceIG ? 56 : 42}px Arial, Helvetica, sans-serif`;
+    ctx.font = `800 ${showPriceIG ? (isStory ? 72 : 48) : (isStory ? 54 : 38)}px Arial, Helvetica, sans-serif`;
     ctx.fillStyle = "#fff";
     ctx.fillText(priceStr, padX, pricelineY);
 
     // Telefone + Ref à direita
     ctx.textAlign = "right";
-    ctx.font = "700 22px Arial, Helvetica, sans-serif";
+    ctx.font = `700 ${isStory ? 26 : 20}px Arial, Helvetica, sans-serif`;
     ctx.fillStyle = "#fff";
     ctx.globalAlpha = 0.85;
-    ctx.fillText("📞 " + phoneDisplay, W - padX, y + 32);
+    ctx.fillText("📞 " + phoneDisplay, W - padX, dividerY + 18);
     if (p.reference) {
-      ctx.font = "400 18px Arial, Helvetica, sans-serif";
+      ctx.font = `400 ${isStory ? 22 : 16}px Arial, Helvetica, sans-serif`;
       ctx.globalAlpha = 0.6;
-      ctx.fillText("Ref.: " + p.reference, W - padX, y + 64);
+      ctx.fillText("Ref.: " + p.reference, W - padX, dividerY + (isStory ? 56 : 46));
     }
     ctx.globalAlpha = 1;
   };
@@ -4042,32 +4049,33 @@ function InstagramPostMaker({property, settings, onClose, showToast}) {
   );
 
   const renderModern = (refP) => React.createElement("div", {ref: refP, style:{width: W, height: H, position:"relative", background: t.bg, overflow:"hidden", fontFamily:"Arial, Helvetica, sans-serif"}},
-    // Foto à esquerda em formato grande
-    imgUrl && React.createElement("img", {src: imgUrl, crossOrigin:"anonymous", style:{position:"absolute", top: 80, left: 60, width: W - 120, height: H * 0.55, objectFit:"cover", borderRadius: 24, boxShadow:"0 12px 40px rgba(0,0,0,.5)"}}),
+    // Foto à esquerda em formato grande (altura reduzida pra conteúdo caber)
+    imgUrl && React.createElement("img", {src: imgUrl, crossOrigin:"anonymous", style:{position:"absolute", top: 80, left: 60, width: W - 120, height: H * (H > 1500 ? 0.52 : 0.42), objectFit:"cover", borderRadius: 24, boxShadow:"0 12px 40px rgba(0,0,0,.5)"}}),
     // Barra superior colorida
     React.createElement("div", {style:{position:"absolute", top:0, left:0, right:0, height: 60, background: t.primary}}),
     // Tarja destaque — grande e destacada
     activeBadge && React.createElement("div", {style:{position:"absolute", top: 100, right: 30, background: activeBadge.color, color: "#fff", padding:"22px 46px", fontSize: 50, fontWeight: 800, letterSpacing: ".08em", borderRadius: 16, boxShadow:"0 12px 30px rgba(0,0,0,.5)", border: "5px solid #fff", zIndex: 5, lineHeight: 1.1, whiteSpace:"nowrap"}}, activeBadge.text),
-    // Logo no topo direito
-    React.createElement("div", {style:{position:"absolute", top: 90 + H * 0.55 + 30, left: 60, right: 60, color: t.text}},
-      React.createElement("div", {style:{display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom: 30}},
-        React.createElement("img", {src: logo, crossOrigin:"anonymous", style:{height: 70}}),
-        React.createElement("div", {style:{background: t.primary, color: t.text, padding:"12px 24px", fontSize: 26, fontWeight: 800, letterSpacing:".15em", borderRadius: 50}}, (p.transaction || "VENDA").toUpperCase())
+    // Conteúdo abaixo da foto
+    React.createElement("div", {style:{position:"absolute", top: 80 + H * (H > 1500 ? 0.52 : 0.42) + 24, left: 60, right: 60, bottom: 70, color: t.text, display:"flex", flexDirection:"column"}},
+      React.createElement("div", {style:{display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom: H > 1500 ? 30 : 14}},
+        React.createElement("img", {src: logo, crossOrigin:"anonymous", style:{height: H > 1500 ? 90 : 60}}),
+        React.createElement("div", {style:{background: t.primary, color: "#fff", padding: H > 1500 ? "14px 26px" : "10px 20px", fontSize: H > 1500 ? 32 : 24, fontWeight: 800, letterSpacing:".15em", borderRadius: 50}}, (p.transaction || "VENDA").toUpperCase())
       ),
-      React.createElement("h1", {style:{fontSize: 58, fontWeight: 800, lineHeight: 1.05, margin: 0, marginBottom: 12, textTransform:"uppercase", letterSpacing:".02em"}}, p.title || "Imóvel"),
-      React.createElement("p", {style:{fontSize: 28, opacity: .85, margin: 0, marginBottom: 22}}, "📍 ", [p.neighborhood, p.city].filter(Boolean).join(" — "), p.city ? "/PR" : ""),
-      features.length > 0 && React.createElement("div", {style:{display:"flex", flexWrap:"wrap", gap: 10, marginBottom: 24}},
-        features.map((f, i) => React.createElement("span", {key:i, style:{background:"rgba(255,255,255,.1)", border:`2px solid ${t.accent}`, padding:"8px 16px", borderRadius: 8, fontSize: 20, fontWeight: 700}}, f))
+      React.createElement("h1", {style:{fontSize: H > 1500 ? 72 : 48, fontWeight: 800, lineHeight: 1.05, margin: 0, marginBottom: 10, textTransform:"uppercase", letterSpacing:".02em"}}, p.title || "Imóvel"),
+      React.createElement("p", {style:{fontSize: H > 1500 ? 30 : 24, opacity: .85, margin: 0, marginBottom: H > 1500 ? 22 : 14}}, "📍 ", [p.neighborhood, p.city].filter(Boolean).join(" — "), p.city ? "/PR" : ""),
+      features.length > 0 && React.createElement("div", {style:{display:"flex", flexWrap:"wrap", gap: 8, marginBottom: 16}},
+        features.map((f, i) => React.createElement("span", {key:i, style:{background:"rgba(255,255,255,.05)", border:`2px solid ${t.accent}`, padding: H > 1500 ? "10px 16px" : "6px 14px", borderRadius: 8, fontSize: H > 1500 ? 24 : 18, fontWeight: 700, color: "#fff"}}, f))
       ),
-      React.createElement("div", {style:{borderTop:`3px solid ${t.accent}`, paddingTop: 20, display:"flex", justifyContent:"space-between", alignItems:"center"}},
+      React.createElement("div", {style:{flex: 1}}),
+      React.createElement("div", {style:{borderTop:`3px solid ${t.accent}`, paddingTop: H > 1500 ? 20 : 14, display:"flex", justifyContent:"space-between", alignItems:"center"}},
         React.createElement("div", null,
-          React.createElement("div", {style:{fontSize: 22, color: t.accent, fontWeight:700, letterSpacing:".15em"}}, "INVESTIMENTO"),
-          highlightBadge === "price_drop" && oldPriceStr && React.createElement("div", {style:{fontSize: 26, fontWeight: 700, textDecoration:"line-through", opacity:.6, marginTop: 4, color:"#fff"}}, "DE ", oldPriceStr),
-          React.createElement("div", {style:{fontSize: showPriceIG ? 56 : 42, fontWeight: 800, marginTop: 6, color:"#fff", lineHeight: 1.1, whiteSpace:"nowrap"}}, priceStr)
+          React.createElement("div", {style:{fontSize: H > 1500 ? 26 : 20, color: t.accent, fontWeight:700, letterSpacing:".15em"}}, "INVESTIMENTO"),
+          highlightBadge === "price_drop" && oldPriceStr && React.createElement("div", {style:{fontSize: H > 1500 ? 30 : 22, fontWeight: 700, textDecoration:"line-through", opacity:.6, marginTop: 4, color:"#fff"}}, "DE ", oldPriceStr),
+          React.createElement("div", {style:{fontSize: showPriceIG ? (H > 1500 ? 72 : 48) : (H > 1500 ? 54 : 38), fontWeight: 800, marginTop: 6, color:"#fff", lineHeight: 1.1, whiteSpace:"nowrap"}}, priceStr)
         ),
         React.createElement("div", {style:{textAlign:"right"}},
-          React.createElement("div", {style:{fontSize: 22, opacity:.8, fontWeight:700}}, "📞 ", phoneDisplay),
-          p.reference && React.createElement("div", {style:{fontSize: 18, opacity:.6, marginTop: 4}}, "Ref.: ", p.reference)
+          React.createElement("div", {style:{fontSize: H > 1500 ? 26 : 20, opacity:.8, fontWeight:700, color:"#fff"}}, "📞 ", phoneDisplay),
+          p.reference && React.createElement("div", {style:{fontSize: H > 1500 ? 22 : 16, opacity:.6, marginTop: 4, color:"#fff"}}, "Ref.: ", p.reference)
         )
       )
     )
