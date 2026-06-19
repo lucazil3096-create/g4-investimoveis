@@ -3667,6 +3667,315 @@ function InstagramPostMaker({property, settings, onClose, showToast}) {
     }
   };
 
+  // Renderer Canvas API — Template Moderno
+  const drawModern = async (ctx) => {
+    const propImg = await loadImg(imgUrl);
+    const logoImg = await loadImg(logo);
+
+    // Fundo
+    ctx.fillStyle = t.bg;
+    ctx.fillRect(0, 0, W, H);
+
+    // Barra superior colorida (60px)
+    ctx.fillStyle = t.primary;
+    ctx.fillRect(0, 0, W, 60);
+
+    // Foto com bordas arredondadas
+    const photoX = 60, photoY = 80;
+    const photoW = W - 120;
+    const photoH = Math.round(H * 0.55);
+    if (propImg) {
+      ctx.save();
+      roundRect(ctx, photoX, photoY, photoW, photoH, 24);
+      ctx.clip();
+      const scale = Math.max(photoW / propImg.width, photoH / propImg.height);
+      const sw = propImg.width * scale, sh = propImg.height * scale;
+      const sx = photoX + (photoW - sw) / 2, sy = photoY + (photoH - sh) / 2;
+      ctx.drawImage(propImg, sx, sy, sw, sh);
+      ctx.restore();
+    }
+
+    // Tarja destaque
+    if (activeBadge) {
+      ctx.font = "800 46px Arial, Helvetica, sans-serif";
+      const tgw = ctx.measureText(activeBadge.text).width;
+      const tgbw = tgw + 80, tgbh = 86;
+      const tgx = W - tgbw - 30, tgy = 100;
+      // Borda branca
+      roundRect(ctx, tgx - 5, tgy - 5, tgbw + 10, tgbh + 10, 18);
+      ctx.fillStyle = "#fff";
+      ctx.fill();
+      // Fundo colorido
+      roundRect(ctx, tgx, tgy, tgbw, tgbh, 14);
+      ctx.fillStyle = activeBadge.color;
+      ctx.fill();
+      ctx.fillStyle = "#fff";
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      ctx.fillText(activeBadge.text, tgx + tgbw/2, tgy + tgbh/2);
+    }
+
+    // === Conteúdo abaixo da foto ===
+    let y = photoY + photoH + 30;
+    const padX = 60;
+
+    // Logo + Badge VENDA na mesma linha
+    if (logoImg) {
+      const logoH = 70;
+      const logoW = logoImg.width * (logoH / logoImg.height);
+      ctx.drawImage(logoImg, padX, y, logoW, logoH);
+    }
+
+    // Badge VENDA (pill formato)
+    const transText = (p.transaction || "VENDA").toUpperCase();
+    ctx.font = "800 26px Arial, Helvetica, sans-serif";
+    const tw = ctx.measureText(transText).width;
+    const bw = tw + 48, bh = 48;
+    roundRect(ctx, W - bw - padX, y + 11, bw, bh, 24);
+    ctx.fillStyle = t.primary;
+    ctx.fill();
+    ctx.fillStyle = "#fff";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.fillText(transText, W - bw/2 - padX, y + 11 + bh/2);
+
+    y += 100;
+
+    // Título
+    ctx.fillStyle = "#fff";
+    ctx.font = "800 58px Arial, Helvetica, sans-serif";
+    ctx.textAlign = "left";
+    ctx.textBaseline = "top";
+    ctx.fillText((p.title || "Imóvel").toUpperCase(), padX, y);
+    y += 76;
+
+    // Localização
+    ctx.font = "400 28px Arial, Helvetica, sans-serif";
+    ctx.globalAlpha = 0.85;
+    const locText = "📍 " + [p.neighborhood, p.city].filter(Boolean).join(" — ") + (p.city ? "/PR" : "");
+    ctx.fillText(locText, padX, y);
+    ctx.globalAlpha = 1;
+    y += 52;
+
+    // Features (chips com borda colorida)
+    ctx.font = "700 20px Arial, Helvetica, sans-serif";
+    let fx = padX;
+    const chipH = 42, chipPad = 16;
+    for (const feat of features) {
+      const fw = ctx.measureText(feat).width + chipPad * 2;
+      if (fx + fw > W - padX) { fx = padX; y += chipH + 10; }
+      // Borda
+      roundRect(ctx, fx, y, fw, chipH, 8);
+      ctx.strokeStyle = t.accent;
+      ctx.lineWidth = 2;
+      ctx.stroke();
+      // Fundo levemente transparente
+      ctx.fillStyle = "rgba(255,255,255,0.05)";
+      ctx.fill();
+      ctx.fillStyle = "#fff";
+      ctx.textBaseline = "middle";
+      ctx.fillText(feat, fx + chipPad, y + chipH/2);
+      fx += fw + 10;
+    }
+    y += chipH + 28;
+
+    // Linha divisória
+    ctx.strokeStyle = t.accent;
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.moveTo(padX, y);
+    ctx.lineTo(W - padX, y);
+    ctx.stroke();
+    y += 24;
+
+    // INVESTIMENTO (label) + preço à esquerda, Telefone + Ref à direita
+    ctx.textBaseline = "top";
+    ctx.textAlign = "left";
+    ctx.fillStyle = t.accent;
+    ctx.font = "700 22px Arial, Helvetica, sans-serif";
+    ctx.fillText("INVESTIMENTO", padX, y);
+
+    let pricelineY = y + 32;
+    if (highlightBadge === "price_drop" && oldPriceStr) {
+      ctx.font = "700 26px Arial, Helvetica, sans-serif";
+      ctx.fillStyle = "#fff";
+      ctx.globalAlpha = 0.6;
+      const oldT = "DE " + oldPriceStr;
+      ctx.fillText(oldT, padX, pricelineY);
+      const oldW = ctx.measureText(oldT).width;
+      ctx.strokeStyle = "#fff";
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(padX, pricelineY + 14);
+      ctx.lineTo(padX + oldW, pricelineY + 14);
+      ctx.stroke();
+      ctx.globalAlpha = 1;
+      pricelineY += 36;
+    }
+
+    ctx.font = `800 ${showPriceIG ? 56 : 42}px Arial, Helvetica, sans-serif`;
+    ctx.fillStyle = "#fff";
+    ctx.fillText(priceStr, padX, pricelineY);
+
+    // Telefone + Ref à direita
+    ctx.textAlign = "right";
+    ctx.font = "700 22px Arial, Helvetica, sans-serif";
+    ctx.fillStyle = "#fff";
+    ctx.globalAlpha = 0.85;
+    ctx.fillText("📞 " + phoneDisplay, W - padX, y + 32);
+    if (p.reference) {
+      ctx.font = "400 18px Arial, Helvetica, sans-serif";
+      ctx.globalAlpha = 0.6;
+      ctx.fillText("Ref.: " + p.reference, W - padX, y + 64);
+    }
+    ctx.globalAlpha = 1;
+  };
+
+  // Renderer Canvas API — Template Minimalista
+  const drawMinimal = async (ctx) => {
+    const propImg = await loadImg(imgUrl);
+    const logoImg = await loadImg(logo);
+
+    // Fundo branco
+    ctx.fillStyle = "#fff";
+    ctx.fillRect(0, 0, W, H);
+
+    // Foto cobrindo tudo
+    if (propImg) {
+      const scale = Math.max(W / propImg.width, H / propImg.height);
+      const sw = propImg.width * scale, sh = propImg.height * scale;
+      const sx = (W - sw) / 2, sy = (H - sh) / 2;
+      ctx.drawImage(propImg, sx, sy, sw, sh);
+    }
+
+    // Overlay gradient (escuro embaixo)
+    const grad = ctx.createLinearGradient(0, 0, 0, H);
+    grad.addColorStop(0, "rgba(0,0,0,0.1)");
+    grad.addColorStop(0.3, "rgba(0,0,0,0)");
+    grad.addColorStop(0.5, "rgba(0,0,0,0)");
+    grad.addColorStop(1, "rgba(0,0,0,0.85)");
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, 0, W, H);
+
+    // Logo no topo
+    if (logoImg) {
+      const logoH = 90;
+      const logoW = logoImg.width * (logoH / logoImg.height);
+      ctx.drawImage(logoImg, 50, 50, logoW, logoH);
+    }
+
+    // Badge VENDA
+    const transText = (p.transaction || "VENDA").toUpperCase();
+    ctx.font = "800 26px Arial, Helvetica, sans-serif";
+    const tw = ctx.measureText(transText).width;
+    const bw = tw + 48, bh = 50;
+    ctx.fillStyle = t.primary;
+    ctx.fillRect(W - bw - 50, 50, bw, bh);
+    ctx.fillStyle = "#fff";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.fillText(transText, W - bw/2 - 50, 50 + bh/2);
+
+    // Tarja destaque
+    if (activeBadge) {
+      ctx.font = "800 54px Arial, Helvetica, sans-serif";
+      const tgw = ctx.measureText(activeBadge.text).width;
+      const tgbw = tgw + 96, tgbh = 100;
+      const tgx = 40, tgy = 200;
+      // Borda branca
+      roundRect(ctx, tgx - 6, tgy - 6, tgbw + 12, tgbh + 12, 22);
+      ctx.fillStyle = "#fff";
+      ctx.fill();
+      // Fundo colorido
+      roundRect(ctx, tgx, tgy, tgbw, tgbh, 16);
+      ctx.fillStyle = activeBadge.color;
+      ctx.fill();
+      ctx.fillStyle = "#fff";
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      ctx.fillText(activeBadge.text, tgx + tgbw/2, tgy + tgbh/2);
+    }
+
+    // === Conteúdo embaixo ===
+    const padX = 60;
+    let y = H - 480;
+
+    // Tag de tipo + localização
+    ctx.fillStyle = t.accent;
+    ctx.font = "800 28px Arial, Helvetica, sans-serif";
+    ctx.textAlign = "left";
+    ctx.textBaseline = "top";
+    const topLabel = (p.type || "IMÓVEL").toUpperCase() + " · " + [p.neighborhood, p.city].filter(Boolean).join(" — ") + (p.city ? "/PR" : "");
+    ctx.fillText(topLabel, padX, y);
+    y += 44;
+
+    // Título grande
+    ctx.fillStyle = "#fff";
+    ctx.font = "800 72px Arial, Helvetica, sans-serif";
+    ctx.fillText((p.title || "Imóvel").toUpperCase(), padX, y);
+    y += 100;
+
+    // Features (chips com fundo escuro)
+    ctx.font = "700 24px Arial, Helvetica, sans-serif";
+    let fx = padX;
+    const chipH = 52, chipPad = 22;
+    for (const feat of features) {
+      const fw = ctx.measureText(feat).width + chipPad * 2;
+      if (fx + fw > W - padX) { fx = padX; y += chipH + 12; }
+      roundRect(ctx, fx, y, fw, chipH, 6);
+      ctx.fillStyle = "rgba(0,0,0,0.5)";
+      ctx.fill();
+      ctx.fillStyle = "#fff";
+      ctx.textBaseline = "middle";
+      ctx.fillText(feat, fx + chipPad, y + chipH/2);
+      fx += fw + 18;
+    }
+    y += chipH + 30;
+
+    // Linha divisória
+    ctx.strokeStyle = t.accent;
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.moveTo(padX, y);
+    ctx.lineTo(W - padX, y);
+    ctx.stroke();
+    y += 24;
+
+    // Preço (esquerda)
+    ctx.textBaseline = "top";
+    ctx.textAlign = "left";
+    if (highlightBadge === "price_drop" && oldPriceStr) {
+      ctx.font = "700 34px Arial, Helvetica, sans-serif";
+      ctx.fillStyle = "#fff";
+      ctx.globalAlpha = 0.75;
+      ctx.fillText("DE " + oldPriceStr, padX, y);
+      const oldW = ctx.measureText("DE " + oldPriceStr).width;
+      ctx.strokeStyle = "#fff";
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.moveTo(padX, y + 18);
+      ctx.lineTo(padX + oldW, y + 18);
+      ctx.stroke();
+      ctx.globalAlpha = 1;
+      y += 44;
+    }
+    ctx.font = `800 ${showPriceIG ? 66 : 46}px Arial, Helvetica, sans-serif`;
+    ctx.fillStyle = "#fff";
+    ctx.fillText(priceStr, padX, y);
+
+    // Telefone + Ref (direita)
+    ctx.textAlign = "right";
+    ctx.font = "800 26px Arial, Helvetica, sans-serif";
+    ctx.fillStyle = "#fff";
+    ctx.fillText("📞 " + phoneDisplay, W - padX, y);
+    if (p.reference) {
+      ctx.font = "400 20px Arial, Helvetica, sans-serif";
+      ctx.globalAlpha = 0.85;
+      ctx.fillText("Ref.: " + p.reference, W - padX, y + 38);
+      ctx.globalAlpha = 1;
+    }
+  };
+
   const download = async () => {
     setDownloading(true);
     try {
@@ -3674,23 +3983,10 @@ function InstagramPostMaker({property, settings, onClose, showToast}) {
       canvas.width = W;
       canvas.height = H;
       const ctx = canvas.getContext("2d");
-      // Renderiza com Canvas API (100% pixel-perfect)
-      // Por enquanto só o Classic está implementado em Canvas. Os demais usam html2canvas como fallback.
-      if (tpl === "classic") {
-        await drawClassic(ctx);
-      } else {
-        // Fallback pros outros templates
-        if (document.fonts && document.fonts.ready) { try { await document.fonts.ready; } catch(e) {} }
-        const imgs = previewRef.current.querySelectorAll("img");
-        await Promise.all(Array.from(imgs).map(img => img.complete ? Promise.resolve() : new Promise(res => { img.onload = res; img.onerror = res; setTimeout(res, 5000); })));
-        await new Promise(r => setTimeout(r, 250));
-        const c2 = await html2canvas(previewRef.current, {
-          backgroundColor: "#ffffff", useCORS: true, allowTaint: true,
-          scale: 1, width: W, height: H, windowWidth: W, windowHeight: H,
-          logging: false, imageTimeout: 8000, foreignObjectRendering: false
-        });
-        ctx.drawImage(c2, 0, 0);
-      }
+      ctx.textRendering = "geometricPrecision";
+      if (tpl === "modern") await drawModern(ctx);
+      else if (tpl === "minimal") await drawMinimal(ctx);
+      else await drawClassic(ctx);
       const dataUrl = canvas.toDataURL("image/jpeg", 0.95);
       const a = document.createElement("a");
       a.href = dataUrl;
