@@ -2016,6 +2016,7 @@ function DetailPage({property: p, setPage, properties, setSelectedProp, favs, to
   const [mapMode, setMapMode] = useState("map");
   const [lightbox, setLightbox] = useState(false);
   const [shareOpen, setShareOpen] = useState(false);
+  const [presentMode, setPresentMode] = useState(false);
   const [cMsg, setCMsg] = useState(`Olá! Tenho interesse no imóvel "${p.title}". Gostaria de mais informações.`);
   const openWpp = () => window.open(`https://wa.me/${WHATSAPP}?text=${encodeURIComponent(cMsg + '\n\nImóvel: ' + p.title + '\nCidade: ' + p.city)}`, "_blank");
   const similar = properties.filter(x => x.id !== p.id && x.active && !x.sold && (x.type === p.type || x.city === p.city)).slice(0,3);
@@ -2271,11 +2272,13 @@ function DetailPage({property: p, setPage, properties, setSelectedProp, favs, to
                 )
               )
             ),
-            React.createElement("button", {className: "btn-sm btn-outline-sm no-print", onClick: doPrint, title:"Imprimir ou salvar como PDF"}, "🖨️ Imprimir")
+            React.createElement("button", {className: "btn-sm btn-outline-sm no-print", onClick: doPrint, title:"Imprimir ou salvar como PDF"}, "🖨️ Imprimir"),
+            isAdmin && React.createElement("button", {className: "btn-sm no-print", onClick: () => setPresentMode(true), title:"Modo apresentação em tela cheia", style:{background:"linear-gradient(135deg, #1e293b, #334155)", color:"white", border:"none", padding:"8px 16px", borderRadius:8, fontWeight:700, cursor:"pointer", fontSize:".85rem", display:"inline-flex", alignItems:"center", gap:6, boxShadow:"0 4px 12px rgba(0,0,0,.2)"}}, "📺 Apresentar")
           )
         )
       )
-    )
+    ),
+    presentMode && React.createElement(PresentationMode, {property: p, settings, onClose: () => setPresentMode(false)})
   );
 }
 
@@ -2492,7 +2495,6 @@ function AdminPanel({properties, setProperties, showToast, settings, viewsMap}) 
   const [editProp, setEditProp] = useState(null);
   const [showForm, setShowForm] = useState(false);
   const [igProp, setIgProp] = useState(null);
-  const [presentProp, setPresentProp] = useState(null);
   const total = properties.filter(p=>p.active&&!p.sold&&p.transaction==="Venda").reduce((s,p)=>s+p.price,0);
   const ac = properties.filter(p=>p.active&&!p.sold).length;
   const rent = properties.filter(p=>p.active&&!p.sold&&p.transaction==="Aluguel").length;
@@ -2638,7 +2640,6 @@ function AdminPanel({properties, setProperties, showToast, settings, viewsMap}) 
       React.createElement("button", {className: `btn-sold-sm ${p.sold ? 'on' : 'off'}`, onClick:()=>toggleSold(p.id)}, p.sold ? "↩ Reativar" : "✓ Vendido"),
       !p.sold && React.createElement("button", {className: "btn-sm btn-outline-sm", onClick:()=>toggleActive(p.id)}, p.active?"Desativar":"Ativar"),
       React.createElement("button", {className: "btn-download-sm", onClick:(e)=>{e.stopPropagation();downloadPhotos(p)}}, I.photo, " Fotos"),
-      !p.sold && React.createElement("button", {className: "btn-sm btn-outline-sm", onClick:()=>setPresentProp(p), title:"Apresentar imóvel em tela cheia", style:{background:"linear-gradient(45deg, #1e293b, #334155)", color:"white", border:"none"}}, "📺 Apresentar"),
       !p.sold && React.createElement("button", {className: "btn-sm btn-outline-sm", onClick:()=>setIgProp(p), title:"Gerar imagem para Instagram", style:{background:"linear-gradient(45deg, #f09433, #e6683c, #dc2743, #cc2366, #bc1888)", color:"white", border:"none"}}, "📸 IG"),
       React.createElement("button", {className: "btn-sm btn-danger-sm", onClick:()=>del(p.id)}, I.trash)
     ))
@@ -2796,8 +2797,6 @@ function AdminPanel({properties, setProperties, showToast, settings, viewsMap}) 
       ) : React.createElement(SettingsPanel, {settings, showToast}),
       // Modal de gerador Instagram
       igProp && React.createElement(InstagramPostMaker, {property: igProp, settings, showToast, onClose: () => setIgProp(null)}),
-      // Modo apresentação
-      presentProp && React.createElement(PresentationMode, {property: presentProp, settings, onClose: () => setPresentProp(null)}),
       // Modal de envio de seleção pro cliente
       showSendModal && React.createElement("div", {style:{position:"fixed", inset:0, background:"rgba(0,0,0,.65)", zIndex:9999, display:"flex", alignItems:"center", justifyContent:"center", padding:20}, onClick: () => setShowSendModal(false)},
         React.createElement("div", {style:{background:"white", borderRadius:14, maxWidth:520, width:"100%", padding:0, maxHeight:"90vh", overflow:"auto", boxShadow:"0 20px 60px rgba(0,0,0,.4)"}, onClick: e => e.stopPropagation()},
