@@ -1331,12 +1331,22 @@ const FB = {
       return {ok: true};
     } catch(e) { console.error("Save selection error:", e); return {ok: false, error: fbErrMsg(e)}; }
   },
-  async getSelection(id) {
-    if (!initFirebase() || !id) return null;
-    try {
-      const snap = await db.collection("selections").doc(id).get();
-      return snap.exists ? snap.data() : null;
-    } catch(e) { console.error("Get selection error:", e); return null; }
+  async getSelection(id, maxRetries = 24) {
+    if (!id) return null;
+    // Espera o Firebase ficar pronto (até ~6s)
+    for (let i = 0; i < maxRetries; i++) {
+      if (initFirebase()) {
+        try {
+          const snap = await db.collection("selections").doc(id).get();
+          return snap.exists ? snap.data() : null;
+        } catch(e) {
+          console.error("Get selection error (tentativa " + (i+1) + "):", e);
+          if (i === maxRetries - 1) return null;
+        }
+      }
+      await new Promise(r => setTimeout(r, 250));
+    }
+    return null;
   },
   async incrementViews(propId) {
     if (!initFirebase() || !propId) return;
@@ -4799,20 +4809,43 @@ function FooterComp({setPage, settings}) {
 function ClientPage({selection, properties, settings, setSelectedProp, setPage, favs, toggleFav, isAdmin}) {
   const s = settings || DEFAULT_SETTINGS;
   const sel = selection || {};
-  const list = (sel.propertyIds || []).map(id => properties.find(p => p.id === id)).filter(Boolean);
   const wpp = (s.whatsappNumber || WHATSAPP);
   const openWppClient = () => {
     const msg = `Olá! Vi a seleção de imóveis que você me enviou e gostaria de mais informações.\n\nMeu nome: ${sel.clientName || ""}`;
     window.open(`https://wa.me/${wpp}?text=${encodeURIComponent(msg)}`, "_blank");
   };
   const goDetail = p => { setSelectedProp(p); setPage("detail"); };
-  if (!sel.propertyIds) {
+
+  // Loading state: ainda buscando a seleção do Firebase
+  if (selection === null || selection === undefined) {
+    return React.createElement("div", {style:{padding:"160px 24px 80px", textAlign:"center", minHeight:"60vh"}},
+      React.createElement("div", {style:{display:"inline-block", width:48, height:48, border:"4px solid #eee", borderTopColor:"var(--red)", borderRadius:"50%", animation:"spin 1s linear infinite", marginBottom:18}}),
+      React.createElement("h2", {style:{fontFamily:"var(--font-display)", fontSize:"1.4rem", marginBottom:8}}, "Carregando sua seleção..."),
+      React.createElement("p", {style:{color:"var(--text-light)"}}, "Aguarda só um instante."),
+      React.createElement("style", null, "@keyframes spin { to { transform: rotate(360deg); } }")
+    );
+  }
+
+  // Seleção realmente não encontrada (Firebase confirmou)
+  if (selection.propertyIds === null) {
     return React.createElement("div", {style:{padding:"140px 24px 80px", textAlign:"center", minHeight:"60vh"}},
       React.createElement("h2", {style:{fontFamily:"var(--font-display)", fontSize:"2rem", marginBottom:12}}, "Seleção não encontrada"),
       React.createElement("p", {style:{color:"var(--text-light)", marginBottom:24}}, "Esse link de seleção não existe, expirou ou foi removido."),
       React.createElement("button", {className:"btn-red", onClick: () => setPage("home"), style:{padding:"14px 28px"}}, "Ir pra página inicial")
     );
   }
+
+  const list = (sel.propertyIds || []).map(id => properties.find(p => p.id === id)).filter(Boolean);
+  // Se os imóveis ainda não carregaram (cache vazio + Firebase carregando), espera
+  const propsStillLoading = properties.length === 0 && (sel.propertyIds || []).length > 0;
+  if (propsStillLoading) {
+    return React.createElement("div", {style:{padding:"160px 24px 80px", textAlign:"center", minHeight:"60vh"}},
+      React.createElement("div", {style:{display:"inline-block", width:48, height:48, border:"4px solid #eee", borderTopColor:"var(--red)", borderRadius:"50%", animation:"spin 1s linear infinite", marginBottom:18}}),
+      React.createElement("h2", {style:{fontFamily:"var(--font-display)", fontSize:"1.4rem", marginBottom:8}}, "Carregando imóveis..."),
+      React.createElement("style", null, "@keyframes spin { to { transform: rotate(360deg); } }")
+    );
+  }
+
   return React.createElement("div", {style:{padding:"110px 0 80px"}},
     React.createElement("div", {style:{maxWidth:"var(--max-w)", margin:"0 auto", padding:"0 28px"}},
       React.createElement("div", {style:{background:"linear-gradient(135deg, var(--red), var(--red-dark))", color:"white", padding:"36px 32px", borderRadius:"var(--radius-lg)", marginBottom:32, boxShadow:"0 12px 36px rgba(196,30,30,.25)"}},
