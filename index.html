@@ -3412,6 +3412,7 @@ function InstagramPostMaker({property, settings, onClose, showToast}) {
   const [downloading, setDownloading] = useState(false);
   const [showPriceIG, setShowPriceIG] = useState(true);
   const [highlightBadge, setHighlightBadge] = useState(""); // "", "opportunity", "price_drop", "exclusive", "new"
+  const [badgeScale, setBadgeScale] = useState(100); // 50-150%
   const s = settings || DEFAULT_SETTINGS;
   const p = property || {};
   const wpp = s.whatsappNumber || WHATSAPP;
@@ -3451,6 +3452,7 @@ function InstagramPostMaker({property, settings, onClose, showToast}) {
     last: { text: "⚡ ÚLTIMA UNIDADE", color: "#dc2626", bg: "#fef2f2" }
   };
   const activeBadge = highlightBadge && badges[highlightBadge];
+  const bScale = badgeScale / 100;
 
   // Helper: carrega imagem com CORS
   const loadImg = (url) => new Promise((res) => {
@@ -3529,17 +3531,21 @@ function InstagramPostMaker({property, settings, onClose, showToast}) {
 
     // Tarja destaque (Oportunidade, Baixou Preço, etc)
     if (activeBadge) {
-      ctx.font = "800 46px Arial, Helvetica, sans-serif";
+      const bFs = Math.round(46 * bScale);
+      const bPadX = Math.round(40 * bScale);
+      const bPadY = Math.round(20 * bScale);
+      const bBorder = Math.max(3, Math.round(5 * bScale));
+      ctx.font = `800 ${bFs}px Arial, Helvetica, sans-serif`;
       const bgT = activeBadge.text;
       const tgw = ctx.measureText(bgT).width;
-      const tgbw = tgw + 80, tgbh = 86;
+      const tgbw = tgw + bPadX * 2, tgbh = bFs + bPadY * 2;
       const tgx = W - tgbw - 30, tgy = 170;
       // Borda branca
-      roundRect(ctx, tgx - 5, tgy - 5, tgbw + 10, tgbh + 10, 18);
+      roundRect(ctx, tgx - bBorder, tgy - bBorder, tgbw + bBorder*2, tgbh + bBorder*2, Math.round(18 * bScale));
       ctx.fillStyle = "#fff";
       ctx.fill();
       // Fundo colorido
-      roundRect(ctx, tgx, tgy, tgbw, tgbh, 14);
+      roundRect(ctx, tgx, tgy, tgbw, tgbh, Math.round(14 * bScale));
       ctx.fillStyle = activeBadge.color;
       ctx.fill();
       // Texto
@@ -3698,18 +3704,18 @@ function InstagramPostMaker({property, settings, onClose, showToast}) {
 
     // Tarja destaque
     if (activeBadge) {
-      ctx.font = "800 46px Arial, Helvetica, sans-serif";
+      const bFs = Math.round(46 * bScale);
+      const bPadX = Math.round(40 * bScale);
+      const bPadY = Math.round(20 * bScale);
+      const bBorder = Math.max(3, Math.round(5 * bScale));
+      ctx.font = `800 ${bFs}px Arial, Helvetica, sans-serif`;
       const tgw = ctx.measureText(activeBadge.text).width;
-      const tgbw = tgw + 80, tgbh = 86;
+      const tgbw = tgw + bPadX * 2, tgbh = bFs + bPadY * 2;
       const tgx = W - tgbw - 30, tgy = 100;
-      // Borda branca
-      roundRect(ctx, tgx - 5, tgy - 5, tgbw + 10, tgbh + 10, 18);
-      ctx.fillStyle = "#fff";
-      ctx.fill();
-      // Fundo colorido
-      roundRect(ctx, tgx, tgy, tgbw, tgbh, 14);
-      ctx.fillStyle = activeBadge.color;
-      ctx.fill();
+      roundRect(ctx, tgx - bBorder, tgy - bBorder, tgbw + bBorder*2, tgbh + bBorder*2, Math.round(18 * bScale));
+      ctx.fillStyle = "#fff"; ctx.fill();
+      roundRect(ctx, tgx, tgy, tgbw, tgbh, Math.round(14 * bScale));
+      ctx.fillStyle = activeBadge.color; ctx.fill();
       ctx.fillStyle = "#fff";
       ctx.textAlign = "center";
       ctx.textBaseline = "middle";
@@ -3885,18 +3891,18 @@ function InstagramPostMaker({property, settings, onClose, showToast}) {
 
     // Tarja destaque
     if (activeBadge) {
-      ctx.font = "800 54px Arial, Helvetica, sans-serif";
+      const bFs = Math.round(54 * bScale);
+      const bPadX = Math.round(48 * bScale);
+      const bPadY = Math.round(23 * bScale);
+      const bBorder = Math.max(3, Math.round(6 * bScale));
+      ctx.font = `800 ${bFs}px Arial, Helvetica, sans-serif`;
       const tgw = ctx.measureText(activeBadge.text).width;
-      const tgbw = tgw + 96, tgbh = 100;
+      const tgbw = tgw + bPadX * 2, tgbh = bFs + bPadY * 2;
       const tgx = 40, tgy = 200;
-      // Borda branca
-      roundRect(ctx, tgx - 6, tgy - 6, tgbw + 12, tgbh + 12, 22);
-      ctx.fillStyle = "#fff";
-      ctx.fill();
-      // Fundo colorido
-      roundRect(ctx, tgx, tgy, tgbw, tgbh, 16);
-      ctx.fillStyle = activeBadge.color;
-      ctx.fill();
+      roundRect(ctx, tgx - bBorder, tgy - bBorder, tgbw + bBorder*2, tgbh + bBorder*2, Math.round(22 * bScale));
+      ctx.fillStyle = "#fff"; ctx.fill();
+      roundRect(ctx, tgx, tgy, tgbw, tgbh, Math.round(16 * bScale));
+      ctx.fillStyle = activeBadge.color; ctx.fill();
       ctx.fillStyle = "#fff";
       ctx.textAlign = "center";
       ctx.textBaseline = "middle";
@@ -4020,7 +4026,7 @@ function InstagramPostMaker({property, settings, onClose, showToast}) {
     // Badge transação
     React.createElement("div", {style:{position:"absolute", top: 40, right: 40, background: t.primary, color: t.text, padding:"14px 28px", fontSize: 28, fontWeight: 800, letterSpacing: ".15em", borderRadius: 8, boxShadow:"0 4px 16px rgba(0,0,0,.4)"}}, (p.transaction || "VENDA").toUpperCase()),
     // Tarja destaque (Oportunidade, Baixou preço, etc) — grande e destacada
-    activeBadge && React.createElement("div", {style:{position:"absolute", top: 170, right: 30, background: activeBadge.color, color: "#fff", padding:"20px 40px", fontSize: 46, fontWeight: 800, letterSpacing: ".08em", borderRadius: 14, boxShadow:"0 10px 30px rgba(0,0,0,.5)", border: "5px solid #fff", lineHeight: 1.1, whiteSpace:"nowrap"}}, activeBadge.text),
+    activeBadge && React.createElement("div", {style:{position:"absolute", top: 170, right: 30, background: activeBadge.color, color: "#fff", padding:"20px 40px", fontSize: 46 * bScale, fontWeight: 800, letterSpacing: ".08em", borderRadius: 14, boxShadow:"0 10px 30px rgba(0,0,0,.5)", border: `${Math.max(3, Math.round(5*bScale))}px solid #fff`, lineHeight: 1.1, whiteSpace:"nowrap", transformOrigin:"top right"}}, activeBadge.text),
     // Informações
     React.createElement("div", {style:{position:"absolute", bottom: 0, left:0, right:0, padding: "60px 60px 50px", color: t.text}},
       React.createElement("div", {style:{fontSize: 32, fontWeight:700, letterSpacing:".1em", color: t.accent, marginBottom: 16, textTransform:"uppercase"}}, p.type || "IMÓVEL"),
@@ -4054,7 +4060,7 @@ function InstagramPostMaker({property, settings, onClose, showToast}) {
     // Barra superior colorida
     React.createElement("div", {style:{position:"absolute", top:0, left:0, right:0, height: 60, background: t.primary}}),
     // Tarja destaque — grande e destacada
-    activeBadge && React.createElement("div", {style:{position:"absolute", top: 100, right: 30, background: activeBadge.color, color: "#fff", padding:"22px 46px", fontSize: 50, fontWeight: 800, letterSpacing: ".08em", borderRadius: 16, boxShadow:"0 12px 30px rgba(0,0,0,.5)", border: "5px solid #fff", zIndex: 5, lineHeight: 1.1, whiteSpace:"nowrap"}}, activeBadge.text),
+    activeBadge && React.createElement("div", {style:{position:"absolute", top: 100, right: 30, background: activeBadge.color, color: "#fff", padding:"22px 46px", fontSize: 50 * bScale, fontWeight: 800, letterSpacing: ".08em", borderRadius: 16, boxShadow:"0 12px 30px rgba(0,0,0,.5)", border: `${Math.max(3, Math.round(5*bScale))}px solid #fff`, zIndex: 5, lineHeight: 1.1, whiteSpace:"nowrap"}}, activeBadge.text),
     // Conteúdo abaixo da foto
     React.createElement("div", {style:{position:"absolute", top: 80 + H * (H > 1500 ? 0.52 : 0.42) + 24, left: 60, right: 60, bottom: 70, color: t.text, display:"flex", flexDirection:"column"}},
       React.createElement("div", {style:{display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom: H > 1500 ? 30 : 14}},
@@ -4092,7 +4098,7 @@ function InstagramPostMaker({property, settings, onClose, showToast}) {
       React.createElement("div", {style:{background: t.primary, color: "#fff", padding:"12px 24px", fontSize: 26, fontWeight: 800, letterSpacing:".18em", boxShadow:"0 6px 20px rgba(0,0,0,.4)"}}, (p.transaction || "VENDA").toUpperCase())
     ),
     // Tarja destaque — grande e destacada
-    activeBadge && React.createElement("div", {style:{position:"absolute", top: 200, left: 40, background: activeBadge.color, color: "#fff", padding:"24px 48px", fontSize: 54, fontWeight: 800, letterSpacing: ".08em", borderRadius: 16, boxShadow:"0 14px 40px rgba(0,0,0,.6)", border: "6px solid #fff", lineHeight: 1.1, whiteSpace:"nowrap"}}, activeBadge.text),
+    activeBadge && React.createElement("div", {style:{position:"absolute", top: 200, left: 40, background: activeBadge.color, color: "#fff", padding:"24px 48px", fontSize: 54 * bScale, fontWeight: 800, letterSpacing: ".08em", borderRadius: 16, boxShadow:"0 14px 40px rgba(0,0,0,.6)", border: `${Math.max(3, Math.round(6*bScale))}px solid #fff`, lineHeight: 1.1, whiteSpace:"nowrap"}}, activeBadge.text),
     // Info embaixo
     React.createElement("div", {style:{position:"absolute", bottom: 60, left: 60, right: 60, color:"#fff"}},
       React.createElement("div", {style:{fontSize: 28, fontWeight:800, letterSpacing:".18em", color: t.accent, marginBottom: 12, textTransform:"uppercase"}}, p.type || "IMÓVEL", " · ", [p.neighborhood, p.city].filter(Boolean).join(" — "), p.city ? "/PR" : ""),
@@ -4171,7 +4177,7 @@ function InstagramPostMaker({property, settings, onClose, showToast}) {
           ),
           // Tarja destaque
           React.createElement("h4", {style:{fontSize:".82rem", fontWeight:800, textTransform:"uppercase", letterSpacing:".08em", color:"var(--text-light)", marginBottom:10}}, "Tarja de destaque"),
-          React.createElement("div", {style:{display:"flex", flexDirection:"column", gap:6, marginBottom:18}},
+          React.createElement("div", {style:{display:"flex", flexDirection:"column", gap:6, marginBottom: highlightBadge ? 12 : 18}},
             [
               {v:"", l:"❌ Nenhuma"},
               {v:"opportunity", l:"🔥 OPORTUNIDADE"},
@@ -4181,6 +4187,18 @@ function InstagramPostMaker({property, settings, onClose, showToast}) {
               {v:"last", l:"⚡ ÚLTIMA UNIDADE"}
             ].map(o =>
               React.createElement("button", {key:o.v, onClick: () => setHighlightBadge(o.v), style:{padding:"8px 12px", border: highlightBadge === o.v ? "2px solid var(--red)" : "1px solid var(--border)", background: highlightBadge === o.v ? "rgba(196,30,30,.06)" : "white", borderRadius: 6, cursor:"pointer", textAlign:"left", fontSize:".84rem", fontWeight:600}}, o.l)
+            )
+          ),
+          // Slider de tamanho da tarja (só aparece se tem tarja selecionada)
+          highlightBadge && React.createElement("div", {style:{marginBottom:18, padding:"10px 14px", background:"rgba(196,30,30,.05)", borderRadius:8, border:"1px solid rgba(196,30,30,.15)"}},
+            React.createElement("label", {style:{fontSize:".78rem", fontWeight:700, color:"var(--text)", display:"block", marginBottom:6}},
+              "Tamanho da tarja: ", React.createElement("strong", {style:{color:"var(--red)"}}, badgeScale, "%")
+            ),
+            React.createElement("input", {type:"range", min:50, max:180, step:5, value: badgeScale, onChange: e => setBadgeScale(+e.target.value), style:{width:"100%", accentColor:"var(--red)"}}),
+            React.createElement("div", {style:{display:"flex", justifyContent:"space-between", fontSize:".68rem", color:"var(--text-light)", marginTop:2}},
+              React.createElement("span", null, "Pequena"),
+              React.createElement("span", null, "Padrão"),
+              React.createElement("span", null, "Gigante")
             )
           ),
           React.createElement("h4", {style:{fontSize:".82rem", fontWeight:800, textTransform:"uppercase", letterSpacing:".08em", color:"var(--text-light)", marginBottom:10}}, "Texto extra (opcional)"),
