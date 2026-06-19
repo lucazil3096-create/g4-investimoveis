@@ -1213,6 +1213,7 @@ button.footer-link { padding-left: 0; }
 <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.9/babel.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/modern-screenshot@4.6.0/dist/index.iife.min.js"></script>
 <script type="text/babel">
 const { useState, useEffect, useCallback, useRef } = React;
 
@@ -3463,21 +3464,32 @@ function InstagramPostMaker({property, settings, onClose, showToast}) {
       if (document.fonts && document.fonts.ready) { try { await document.fonts.ready; } catch(e) {} }
       const imgs = previewRef.current.querySelectorAll("img");
       await Promise.all(Array.from(imgs).map(img => img.complete ? Promise.resolve() : new Promise(res => { img.onload = res; img.onerror = res; setTimeout(res, 5000); })));
-      await new Promise(r => setTimeout(r, 200));
-      const canvas = await html2canvas(previewRef.current, {
-        backgroundColor: "#ffffff",
-        useCORS: true,
-        allowTaint: true,
-        scale: 1,
-        width: W,
-        height: H,
-        windowWidth: W,
-        windowHeight: H,
-        logging: false,
-        imageTimeout: 8000,
-        foreignObjectRendering: false
-      });
-      const dataUrl = canvas.toDataURL("image/jpeg", 0.95);
+      await new Promise(r => setTimeout(r, 250));
+
+      let dataUrl = null;
+
+      // 1) Tenta modern-screenshot (mais fiel ao visual)
+      if (window.modernScreenshot && window.modernScreenshot.domToJpeg) {
+        try {
+          dataUrl = await window.modernScreenshot.domToJpeg(previewRef.current, {
+            width: W, height: H, quality: 0.95, scale: 1, backgroundColor: "#ffffff",
+            fetch: { requestInit: { cache: "no-cache" } }
+          });
+        } catch(err) { console.warn("modern-screenshot falhou, tentando html2canvas:", err); }
+      }
+
+      // 2) Fallback html2canvas
+      if (!dataUrl && typeof html2canvas !== "undefined") {
+        const canvas = await html2canvas(previewRef.current, {
+          backgroundColor: "#ffffff", useCORS: true, allowTaint: true,
+          scale: 1, width: W, height: H, windowWidth: W, windowHeight: H,
+          logging: false, imageTimeout: 8000, foreignObjectRendering: false
+        });
+        dataUrl = canvas.toDataURL("image/jpeg", 0.95);
+      }
+
+      if (!dataUrl) throw new Error("Nenhuma biblioteca de captura disponível");
+
       const a = document.createElement("a");
       a.href = dataUrl;
       a.download = `instagram-${(p.reference || p.id || "post").toString().toLowerCase()}-${tpl}-${theme}.jpg`;
