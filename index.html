@@ -3452,44 +3452,246 @@ function InstagramPostMaker({property, settings, onClose, showToast}) {
   };
   const activeBadge = highlightBadge && badges[highlightBadge];
 
-  const download = async () => {
-    if (!previewRef.current) return;
-    if (typeof html2canvas === "undefined") {
-      showToast && showToast("Biblioteca de imagem ainda carregando, tente novamente em 2s.", "error");
-      return;
+  // Helper: carrega imagem com CORS
+  const loadImg = (url) => new Promise((res) => {
+    if (!url) return res(null);
+    const img = new Image();
+    img.crossOrigin = "anonymous";
+    img.onload = () => res(img);
+    img.onerror = () => res(null);
+    img.src = url;
+  });
+
+  // Helper: desenha retangulo arredondado
+  const roundRect = (ctx, x, y, w, h, r) => {
+    if (r > w/2) r = w/2;
+    if (r > h/2) r = h/2;
+    ctx.beginPath();
+    ctx.moveTo(x + r, y);
+    ctx.lineTo(x + w - r, y);
+    ctx.quadraticCurveTo(x + w, y, x + w, y + r);
+    ctx.lineTo(x + w, y + h - r);
+    ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+    ctx.lineTo(x + r, y + h);
+    ctx.quadraticCurveTo(x, y + h, x, y + h - r);
+    ctx.lineTo(x, y + r);
+    ctx.quadraticCurveTo(x, y, x + r, y);
+    ctx.closePath();
+  };
+
+  // Renderer Canvas API — desenha o template Classic
+  const drawClassic = async (ctx) => {
+    const propImg = await loadImg(imgUrl);
+    const logoImg = await loadImg(logo);
+
+    // Fundo
+    ctx.fillStyle = t.bg;
+    ctx.fillRect(0, 0, W, H);
+
+    // Foto cobrindo a parte de cima (68% da altura)
+    if (propImg) {
+      const imgH = Math.round(H * 0.68);
+      // object-fit: cover
+      const scale = Math.max(W / propImg.width, imgH / propImg.height);
+      const sw = propImg.width * scale, sh = propImg.height * scale;
+      const sx = (W - sw) / 2, sy = (imgH - sh) / 2;
+      ctx.drawImage(propImg, sx, sy, sw, sh);
     }
+
+    // Gradient overlay (foto -> fundo)
+    const gy = Math.round(H * 0.40);
+    const gh = Math.round(H * 0.40);
+    const grad = ctx.createLinearGradient(0, gy, 0, gy + gh);
+    grad.addColorStop(0, "rgba(0,0,0,0)");
+    grad.addColorStop(1, t.bg);
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, gy, W, gh);
+
+    // Logo no topo
+    if (logoImg) {
+      const logoH = 80;
+      const logoW = logoImg.width * (logoH / logoImg.height);
+      ctx.drawImage(logoImg, 40, 40, logoW, logoH);
+    }
+
+    // Badge VENDA (canto sup. dir.)
+    const transText = (p.transaction || "VENDA").toUpperCase();
+    ctx.font = "800 28px Arial, Helvetica, sans-serif";
+    const tw = ctx.measureText(transText).width;
+    const bw = tw + 56, bh = 60;
+    roundRect(ctx, W - bw - 40, 40, bw, bh, 8);
+    ctx.fillStyle = t.primary;
+    ctx.fill();
+    ctx.fillStyle = "#fff";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.fillText(transText, W - bw/2 - 40, 40 + bh/2);
+
+    // Tarja destaque (Oportunidade, Baixou Preço, etc)
+    if (activeBadge) {
+      ctx.font = "800 46px Arial, Helvetica, sans-serif";
+      const bgT = activeBadge.text;
+      const tgw = ctx.measureText(bgT).width;
+      const tgbw = tgw + 80, tgbh = 86;
+      const tgx = W - tgbw - 30, tgy = 170;
+      // Borda branca
+      roundRect(ctx, tgx - 5, tgy - 5, tgbw + 10, tgbh + 10, 18);
+      ctx.fillStyle = "#fff";
+      ctx.fill();
+      // Fundo colorido
+      roundRect(ctx, tgx, tgy, tgbw, tgbh, 14);
+      ctx.fillStyle = activeBadge.color;
+      ctx.fill();
+      // Texto
+      ctx.fillStyle = "#fff";
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      ctx.fillText(bgT, tgx + tgbw/2, tgy + tgbh/2);
+    }
+
+    // === Conteúdo inferior ===
+    const padX = 60;
+    let y = H - 480; // posição inicial do conteúdo de baixo (~ baseado em padding-bottom 50)
+
+    // CASA (tipo)
+    ctx.fillStyle = t.accent;
+    ctx.font = "700 32px Arial, Helvetica, sans-serif";
+    ctx.textAlign = "left";
+    ctx.textBaseline = "top";
+    ctx.fillText((p.type || "IMÓVEL").toUpperCase(), padX, y);
+    y += 48;
+
+    // Título
+    ctx.fillStyle = "#fff";
+    ctx.font = "800 64px Arial, Helvetica, sans-serif";
+    ctx.fillText((p.title || "Imóvel").toUpperCase(), padX, y);
+    y += 84;
+
+    // Localização
+    ctx.font = "400 30px Arial, Helvetica, sans-serif";
+    const locText = "📍 " + [p.neighborhood, p.city].filter(Boolean).join(" — ") + (p.city ? "/PR" : "");
+    ctx.fillText(locText, padX, y);
+    y += 56;
+
+    // Features (chips)
+    ctx.font = "700 22px Arial, Helvetica, sans-serif";
+    let fx = padX;
+    let fy = y;
+    const chipH = 46;
+    const chipPad = 22;
+    for (const feat of features) {
+      const fw = ctx.measureText(feat).width + chipPad * 2;
+      if (fx + fw > W - padX) { fx = padX; fy += chipH + 12; }
+      roundRect(ctx, fx, fy, fw, chipH, 23);
+      ctx.fillStyle = "rgba(40,40,40,0.85)";
+      ctx.fill();
+      ctx.fillStyle = "#fff";
+      ctx.textBaseline = "middle";
+      ctx.fillText(feat, fx + chipPad, fy + chipH/2);
+      fx += fw + 12;
+    }
+    y = fy + chipH + 24;
+
+    // === Caixa do preço ===
+    const priceFontSize = showPriceIG ? 60 : 44;
+    ctx.font = "700 22px Arial, Helvetica, sans-serif";
+    const lblW = ctx.measureText("VALOR").width;
+    ctx.font = `800 ${priceFontSize}px Arial, Helvetica, sans-serif`;
+    const valW = ctx.measureText(priceStr).width;
+    ctx.font = "700 28px Arial, Helvetica, sans-serif";
+    const oldW = (highlightBadge === "price_drop" && oldPriceStr) ? ctx.measureText("DE " + oldPriceStr).width : 0;
+    const innerW = Math.max(lblW, valW, oldW);
+    const pbW = innerW + 80;
+    const pbH = (highlightBadge === "price_drop" && oldPriceStr) ? 156 : 120;
+    roundRect(ctx, padX, y, pbW, pbH, 14);
+    ctx.fillStyle = t.primary;
+    ctx.fill();
+    // Label "VALOR"
+    ctx.fillStyle = "#fff";
+    ctx.textAlign = "left";
+    ctx.textBaseline = "top";
+    ctx.globalAlpha = 0.9;
+    ctx.font = "700 22px Arial, Helvetica, sans-serif";
+    ctx.fillText("VALOR", padX + 40, y + 22);
+    ctx.globalAlpha = 1;
+    // De (preço antigo riscado)
+    let pTextY = y + 56;
+    if (highlightBadge === "price_drop" && oldPriceStr) {
+      ctx.font = "700 28px Arial, Helvetica, sans-serif";
+      ctx.globalAlpha = 0.7;
+      ctx.fillText("DE " + oldPriceStr, padX + 40, pTextY);
+      // Linha riscando
+      const oldW2 = ctx.measureText("DE " + oldPriceStr).width;
+      ctx.strokeStyle = "#fff";
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(padX + 40, pTextY + 16);
+      ctx.lineTo(padX + 40 + oldW2, pTextY + 16);
+      ctx.stroke();
+      ctx.globalAlpha = 1;
+      pTextY += 36;
+    }
+    // Preço grande
+    ctx.font = `800 ${priceFontSize}px Arial, Helvetica, sans-serif`;
+    ctx.fillStyle = "#fff";
+    ctx.fillText(priceStr, padX + 40, pTextY);
+    y += pbH + 30;
+
+    // CTA: Telefone + Ref
+    ctx.fillStyle = "#fff";
+    ctx.font = "800 28px Arial, Helvetica, sans-serif";
+    ctx.textBaseline = "middle";
+    ctx.textAlign = "left";
+    const phoneY = H - 80;
+    ctx.fillStyle = t.accent;
+    ctx.fillText("📞", padX, phoneY);
+    ctx.fillStyle = "#fff";
+    ctx.fillText(" " + phoneDisplay, padX + 50, phoneY);
+
+    if (p.reference) {
+      ctx.textAlign = "right";
+      ctx.fillStyle = "#fff";
+      ctx.globalAlpha = 0.7;
+      ctx.font = "700 22px Arial, Helvetica, sans-serif";
+      ctx.fillText("Ref.: " + p.reference, W - padX, phoneY);
+      ctx.globalAlpha = 1;
+    }
+
+    if (customCta) {
+      ctx.textAlign = "left";
+      ctx.font = "600 26px Arial, Helvetica, sans-serif";
+      ctx.fillStyle = "#fff";
+      ctx.globalAlpha = 0.9;
+      ctx.fillText(customCta, padX, phoneY - 50);
+      ctx.globalAlpha = 1;
+    }
+  };
+
+  const download = async () => {
     setDownloading(true);
     try {
-      // Aguarda fontes e imagens carregarem
-      if (document.fonts && document.fonts.ready) { try { await document.fonts.ready; } catch(e) {} }
-      const imgs = previewRef.current.querySelectorAll("img");
-      await Promise.all(Array.from(imgs).map(img => img.complete ? Promise.resolve() : new Promise(res => { img.onload = res; img.onerror = res; setTimeout(res, 5000); })));
-      await new Promise(r => setTimeout(r, 250));
-
-      let dataUrl = null;
-
-      // 1) Tenta modern-screenshot (mais fiel ao visual)
-      if (window.modernScreenshot && window.modernScreenshot.domToJpeg) {
-        try {
-          dataUrl = await window.modernScreenshot.domToJpeg(previewRef.current, {
-            width: W, height: H, quality: 0.95, scale: 1, backgroundColor: "#ffffff",
-            fetch: { requestInit: { cache: "no-cache" } }
-          });
-        } catch(err) { console.warn("modern-screenshot falhou, tentando html2canvas:", err); }
-      }
-
-      // 2) Fallback html2canvas
-      if (!dataUrl && typeof html2canvas !== "undefined") {
-        const canvas = await html2canvas(previewRef.current, {
+      const canvas = document.createElement("canvas");
+      canvas.width = W;
+      canvas.height = H;
+      const ctx = canvas.getContext("2d");
+      // Renderiza com Canvas API (100% pixel-perfect)
+      // Por enquanto só o Classic está implementado em Canvas. Os demais usam html2canvas como fallback.
+      if (tpl === "classic") {
+        await drawClassic(ctx);
+      } else {
+        // Fallback pros outros templates
+        if (document.fonts && document.fonts.ready) { try { await document.fonts.ready; } catch(e) {} }
+        const imgs = previewRef.current.querySelectorAll("img");
+        await Promise.all(Array.from(imgs).map(img => img.complete ? Promise.resolve() : new Promise(res => { img.onload = res; img.onerror = res; setTimeout(res, 5000); })));
+        await new Promise(r => setTimeout(r, 250));
+        const c2 = await html2canvas(previewRef.current, {
           backgroundColor: "#ffffff", useCORS: true, allowTaint: true,
           scale: 1, width: W, height: H, windowWidth: W, windowHeight: H,
           logging: false, imageTimeout: 8000, foreignObjectRendering: false
         });
-        dataUrl = canvas.toDataURL("image/jpeg", 0.95);
+        ctx.drawImage(c2, 0, 0);
       }
-
-      if (!dataUrl) throw new Error("Nenhuma biblioteca de captura disponível");
-
+      const dataUrl = canvas.toDataURL("image/jpeg", 0.95);
       const a = document.createElement("a");
       a.href = dataUrl;
       a.download = `instagram-${(p.reference || p.id || "post").toString().toLowerCase()}-${tpl}-${theme}.jpg`;
