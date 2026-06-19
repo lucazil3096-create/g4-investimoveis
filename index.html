@@ -1212,6 +1212,7 @@ button.footer-link { padding-left: 0; }
 <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.9/babel.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <script type="text/babel">
 const { useState, useEffect, useCallback, useRef } = React;
 
@@ -2479,6 +2480,7 @@ function AdminPanel({properties, setProperties, showToast, settings, viewsMap}) 
   const [ap, setAp] = useState("dashboard");
   const [editProp, setEditProp] = useState(null);
   const [showForm, setShowForm] = useState(false);
+  const [igProp, setIgProp] = useState(null);
   const total = properties.filter(p=>p.active&&!p.sold&&p.transaction==="Venda").reduce((s,p)=>s+p.price,0);
   const ac = properties.filter(p=>p.active&&!p.sold).length;
   const rent = properties.filter(p=>p.active&&!p.sold&&p.transaction==="Aluguel").length;
@@ -2624,6 +2626,7 @@ function AdminPanel({properties, setProperties, showToast, settings, viewsMap}) 
       React.createElement("button", {className: `btn-sold-sm ${p.sold ? 'on' : 'off'}`, onClick:()=>toggleSold(p.id)}, p.sold ? "↩ Reativar" : "✓ Vendido"),
       !p.sold && React.createElement("button", {className: "btn-sm btn-outline-sm", onClick:()=>toggleActive(p.id)}, p.active?"Desativar":"Ativar"),
       React.createElement("button", {className: "btn-download-sm", onClick:(e)=>{e.stopPropagation();downloadPhotos(p)}}, I.photo, " Fotos"),
+      !p.sold && React.createElement("button", {className: "btn-sm btn-outline-sm", onClick:()=>setIgProp(p), title:"Gerar imagem para Instagram", style:{background:"linear-gradient(45deg, #f09433, #e6683c, #dc2743, #cc2366, #bc1888)", color:"white", border:"none"}}, "📸 IG"),
       React.createElement("button", {className: "btn-sm btn-danger-sm", onClick:()=>del(p.id)}, I.trash)
     ))
   );
@@ -2778,6 +2781,8 @@ function AdminPanel({properties, setProperties, showToast, settings, viewsMap}) 
           React.createElement("div", {style:{overflowX:"auto"}}, React.createElement("table", {className: "a-table"}, React.createElement("thead", null, React.createElement("tr", null, ["Foto","Imóvel","Tipo","Cidade","Preço","Views","Status","Ações"].map(h => React.createElement("th", {key:h}, h)))), React.createElement("tbody", null, inactiveProps.map(p => React.createElement(TableRow, {key:p.id, p, minimal:true})))))
 
       ) : React.createElement(SettingsPanel, {settings, showToast}),
+      // Modal de gerador Instagram
+      igProp && React.createElement(InstagramPostMaker, {property: igProp, settings, showToast, onClose: () => setIgProp(null)}),
       // Modal de envio de seleção pro cliente
       showSendModal && React.createElement("div", {style:{position:"fixed", inset:0, background:"rgba(0,0,0,.65)", zIndex:9999, display:"flex", alignItems:"center", justifyContent:"center", padding:20}, onClick: () => setShowSendModal(false)},
         React.createElement("div", {style:{background:"white", borderRadius:14, maxWidth:520, width:"100%", padding:0, maxHeight:"90vh", overflow:"auto", boxShadow:"0 20px 60px rgba(0,0,0,.4)"}, onClick: e => e.stopPropagation()},
@@ -3391,6 +3396,234 @@ function MapPicker({f, upd, showToast}) {
         (f.streetHeading != null || f.streetPitch != null) && React.createElement("span", {style:{marginLeft:12}}, `🎥 Câmera: ${Math.round(+f.streetHeading||0)}° / ${Math.round(+f.streetPitch||0)}°`)
       ),
       (f.lat || f.lng || f.streetHeading || f.streetPitch) && React.createElement("button", {type:"button", onClick:()=>{upd('lat',''); upd('lng',''); upd('streetHeading',''); upd('streetPitch','');}, style:{background:"none", border:"none", color:"var(--red)", cursor:"pointer", fontSize:".78rem", textDecoration:"underline"}}, "Limpar")
+    )
+  );
+}
+
+// ===== INSTAGRAM POST MAKER =====
+function InstagramPostMaker({property, settings, onClose, showToast}) {
+  const previewRef = useRef(null);
+  const [tpl, setTpl] = useState("classic");
+  const [theme, setTheme] = useState("red");
+  const [format, setFormat] = useState("feed"); // feed (1080x1080) or story (1080x1920)
+  const [imgIdx, setImgIdx] = useState(0);
+  const [customCta, setCustomCta] = useState("");
+  const [downloading, setDownloading] = useState(false);
+  const s = settings || DEFAULT_SETTINGS;
+  const p = property || {};
+  const wpp = s.whatsappNumber || WHATSAPP;
+  const phoneDisplay = (s.phones || "").split("|")[0].trim() || `(${wpp.slice(2,4)}) ${wpp.slice(4,9)}-${wpp.slice(9,13)}`;
+
+  const themes = {
+    red:    { primary: "#c41e1e", primaryDark: "#9b1818", accent: "#f59e0b", bg: "#1a1a1a", text: "#fff" },
+    blue:   { primary: "#1e40af", primaryDark: "#1e3a8a", accent: "#fbbf24", bg: "#0c0e2a", text: "#fff" },
+    green:  { primary: "#16a34a", primaryDark: "#15803d", accent: "#fde047", bg: "#0f1f15", text: "#fff" },
+    gold:   { primary: "#d4a012", primaryDark: "#a87f0e", accent: "#fff", bg: "#1a1306", text: "#fff" },
+    black:  { primary: "#1a1a1a", primaryDark: "#000", accent: "#c41e1e", bg: "#0a0a0a", text: "#fff" },
+    rose:   { primary: "#e11d48", primaryDark: "#be123c", accent: "#fbcfe8", bg: "#1f0a14", text: "#fff" }
+  };
+  const t = themes[theme];
+
+  const W = 1080;
+  const H = format === "story" ? 1920 : 1080;
+
+  const imgUrl = (p.images && p.images[imgIdx]) || p.images && p.images[0] || "";
+  const logo = s.logoUrl || LOGO_SRC;
+
+  const features = [];
+  if (p.bedrooms > 0) features.push(`${p.bedrooms} ${p.bedrooms === 1 ? "QUARTO" : "QUARTOS"}${p.suites > 0 ? ` (${p.suites} SUÍTE${p.suites > 1 ? "S" : ""})` : ""}`);
+  if (p.bathrooms > 0) features.push(`${p.bathrooms} BANHEIRO${p.bathrooms > 1 ? "S" : ""}`);
+  if (p.garages > 0) features.push(`${p.garages} VAGA${p.garages > 1 ? "S" : ""}`);
+  if (p.builtArea > 0) features.push(`${p.builtArea} m² CONSTRUÍDOS`);
+  else if (p.area > 0) features.push(`${p.area} m² TERRENO`);
+
+  const priceStr = p.showPrice ? fmtCurrency(p.price) : "VALOR SOB CONSULTA";
+
+  const download = async () => {
+    if (!previewRef.current) return;
+    if (typeof html2canvas === "undefined") {
+      showToast && showToast("Biblioteca de imagem ainda carregando, tente novamente em 2s.", "error");
+      return;
+    }
+    setDownloading(true);
+    try {
+      const canvas = await html2canvas(previewRef.current, {
+        backgroundColor: null,
+        useCORS: true,
+        allowTaint: true,
+        scale: 1,
+        width: W,
+        height: H,
+        logging: false
+      });
+      const dataUrl = canvas.toDataURL("image/jpeg", 0.95);
+      const a = document.createElement("a");
+      a.href = dataUrl;
+      a.download = `instagram-${(p.reference || p.id || "post").toString().toLowerCase()}-${tpl}-${theme}.jpg`;
+      document.body.appendChild(a); a.click(); document.body.removeChild(a);
+      showToast && showToast("Imagem baixada!", "success");
+    } catch(e) {
+      console.error(e);
+      showToast && showToast("Erro ao gerar imagem: " + (e.message || e), "error");
+    }
+    setDownloading(false);
+  };
+
+  // === TEMPLATES ===
+  const renderClassic = () => React.createElement("div", {ref: previewRef, style:{width: W, height: H, position:"relative", background: t.bg, overflow:"hidden", fontFamily:"'Inter', -apple-system, sans-serif"}},
+    // Foto de fundo
+    imgUrl && React.createElement("img", {src: imgUrl, crossOrigin:"anonymous", style:{position:"absolute", inset:0, width:"100%", height:"68%", objectFit:"cover"}}),
+    // Gradient
+    React.createElement("div", {style:{position:"absolute", top:"40%", left:0, right:0, height:"40%", background: `linear-gradient(180deg, transparent, ${t.bg} 80%)`}}),
+    // Logo no topo
+    React.createElement("div", {style:{position:"absolute", top: 40, left: 40, display:"flex", alignItems:"center", gap: 16}},
+      React.createElement("img", {src: logo, crossOrigin:"anonymous", style:{height: 80, filter:"drop-shadow(0 4px 12px rgba(0,0,0,.6))"}})
+    ),
+    // Badge transação
+    React.createElement("div", {style:{position:"absolute", top: 40, right: 40, background: t.primary, color: t.text, padding:"14px 28px", fontSize: 28, fontWeight: 900, letterSpacing: ".15em", borderRadius: 8, boxShadow:"0 4px 16px rgba(0,0,0,.4)"}}, (p.transaction || "VENDA").toUpperCase()),
+    // Informações
+    React.createElement("div", {style:{position:"absolute", bottom: 0, left:0, right:0, padding: "60px 60px 50px", color: t.text}},
+      React.createElement("div", {style:{fontSize: 32, fontWeight:700, letterSpacing:".1em", color: t.accent, marginBottom: 16, textTransform:"uppercase"}}, p.type || "IMÓVEL"),
+      React.createElement("h1", {style:{fontSize: 64, fontWeight:900, lineHeight:1.05, margin: 0, textTransform:"uppercase", letterSpacing:".02em", marginBottom: 20, textShadow:"0 2px 12px rgba(0,0,0,.5)"}}, p.title || "Imóvel"),
+      React.createElement("p", {style:{fontSize: 30, opacity: .9, margin:0, marginBottom: 28}}, "📍 ", [p.neighborhood, p.city].filter(Boolean).join(" — "), p.city ? "/PR" : ""),
+      // Features
+      features.length > 0 && React.createElement("div", {style:{display:"flex", flexWrap:"wrap", gap: 14, marginBottom: 28}},
+        features.map((f, i) => React.createElement("div", {key:i, style:{background:"rgba(255,255,255,.12)", padding:"10px 18px", borderRadius: 50, fontSize: 22, fontWeight: 700, letterSpacing:".05em"}}, f))
+      ),
+      // Preço
+      React.createElement("div", {style:{background: t.primary, color: t.text, padding: "22px 36px", borderRadius: 14, display:"inline-block", marginBottom: 24, boxShadow:"0 6px 20px rgba(0,0,0,.4)"}},
+        React.createElement("div", {style:{fontSize: 20, fontWeight:700, opacity:.85, letterSpacing:".15em"}}, "VALOR"),
+        React.createElement("div", {style:{fontSize: p.showPrice ? 56 : 40, fontWeight:900, lineHeight:1}}, priceStr)
+      ),
+      // CTA
+      React.createElement("div", {style:{display:"flex", justifyContent:"space-between", alignItems:"center", marginTop: 12}},
+        React.createElement("div", {style:{fontSize: 28, fontWeight: 800}},
+          React.createElement("span", {style:{color: t.accent, marginRight: 12}}, "📞"),
+          phoneDisplay
+        ),
+        p.reference && React.createElement("div", {style:{fontSize: 22, opacity:.7, fontWeight: 700}}, "Ref.: ", p.reference)
+      ),
+      customCta && React.createElement("p", {style:{fontSize: 26, marginTop: 18, fontWeight: 600, opacity: .9}}, customCta)
+    )
+  );
+
+  const renderModern = () => React.createElement("div", {ref: previewRef, style:{width: W, height: H, position:"relative", background: t.bg, overflow:"hidden", fontFamily:"'Inter', -apple-system, sans-serif"}},
+    // Foto à esquerda em formato grande
+    imgUrl && React.createElement("img", {src: imgUrl, crossOrigin:"anonymous", style:{position:"absolute", top: 80, left: 60, width: W - 120, height: H * 0.55, objectFit:"cover", borderRadius: 24, boxShadow:"0 12px 40px rgba(0,0,0,.5)"}}),
+    // Barra superior colorida
+    React.createElement("div", {style:{position:"absolute", top:0, left:0, right:0, height: 60, background: t.primary}}),
+    // Logo no topo direito
+    React.createElement("div", {style:{position:"absolute", top: 90 + H * 0.55 + 30, left: 60, right: 60, color: t.text}},
+      React.createElement("div", {style:{display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom: 30}},
+        React.createElement("img", {src: logo, crossOrigin:"anonymous", style:{height: 70}}),
+        React.createElement("div", {style:{background: t.primary, color: t.text, padding:"12px 24px", fontSize: 26, fontWeight: 900, letterSpacing:".15em", borderRadius: 50}}, (p.transaction || "VENDA").toUpperCase())
+      ),
+      React.createElement("h1", {style:{fontSize: 58, fontWeight: 900, lineHeight: 1.05, margin: 0, marginBottom: 12, textTransform:"uppercase", letterSpacing:".02em"}}, p.title || "Imóvel"),
+      React.createElement("p", {style:{fontSize: 28, opacity: .85, margin: 0, marginBottom: 22}}, "📍 ", [p.neighborhood, p.city].filter(Boolean).join(" — "), p.city ? "/PR" : ""),
+      features.length > 0 && React.createElement("div", {style:{display:"flex", flexWrap:"wrap", gap: 10, marginBottom: 24}},
+        features.map((f, i) => React.createElement("span", {key:i, style:{background:"rgba(255,255,255,.1)", border:`2px solid ${t.accent}`, padding:"8px 16px", borderRadius: 8, fontSize: 20, fontWeight: 700}}, f))
+      ),
+      React.createElement("div", {style:{borderTop:`3px solid ${t.accent}`, paddingTop: 20, display:"flex", justifyContent:"space-between", alignItems:"center"}},
+        React.createElement("div", null,
+          React.createElement("div", {style:{fontSize: 20, color: t.accent, fontWeight:700, letterSpacing:".15em"}}, "INVESTIMENTO"),
+          React.createElement("div", {style:{fontSize: p.showPrice ? 52 : 38, fontWeight: 900, marginTop: 4}}, priceStr)
+        ),
+        React.createElement("div", {style:{textAlign:"right"}},
+          React.createElement("div", {style:{fontSize: 22, opacity:.8, fontWeight:700}}, "📞 ", phoneDisplay),
+          p.reference && React.createElement("div", {style:{fontSize: 18, opacity:.6, marginTop: 4}}, "Ref.: ", p.reference)
+        )
+      )
+    )
+  );
+
+  const renderMinimal = () => React.createElement("div", {ref: previewRef, style:{width: W, height: H, position:"relative", background: "#fff", overflow:"hidden", fontFamily:"'Inter', -apple-system, sans-serif"}},
+    // Foto cobrindo tudo
+    imgUrl && React.createElement("img", {src: imgUrl, crossOrigin:"anonymous", style:{position:"absolute", inset:0, width:"100%", height:"100%", objectFit:"cover"}}),
+    // Overlay escuro
+    React.createElement("div", {style:{position:"absolute", inset:0, background:`linear-gradient(180deg, rgba(0,0,0,.1) 0%, transparent 30%, transparent 50%, rgba(0,0,0,.85) 100%)`}}),
+    // Logo no topo
+    React.createElement("div", {style:{position:"absolute", top: 50, left: 50, right: 50, display:"flex", justifyContent:"space-between", alignItems:"flex-start"}},
+      React.createElement("img", {src: logo, crossOrigin:"anonymous", style:{height: 90, filter:"drop-shadow(0 4px 12px rgba(0,0,0,.6))"}}),
+      React.createElement("div", {style:{background: t.primary, color: "#fff", padding:"12px 24px", fontSize: 26, fontWeight: 900, letterSpacing:".18em", boxShadow:"0 6px 20px rgba(0,0,0,.4)"}}, (p.transaction || "VENDA").toUpperCase())
+    ),
+    // Info embaixo
+    React.createElement("div", {style:{position:"absolute", bottom: 60, left: 60, right: 60, color:"#fff"}},
+      React.createElement("div", {style:{fontSize: 28, fontWeight:800, letterSpacing:".18em", color: t.accent, marginBottom: 12, textTransform:"uppercase"}}, p.type || "IMÓVEL", " · ", [p.neighborhood, p.city].filter(Boolean).join(" — "), p.city ? "/PR" : ""),
+      React.createElement("h1", {style:{fontSize: 72, fontWeight: 900, lineHeight: 1, margin: 0, marginBottom: 32, textTransform:"uppercase", letterSpacing:".01em", textShadow:"0 2px 16px rgba(0,0,0,.7)"}}, p.title || "Imóvel"),
+      features.length > 0 && React.createElement("div", {style:{display:"flex", flexWrap:"wrap", gap: 18, marginBottom: 30, fontSize: 24, fontWeight: 700}},
+        features.map((f, i) => React.createElement("span", {key:i, style:{background:"rgba(0,0,0,.5)", padding:"10px 22px", borderRadius: 6, backdropFilter:"blur(4px)"}}, f))
+      ),
+      React.createElement("div", {style:{display:"flex", justifyContent:"space-between", alignItems:"center", marginTop: 20, paddingTop: 20, borderTop:`3px solid ${t.accent}`}},
+        React.createElement("div", null,
+          React.createElement("div", {style:{fontSize: p.showPrice ? 62 : 42, fontWeight: 900}}, priceStr)
+        ),
+        React.createElement("div", {style:{textAlign:"right"}},
+          React.createElement("div", {style:{fontSize: 26, fontWeight: 800}}, "📞 ", phoneDisplay),
+          p.reference && React.createElement("div", {style:{fontSize: 20, opacity:.85, marginTop: 4}}, "Ref.: ", p.reference)
+        )
+      )
+    )
+  );
+
+  const renderTpl = () => {
+    if (tpl === "classic") return renderClassic();
+    if (tpl === "modern") return renderModern();
+    return renderMinimal();
+  };
+
+  return React.createElement("div", {style:{position:"fixed", inset:0, background:"rgba(0,0,0,.85)", zIndex:9999, display:"flex", alignItems:"center", justifyContent:"center", padding:20, overflowY:"auto"}, onClick: onClose},
+    React.createElement("div", {style:{background:"white", borderRadius:14, maxWidth:1100, width:"100%", maxHeight:"95vh", overflow:"auto", boxShadow:"0 20px 60px rgba(0,0,0,.5)"}, onClick: e => e.stopPropagation()},
+      React.createElement("div", {style:{padding:"22px 28px", background:"linear-gradient(135deg, var(--red), var(--red-dark))", color:"white", borderRadius:"14px 14px 0 0", display:"flex", justifyContent:"space-between", alignItems:"center", position:"sticky", top:0, zIndex:2}},
+        React.createElement("div", null,
+          React.createElement("h3", {style:{margin:0, fontSize:"1.3rem", fontWeight:800}}, "📸 Montagem para Instagram"),
+          React.createElement("p", {style:{margin:0, fontSize:".82rem", opacity:.9, marginTop:4}}, p.title || "Imóvel", " · Ref. ", p.reference || "—")
+        ),
+        React.createElement("button", {onClick: onClose, style:{background:"rgba(255,255,255,.2)", border:"none", color:"white", width:36, height:36, borderRadius:"50%", cursor:"pointer", fontSize:"1.2rem", fontWeight:700}}, "✕")
+      ),
+      React.createElement("div", {style:{display:"grid", gridTemplateColumns:"320px 1fr", gap:0}},
+        // Controles à esquerda
+        React.createElement("div", {style:{padding:"20px 22px", borderRight:"1px solid var(--border)", background:"var(--bg-accent)", minHeight:"400px"}},
+          React.createElement("h4", {style:{fontSize:".82rem", fontWeight:800, textTransform:"uppercase", letterSpacing:".08em", color:"var(--text-light)", marginBottom:10}}, "Formato"),
+          React.createElement("div", {style:{display:"grid", gridTemplateColumns:"1fr 1fr", gap:8, marginBottom:18}},
+            React.createElement("button", {onClick: () => setFormat("feed"), className: format === "feed" ? "btn-red" : "btn-outline-sm", style:{padding:"10px 12px", fontSize:".82rem"}}, "📐 Feed (1:1)"),
+            React.createElement("button", {onClick: () => setFormat("story"), className: format === "story" ? "btn-red" : "btn-outline-sm", style:{padding:"10px 12px", fontSize:".82rem"}}, "📱 Story (9:16)")
+          ),
+          React.createElement("h4", {style:{fontSize:".82rem", fontWeight:800, textTransform:"uppercase", letterSpacing:".08em", color:"var(--text-light)", marginBottom:10}}, "Modelo"),
+          React.createElement("div", {style:{display:"flex", flexDirection:"column", gap:6, marginBottom:18}},
+            [{v:"classic",l:"🎨 Clássico", d:"Foto + info abaixo"},{v:"modern",l:"✨ Moderno", d:"Foto com moldura"},{v:"minimal",l:"🌟 Minimalista", d:"Foto inteira + overlay"}].map(o =>
+              React.createElement("button", {key:o.v, onClick: () => setTpl(o.v), style:{padding:"10px 12px", border: tpl === o.v ? "2px solid var(--red)" : "1px solid var(--border)", background: tpl === o.v ? "rgba(196,30,30,.06)" : "white", borderRadius: 8, cursor:"pointer", textAlign:"left"}},
+                React.createElement("div", {style:{fontWeight:700, fontSize:".88rem"}}, o.l),
+                React.createElement("div", {style:{fontSize:".72rem", color:"var(--text-light)", marginTop:2}}, o.d)
+              )
+            )
+          ),
+          React.createElement("h4", {style:{fontSize:".82rem", fontWeight:800, textTransform:"uppercase", letterSpacing:".08em", color:"var(--text-light)", marginBottom:10}}, "Cor"),
+          React.createElement("div", {style:{display:"grid", gridTemplateColumns:"repeat(6, 1fr)", gap:6, marginBottom:18}},
+            Object.entries(themes).map(([k, th]) =>
+              React.createElement("button", {key:k, onClick: () => setTheme(k), title: k, style:{width:36, height:36, borderRadius:"50%", border: theme === k ? "3px solid #1a1a1a" : "2px solid white", background: th.primary, cursor:"pointer", padding:0, boxShadow:"0 2px 6px rgba(0,0,0,.2)"}})
+            )
+          ),
+          p.images && p.images.length > 1 && React.createElement(React.Fragment, null,
+            React.createElement("h4", {style:{fontSize:".82rem", fontWeight:800, textTransform:"uppercase", letterSpacing:".08em", color:"var(--text-light)", marginBottom:10}}, "Foto principal"),
+            React.createElement("div", {style:{display:"grid", gridTemplateColumns:"repeat(4, 1fr)", gap:6, marginBottom:18}},
+              p.images.slice(0, 8).map((img, i) =>
+                React.createElement("button", {key:i, onClick: () => setImgIdx(i), style:{padding:0, border: imgIdx === i ? "3px solid var(--red)" : "2px solid transparent", borderRadius:6, cursor:"pointer", overflow:"hidden", aspectRatio:"1"}},
+                  React.createElement("img", {src: img, style:{width:"100%", height:"100%", objectFit:"cover"}})
+                )
+              )
+            )
+          ),
+          React.createElement("h4", {style:{fontSize:".82rem", fontWeight:800, textTransform:"uppercase", letterSpacing:".08em", color:"var(--text-light)", marginBottom:10}}, "Texto extra (opcional)"),
+          React.createElement("textarea", {className:"af-input af-textarea", value: customCta, onChange: e => setCustomCta(e.target.value), placeholder:"Ex: AGENDE SUA VISITA HOJE!", style:{minHeight: 60, fontSize:".85rem", marginBottom:18}}),
+          React.createElement("button", {className:"btn-red", onClick: download, disabled: downloading, style:{width:"100%", padding:"14px", fontSize:".95rem", fontWeight:700}}, downloading ? "Gerando..." : "📥 Baixar imagem JPG")
+        ),
+        // Preview à direita
+        React.createElement("div", {style:{padding:"20px", background:"#222", display:"flex", justifyContent:"center", alignItems:"flex-start", overflowY:"auto"}},
+          React.createElement("div", {style:{transform: `scale(${format === "story" ? 0.28 : 0.42})`, transformOrigin:"top center", marginBottom: format === "story" ? -1390 : -640}},
+            renderTpl()
+          )
+        )
+      )
     )
   );
 }
