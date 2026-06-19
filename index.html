@@ -3082,31 +3082,64 @@ function SettingsPanel({settings, showToast}) {
           React.createElement("div", {style:{fontSize:".72rem",color:"var(--text-light)",marginTop:4}}, "Tom mais escuro que aparece ao passar o mouse")
         ),
         React.createElement("div", {key:"palettes", className: "af-group full"},
-          React.createElement("label", {className: "af-label"}, "Paletas prontas (clique pra aplicar)"),
-          React.createElement("div", {style:{display:"flex", gap:10, flexWrap:"wrap"}},
+          React.createElement("label", {className: "af-label"}, "🎨 Temas prontos (clique pra aplicar TUDO: cores, fundo e texto)"),
+          React.createElement("p", {style:{fontSize:".78rem", color:"var(--text-light)", marginBottom:14, marginTop:-4}}, "Cada tema muda o visual inteiro do site. Você pode ajustar uma cor depois se quiser."),
+          React.createElement("div", {style:{display:"grid", gridTemplateColumns:"repeat(auto-fill, minmax(140px, 1fr))", gap:10}},
             [
-              {name:"🔴 Vermelho clássico", c1:"#c41e1e", c2:"#9b1818", group:"normal"},
-              {name:"🟫 Vinho", c1:"#7c2d12", c2:"#581c0c", group:"normal"},
-              {name:"🔵 Azul executivo", c1:"#1e40af", c2:"#1e3a8a", group:"normal"},
-              {name:"⚫ Preto premium", c1:"#1f2937", c2:"#111827", group:"normal"},
-              {name:"🟢 Verde luxo", c1:"#065f46", c2:"#064e3b", group:"normal"},
-              {name:"🟣 Roxo moderno", c1:"#7c3aed", c2:"#6d28d9", group:"normal"},
-              {name:"🟠 Laranja vibrante", c1:"#ea580c", c2:"#c2410c", group:"normal"},
-              {name:"⚽ Copa do Mundo", c1:"#16a34a", c2:"#fbbf24", group:"data"},
-              {name:"🌹 Dia das Mulheres", c1:"#ec4899", c2:"#be185d", group:"data"},
-              {name:"🎄 Natal", c1:"#dc2626", c2:"#15803d", group:"data"},
-              {name:"🐰 Páscoa", c1:"#ef4444", c2:"#fbbf24", group:"data"},
-              {name:"🎆 Ano Novo / Réveillon", c1:"#ca8a04", c2:"#78350f", group:"data"},
-              {name:"💛 São João / Festa Junina", c1:"#eab308", c2:"#a16207", group:"data"},
-              {name:"💜 Outubro Rosa", c1:"#ec4899", c2:"#9d174d", group:"data"},
-              {name:"🇧🇷 Independência (7 set)", c1:"#16a34a", c2:"#1e40af", group:"data"},
-              {name:"💙 Carnaval", c1:"#7c3aed", c2:"#facc15", group:"data"}
-            ].map(p => React.createElement("button", {key:p.name, type:"button", onClick:()=>{upd("primaryColor", p.c1); upd("primaryColorDark", p.c2);}, title: p.name, style:{display:"flex", flexDirection:"column", alignItems:"center", gap:4, padding:8, border: (s.primaryColor===p.c1 ? "2px solid var(--text)" : "2px solid transparent"), borderRadius:8, background:"white", cursor:"pointer", transition:"transform .15s", minWidth:96}, onMouseEnter:e=>e.currentTarget.style.transform="scale(1.05)", onMouseLeave:e=>e.currentTarget.style.transform="scale(1)"},
-              React.createElement("div", {style:{display:"flex", gap:2}},
-                React.createElement("div", {style:{width:24, height:32, background:p.c1, borderRadius:"4px 0 0 4px"}}),
-                React.createElement("div", {style:{width:24, height:32, background:p.c2, borderRadius:"0 4px 4px 0"}})
+              // Temas neutros / clássicos
+              {name:"🔴 Vermelho clássico", primaryColor:"#c41e1e", primaryColorDark:"#9b1818", bgDark:"#141414", bgLight:"#fafaf8", textColor:"#1a1a1a", textLightColor:"#71706b"},
+              {name:"🟫 Vinho", primaryColor:"#7c2d12", primaryColorDark:"#581c0c", bgDark:"#1c0f0a", bgLight:"#fdf8f5", textColor:"#1c0f0a", textLightColor:"#78716c"},
+              {name:"🔵 Azul executivo", primaryColor:"#1e40af", primaryColorDark:"#1e3a8a", bgDark:"#0f172a", bgLight:"#f8fafc", textColor:"#0f172a", textLightColor:"#64748b"},
+              {name:"⚫ Preto premium", primaryColor:"#1f2937", primaryColorDark:"#111827", bgDark:"#000000", bgLight:"#f9fafb", textColor:"#111827", textLightColor:"#6b7280"},
+              {name:"🟢 Verde luxo", primaryColor:"#065f46", primaryColorDark:"#064e3b", bgDark:"#0a1f17", bgLight:"#f0fdf4", textColor:"#064e3b", textLightColor:"#65a30d"},
+              {name:"🟣 Roxo moderno", primaryColor:"#7c3aed", primaryColorDark:"#6d28d9", bgDark:"#1e1b3a", bgLight:"#faf5ff", textColor:"#3b0764", textLightColor:"#7c3aed"},
+              {name:"🟠 Laranja vibrante", primaryColor:"#ea580c", primaryColorDark:"#c2410c", bgDark:"#1c0f08", bgLight:"#fff7ed", textColor:"#1c0f08", textLightColor:"#9a3412"},
+              // Datas comemorativas — visuais completos
+              {name:"⚽ Copa do Mundo", primaryColor:"#16a34a", primaryColorDark:"#15803d", bgDark:"#003B6F", bgLight:"#FFFEF0", textColor:"#0a1f3a", textLightColor:"#1d4e89"},
+              {name:"🌹 Dia das Mulheres", primaryColor:"#ec4899", primaryColorDark:"#be185d", bgDark:"#500724", bgLight:"#fdf2f8", textColor:"#831843", textLightColor:"#be185d"},
+              {name:"🎄 Natal", primaryColor:"#dc2626", primaryColorDark:"#991b1b", bgDark:"#064e3b", bgLight:"#fefce8", textColor:"#064e3b", textLightColor:"#ca8a04"},
+              {name:"🐰 Páscoa", primaryColor:"#f472b6", primaryColorDark:"#db2777", bgDark:"#4c1d63", bgLight:"#fdf4ff", textColor:"#581c87", textLightColor:"#a21caf"},
+              {name:"🎆 Réveillon / Ano Novo", primaryColor:"#ca8a04", primaryColorDark:"#854d0e", bgDark:"#0a0a0a", bgLight:"#fefce8", textColor:"#0a0a0a", textLightColor:"#a16207"},
+              {name:"💛 São João", primaryColor:"#eab308", primaryColorDark:"#a16207", bgDark:"#451a03", bgLight:"#fffbeb", textColor:"#451a03", textLightColor:"#92400e"},
+              {name:"💜 Outubro Rosa", primaryColor:"#ec4899", primaryColorDark:"#9d174d", bgDark:"#831843", bgLight:"#fdf2f8", textColor:"#500724", textLightColor:"#9d174d"},
+              {name:"🇧🇷 Independência", primaryColor:"#16a34a", primaryColorDark:"#15803d", bgDark:"#1e40af", bgLight:"#fefce8", textColor:"#1e40af", textLightColor:"#15803d"},
+              {name:"💙 Carnaval", primaryColor:"#a21caf", primaryColorDark:"#86198f", bgDark:"#3b0764", bgLight:"#fffbeb", textColor:"#3b0764", textLightColor:"#9333ea"},
+              {name:"💎 Black Friday", primaryColor:"#fbbf24", primaryColorDark:"#d97706", bgDark:"#000000", bgLight:"#fafaf9", textColor:"#0a0a0a", textLightColor:"#525252"},
+              {name:"💙 Novembro Azul", primaryColor:"#2563eb", primaryColorDark:"#1d4ed8", bgDark:"#0c1c3a", bgLight:"#eff6ff", textColor:"#1e3a8a", textLightColor:"#2563eb"}
+            ].map(pal => React.createElement("button", {
+              key:pal.name, type:"button",
+              onClick: () => {
+                upd("primaryColor", pal.primaryColor);
+                upd("primaryColorDark", pal.primaryColorDark);
+                upd("bgDark", pal.bgDark);
+                upd("bgLight", pal.bgLight);
+                upd("textColor", pal.textColor);
+                upd("textLightColor", pal.textLightColor);
+              },
+              title: `Aplicar tema ${pal.name}`,
+              style:{
+                display:"flex", flexDirection:"column", alignItems:"stretch", gap:0, padding:0,
+                border: (s.primaryColor === pal.primaryColor && s.bgDark === pal.bgDark) ? "3px solid var(--red)" : "2px solid var(--border)",
+                borderRadius:10, background:"white", cursor:"pointer", overflow:"hidden",
+                transition:"transform .15s, box-shadow .15s",
+                boxShadow: (s.primaryColor === pal.primaryColor && s.bgDark === pal.bgDark) ? "0 6px 20px rgba(196,30,30,.25)" : "0 2px 6px rgba(0,0,0,.05)"
+              },
+              onMouseEnter: e => { e.currentTarget.style.transform = "scale(1.04)"; e.currentTarget.style.boxShadow = "0 8px 24px rgba(0,0,0,.15)"; },
+              onMouseLeave: e => { e.currentTarget.style.transform = "scale(1)"; e.currentTarget.style.boxShadow = (s.primaryColor === pal.primaryColor && s.bgDark === pal.bgDark) ? "0 6px 20px rgba(196,30,30,.25)" : "0 2px 6px rgba(0,0,0,.05)"; }
+            },
+              // Mini preview do tema (3 listras de cores)
+              React.createElement("div", {style:{display:"flex", height: 56}},
+                React.createElement("div", {style:{flex:1.2, background: pal.bgDark, display:"flex", alignItems:"center", justifyContent:"center"}},
+                  React.createElement("div", {style:{width:14, height:14, borderRadius:"50%", background: pal.primaryColor, boxShadow:`0 0 0 2px ${pal.bgDark}, 0 0 0 4px ${pal.primaryColorDark}`}})
+                ),
+                React.createElement("div", {style:{flex:1, background: pal.bgLight, display:"flex", flexDirection:"column", justifyContent:"center", padding:"0 6px"}},
+                  React.createElement("div", {style:{width:"60%", height:5, background: pal.textColor, marginBottom:3, borderRadius:2}}),
+                  React.createElement("div", {style:{width:"40%", height:3, background: pal.textLightColor, borderRadius:2}})
+                )
               ),
-              React.createElement("span", {style:{fontSize:".66rem", color:"var(--text-light)", textAlign:"center", lineHeight:1.2}}, p.name)
+              React.createElement("div", {style:{padding:"7px 6px 8px", background:"white"}},
+                React.createElement("span", {style:{fontSize:".74rem", color:"var(--text)", textAlign:"center", lineHeight:1.2, fontWeight:600, display:"block"}}, pal.name)
+              )
             ))
           )
         ),
