@@ -3439,7 +3439,8 @@ function InstagramPostMaker({property, settings, onClose, showToast}) {
   if (p.builtArea > 0) features.push(`${p.builtArea} m² CONSTRUÍDOS`);
   else if (p.area > 0) features.push(`${p.area} m² TERRENO`);
 
-  const priceStr = (showPriceIG && p.showPrice) ? fmtCurrency(p.price) : "VALOR SOB CONSULTA";
+  // No gerador IG, o toggle "Mostrar valor" tem prioridade sobre o showPrice geral do imovel
+  const priceStr = (showPriceIG && p.price > 0) ? fmtCurrency(p.price) : "VALOR SOB CONSULTA";
   const oldPriceStr = p.oldPrice ? fmtCurrency(p.oldPrice) : "";
   const badges = {
     opportunity: { text: "🔥 OPORTUNIDADE", color: "#f59e0b", bg: "#fff7ed" },
@@ -3501,8 +3502,8 @@ function InstagramPostMaker({property, settings, onClose, showToast}) {
     ),
     // Badge transação
     React.createElement("div", {style:{position:"absolute", top: 40, right: 40, background: t.primary, color: t.text, padding:"14px 28px", fontSize: 28, fontWeight: 900, letterSpacing: ".15em", borderRadius: 8, boxShadow:"0 4px 16px rgba(0,0,0,.4)"}}, (p.transaction || "VENDA").toUpperCase()),
-    // Tarja destaque (Oportunidade, Baixou preço, etc)
-    activeBadge && React.createElement("div", {style:{position:"absolute", top: 140, right: 40, background: activeBadge.bg, color: activeBadge.color, padding:"10px 24px", fontSize: 24, fontWeight: 900, letterSpacing: ".1em", borderRadius: 8, boxShadow:"0 4px 16px rgba(0,0,0,.4)", border: `3px solid ${activeBadge.color}`, transform: "rotate(-3deg)"}}, activeBadge.text),
+    // Tarja destaque (Oportunidade, Baixou preço, etc) — grande e destacada
+    activeBadge && React.createElement("div", {style:{position:"absolute", top: 170, right: 30, background: activeBadge.color, color: "#fff", padding:"22px 44px", fontSize: 50, fontWeight: 900, letterSpacing: ".1em", borderRadius: 14, boxShadow:`0 10px 40px ${activeBadge.color}cc, 0 0 0 6px #fff`, transform: "rotate(-6deg)", textShadow:"0 2px 8px rgba(0,0,0,.5)"}}, activeBadge.text),
     // Informações
     React.createElement("div", {style:{position:"absolute", bottom: 0, left:0, right:0, padding: "60px 60px 50px", color: t.text}},
       React.createElement("div", {style:{fontSize: 32, fontWeight:700, letterSpacing:".1em", color: t.accent, marginBottom: 16, textTransform:"uppercase"}}, p.type || "IMÓVEL"),
@@ -3516,7 +3517,7 @@ function InstagramPostMaker({property, settings, onClose, showToast}) {
       React.createElement("div", {style:{background: t.primary, color: t.text, padding: "22px 36px", borderRadius: 14, display:"inline-block", marginBottom: 24, boxShadow:"0 6px 20px rgba(0,0,0,.4)"}},
         React.createElement("div", {style:{fontSize: 20, fontWeight:700, opacity:.85, letterSpacing:".15em"}}, "VALOR"),
         highlightBadge === "price_drop" && oldPriceStr && React.createElement("div", {style:{fontSize: 26, fontWeight: 700, textDecoration:"line-through", opacity:.7, marginBottom: 2}}, "DE ", oldPriceStr),
-        React.createElement("div", {style:{fontSize: (showPriceIG && p.showPrice) ? 56 : 40, fontWeight:900, lineHeight:1}}, priceStr)
+        React.createElement("div", {style:{fontSize: showPriceIG ? 56 : 40, fontWeight:900, lineHeight:1}}, priceStr)
       ),
       // CTA
       React.createElement("div", {style:{display:"flex", justifyContent:"space-between", alignItems:"center", marginTop: 12}},
@@ -3535,8 +3536,8 @@ function InstagramPostMaker({property, settings, onClose, showToast}) {
     imgUrl && React.createElement("img", {src: imgUrl, crossOrigin:"anonymous", style:{position:"absolute", top: 80, left: 60, width: W - 120, height: H * 0.55, objectFit:"cover", borderRadius: 24, boxShadow:"0 12px 40px rgba(0,0,0,.5)"}}),
     // Barra superior colorida
     React.createElement("div", {style:{position:"absolute", top:0, left:0, right:0, height: 60, background: t.primary}}),
-    // Tarja destaque
-    activeBadge && React.createElement("div", {style:{position:"absolute", top: 90, right: 70, background: activeBadge.bg, color: activeBadge.color, padding:"12px 26px", fontSize: 26, fontWeight: 900, letterSpacing: ".1em", borderRadius: 10, boxShadow:"0 6px 18px rgba(0,0,0,.4)", border: `3px solid ${activeBadge.color}`, transform: "rotate(-2deg)", zIndex: 2}}, activeBadge.text),
+    // Tarja destaque — grande e destacada
+    activeBadge && React.createElement("div", {style:{position:"absolute", top: 100, right: 30, background: activeBadge.color, color: "#fff", padding:"24px 48px", fontSize: 52, fontWeight: 900, letterSpacing: ".08em", borderRadius: 16, boxShadow:`0 12px 40px ${activeBadge.color}cc, 0 0 0 6px #fff`, transform: "rotate(-5deg)", zIndex: 5, textShadow:"0 2px 8px rgba(0,0,0,.5)"}}, activeBadge.text),
     // Logo no topo direito
     React.createElement("div", {style:{position:"absolute", top: 90 + H * 0.55 + 30, left: 60, right: 60, color: t.text}},
       React.createElement("div", {style:{display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom: 30}},
@@ -3552,7 +3553,7 @@ function InstagramPostMaker({property, settings, onClose, showToast}) {
         React.createElement("div", null,
           React.createElement("div", {style:{fontSize: 20, color: t.accent, fontWeight:700, letterSpacing:".15em"}}, "INVESTIMENTO"),
           highlightBadge === "price_drop" && oldPriceStr && React.createElement("div", {style:{fontSize: 24, fontWeight: 700, textDecoration:"line-through", opacity:.6, marginTop: 4}}, "DE ", oldPriceStr),
-          React.createElement("div", {style:{fontSize: (showPriceIG && p.showPrice) ? 52 : 38, fontWeight: 900, marginTop: 4}}, priceStr)
+          React.createElement("div", {style:{fontSize: showPriceIG ? 52 : 38, fontWeight: 900, marginTop: 4}}, priceStr)
         ),
         React.createElement("div", {style:{textAlign:"right"}},
           React.createElement("div", {style:{fontSize: 22, opacity:.8, fontWeight:700}}, "📞 ", phoneDisplay),
@@ -3572,8 +3573,8 @@ function InstagramPostMaker({property, settings, onClose, showToast}) {
       React.createElement("img", {src: logo, crossOrigin:"anonymous", style:{height: 90, filter:"drop-shadow(0 4px 12px rgba(0,0,0,.6))"}}),
       React.createElement("div", {style:{background: t.primary, color: "#fff", padding:"12px 24px", fontSize: 26, fontWeight: 900, letterSpacing:".18em", boxShadow:"0 6px 20px rgba(0,0,0,.4)"}}, (p.transaction || "VENDA").toUpperCase())
     ),
-    // Tarja destaque
-    activeBadge && React.createElement("div", {style:{position:"absolute", top: 180, left: 60, background: activeBadge.bg, color: activeBadge.color, padding:"14px 30px", fontSize: 30, fontWeight: 900, letterSpacing: ".1em", borderRadius: 10, boxShadow:"0 8px 24px rgba(0,0,0,.5)", border: `3px solid ${activeBadge.color}`, transform: "rotate(-3deg)"}}, activeBadge.text),
+    // Tarja destaque — grande e destacada
+    activeBadge && React.createElement("div", {style:{position:"absolute", top: 200, left: 40, background: activeBadge.color, color: "#fff", padding:"26px 50px", fontSize: 56, fontWeight: 900, letterSpacing: ".08em", borderRadius: 16, boxShadow:`0 14px 50px ${activeBadge.color}dd, 0 0 0 7px #fff`, transform: "rotate(-7deg)", textShadow:"0 3px 10px rgba(0,0,0,.6)"}}, activeBadge.text),
     // Info embaixo
     React.createElement("div", {style:{position:"absolute", bottom: 60, left: 60, right: 60, color:"#fff"}},
       React.createElement("div", {style:{fontSize: 28, fontWeight:800, letterSpacing:".18em", color: t.accent, marginBottom: 12, textTransform:"uppercase"}}, p.type || "IMÓVEL", " · ", [p.neighborhood, p.city].filter(Boolean).join(" — "), p.city ? "/PR" : ""),
@@ -3584,7 +3585,7 @@ function InstagramPostMaker({property, settings, onClose, showToast}) {
       React.createElement("div", {style:{display:"flex", justifyContent:"space-between", alignItems:"center", marginTop: 20, paddingTop: 20, borderTop:`3px solid ${t.accent}`}},
         React.createElement("div", null,
           highlightBadge === "price_drop" && oldPriceStr && React.createElement("div", {style:{fontSize: 32, fontWeight: 700, textDecoration:"line-through", opacity:.7, marginBottom: 4}}, "DE ", oldPriceStr),
-          React.createElement("div", {style:{fontSize: (showPriceIG && p.showPrice) ? 62 : 42, fontWeight: 900}}, priceStr)
+          React.createElement("div", {style:{fontSize: showPriceIG ? 62 : 42, fontWeight: 900}}, priceStr)
         ),
         React.createElement("div", {style:{textAlign:"right"}},
           React.createElement("div", {style:{fontSize: 26, fontWeight: 800}}, "📞 ", phoneDisplay),
