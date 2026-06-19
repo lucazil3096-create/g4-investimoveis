@@ -2492,6 +2492,7 @@ function AdminPanel({properties, setProperties, showToast, settings, viewsMap}) 
   const [editProp, setEditProp] = useState(null);
   const [showForm, setShowForm] = useState(false);
   const [igProp, setIgProp] = useState(null);
+  const [presentProp, setPresentProp] = useState(null);
   const total = properties.filter(p=>p.active&&!p.sold&&p.transaction==="Venda").reduce((s,p)=>s+p.price,0);
   const ac = properties.filter(p=>p.active&&!p.sold).length;
   const rent = properties.filter(p=>p.active&&!p.sold&&p.transaction==="Aluguel").length;
@@ -2637,6 +2638,7 @@ function AdminPanel({properties, setProperties, showToast, settings, viewsMap}) 
       React.createElement("button", {className: `btn-sold-sm ${p.sold ? 'on' : 'off'}`, onClick:()=>toggleSold(p.id)}, p.sold ? "↩ Reativar" : "✓ Vendido"),
       !p.sold && React.createElement("button", {className: "btn-sm btn-outline-sm", onClick:()=>toggleActive(p.id)}, p.active?"Desativar":"Ativar"),
       React.createElement("button", {className: "btn-download-sm", onClick:(e)=>{e.stopPropagation();downloadPhotos(p)}}, I.photo, " Fotos"),
+      !p.sold && React.createElement("button", {className: "btn-sm btn-outline-sm", onClick:()=>setPresentProp(p), title:"Apresentar imóvel em tela cheia", style:{background:"linear-gradient(45deg, #1e293b, #334155)", color:"white", border:"none"}}, "📺 Apresentar"),
       !p.sold && React.createElement("button", {className: "btn-sm btn-outline-sm", onClick:()=>setIgProp(p), title:"Gerar imagem para Instagram", style:{background:"linear-gradient(45deg, #f09433, #e6683c, #dc2743, #cc2366, #bc1888)", color:"white", border:"none"}}, "📸 IG"),
       React.createElement("button", {className: "btn-sm btn-danger-sm", onClick:()=>del(p.id)}, I.trash)
     ))
@@ -2794,6 +2796,8 @@ function AdminPanel({properties, setProperties, showToast, settings, viewsMap}) 
       ) : React.createElement(SettingsPanel, {settings, showToast}),
       // Modal de gerador Instagram
       igProp && React.createElement(InstagramPostMaker, {property: igProp, settings, showToast, onClose: () => setIgProp(null)}),
+      // Modo apresentação
+      presentProp && React.createElement(PresentationMode, {property: presentProp, settings, onClose: () => setPresentProp(null)}),
       // Modal de envio de seleção pro cliente
       showSendModal && React.createElement("div", {style:{position:"fixed", inset:0, background:"rgba(0,0,0,.65)", zIndex:9999, display:"flex", alignItems:"center", justifyContent:"center", padding:20}, onClick: () => setShowSendModal(false)},
         React.createElement("div", {style:{background:"white", borderRadius:14, maxWidth:520, width:"100%", padding:0, maxHeight:"90vh", overflow:"auto", boxShadow:"0 20px 60px rgba(0,0,0,.4)"}, onClick: e => e.stopPropagation()},
@@ -3412,6 +3416,137 @@ function MapPicker({f, upd, showToast}) {
 }
 
 // ===== INSTAGRAM POST MAKER =====
+// ===== MODO APRESENTAÇÃO (fotos em tela cheia, pra mostrar pro cliente) =====
+function PresentationMode({property, settings, onClose}) {
+  const p = property || {};
+  const s = settings || DEFAULT_SETTINGS;
+  const images = (p.images && p.images.length > 0) ? p.images : [];
+  const [idx, setIdx] = useState(0);
+  const [auto, setAuto] = useState(true);
+  const [showInfo, setShowInfo] = useState(true);
+  const touchStartX = useRef(0);
+
+  // Auto-advance a cada 6 segundos
+  useEffect(() => {
+    if (!auto || images.length <= 1) return;
+    const t = setTimeout(() => setIdx(i => (i + 1) % images.length), 6000);
+    return () => clearTimeout(t);
+  }, [idx, auto, images.length]);
+
+  // Teclado
+  useEffect(() => {
+    const onKey = (e) => {
+      if (e.key === "Escape") onClose();
+      else if (e.key === "ArrowLeft") setIdx(i => (i - 1 + images.length) % images.length);
+      else if (e.key === "ArrowRight") setIdx(i => (i + 1) % images.length);
+      else if (e.key === " ") { e.preventDefault(); setAuto(a => !a); }
+      else if (e.key === "i" || e.key === "I") setShowInfo(s => !s);
+    };
+    window.addEventListener("keydown", onKey);
+    // Esconde scroll e header
+    document.body.style.overflow = "hidden";
+    document.body.classList.add("lightbox-open");
+    return () => {
+      window.removeEventListener("keydown", onKey);
+      document.body.style.overflow = "";
+      document.body.classList.remove("lightbox-open");
+    };
+  }, [images.length, onClose]);
+
+  // Tenta fullscreen real do navegador
+  useEffect(() => {
+    const el = document.documentElement;
+    if (el.requestFullscreen) { try { el.requestFullscreen(); } catch(e) {} }
+    return () => {
+      if (document.fullscreenElement && document.exitFullscreen) {
+        try { document.exitFullscreen(); } catch(e) {}
+      }
+    };
+  }, []);
+
+  const onTouchStart = (e) => { if (e.touches[0]) touchStartX.current = e.touches[0].clientX; };
+  const onTouchEnd = (e) => {
+    if (!e.changedTouches[0]) return;
+    const dx = e.changedTouches[0].clientX - touchStartX.current;
+    if (Math.abs(dx) > 50 && images.length > 1) {
+      if (dx > 0) setIdx(i => (i - 1 + images.length) % images.length);
+      else setIdx(i => (i + 1) % images.length);
+    }
+  };
+
+  if (images.length === 0) {
+    return React.createElement("div", {style:{position:"fixed", inset:0, background:"#000", zIndex:999999, display:"flex", alignItems:"center", justifyContent:"center", color:"#fff", flexDirection:"column", gap:20}},
+      React.createElement("p", null, "Esse imóvel não tem fotos cadastradas."),
+      React.createElement("button", {className:"btn-red", onClick: onClose, style:{padding:"12px 24px"}}, "Fechar")
+    );
+  }
+
+  return React.createElement("div", {style:{position:"fixed", inset:0, background:"#000", zIndex:999999, display:"flex", flexDirection:"column", overflow:"hidden"}, onTouchStart: onTouchStart, onTouchEnd: onTouchEnd},
+    // Imagem em tela cheia
+    React.createElement("img", {
+      key: idx,
+      src: images[idx],
+      style: {width:"100%", height:"100%", objectFit:"contain", animation:"fadeIn .5s ease"},
+      alt: p.title
+    }),
+
+    // Overlay topo - controles
+    React.createElement("div", {style:{position:"absolute", top:0, left:0, right:0, padding:"20px 28px", background:"linear-gradient(180deg, rgba(0,0,0,.75), transparent)", display:"flex", justifyContent:"space-between", alignItems:"center", color:"#fff", zIndex:5}},
+      React.createElement("div", {style:{display:"flex", alignItems:"center", gap:14}},
+        s.logoUrl && React.createElement("img", {src: s.logoUrl, style:{height: 50, filter:"drop-shadow(0 2px 8px rgba(0,0,0,.5))"}}),
+        React.createElement("div", null,
+          React.createElement("div", {style:{fontSize:".78rem", opacity:.7, letterSpacing:".15em", fontWeight:700}}, "APRESENTAÇÃO"),
+          React.createElement("div", {style:{fontSize:"1rem", fontWeight:700}}, p.reference ? `Ref. ${p.reference}` : (p.type || ""), " · ", idx + 1, "/", images.length)
+        )
+      ),
+      React.createElement("div", {style:{display:"flex", gap:10}},
+        React.createElement("button", {onClick: () => setAuto(a => !a), title: auto ? "Pausar (Espaço)" : "Reproduzir (Espaço)", style:{background:"rgba(255,255,255,.12)", color:"#fff", border:"none", width:48, height:48, borderRadius:"50%", cursor:"pointer", fontSize:"1.2rem"}}, auto ? "⏸" : "▶"),
+        React.createElement("button", {onClick: () => setShowInfo(s => !s), title: "Mostrar/Esconder info (I)", style:{background:"rgba(255,255,255,.12)", color:"#fff", border:"none", width:48, height:48, borderRadius:"50%", cursor:"pointer", fontSize:"1.2rem"}}, "ℹ"),
+        React.createElement("button", {onClick: onClose, title: "Sair (Esc)", style:{background:"rgba(220,38,38,.95)", color:"#fff", border:"2px solid #fff", width:48, height:48, borderRadius:"50%", cursor:"pointer", fontSize:"1.3rem", fontWeight:900, boxShadow:"0 4px 14px rgba(0,0,0,.4)"}}, "✕")
+      )
+    ),
+
+    // Setas de navegação
+    images.length > 1 && React.createElement(React.Fragment, null,
+      React.createElement("button", {onClick: () => { setAuto(false); setIdx(i => (i - 1 + images.length) % images.length); }, style:{position:"absolute", top:"50%", left:24, transform:"translateY(-50%)", width:64, height:64, borderRadius:"50%", background:"rgba(0,0,0,.55)", color:"#fff", border:"2px solid rgba(255,255,255,.25)", fontSize:"1.6rem", cursor:"pointer", zIndex:5}}, "‹"),
+      React.createElement("button", {onClick: () => { setAuto(false); setIdx(i => (i + 1) % images.length); }, style:{position:"absolute", top:"50%", right:24, transform:"translateY(-50%)", width:64, height:64, borderRadius:"50%", background:"rgba(0,0,0,.55)", color:"#fff", border:"2px solid rgba(255,255,255,.25)", fontSize:"1.6rem", cursor:"pointer", zIndex:5}}, "›")
+    ),
+
+    // Info do imóvel embaixo
+    showInfo && React.createElement("div", {style:{position:"absolute", bottom:0, left:0, right:0, padding:"60px 32px 32px", background:"linear-gradient(0deg, rgba(0,0,0,.85), transparent)", color:"#fff", zIndex:5}},
+      React.createElement("div", {style:{display:"flex", justifyContent:"space-between", alignItems:"flex-end", gap:20, flexWrap:"wrap"}},
+        React.createElement("div", {style:{flex:"1 1 60%", minWidth:300}},
+          React.createElement("div", {style:{display:"flex", gap:8, marginBottom:10, flexWrap:"wrap"}},
+            React.createElement("span", {style:{background:"rgba(196,30,30,.95)", color:"#fff", padding:"6px 16px", borderRadius:50, fontSize:".82rem", fontWeight:800, letterSpacing:".1em"}}, (p.transaction || "VENDA").toUpperCase()),
+            React.createElement("span", {style:{background:"rgba(255,255,255,.15)", color:"#fff", padding:"6px 16px", borderRadius:50, fontSize:".82rem", fontWeight:700}}, p.type || "Imóvel"),
+            p.reserved && React.createElement("span", {style:{background:"rgba(255,255,255,.15)", color:"#fff", padding:"6px 16px", borderRadius:50, fontSize:".82rem", fontWeight:700}}, "⚡ RESERVADO")
+          ),
+          React.createElement("h1", {style:{fontFamily:"var(--font-display)", fontSize:"2.6rem", letterSpacing:".03em", textTransform:"uppercase", margin:"0 0 8px"}}, p.title || "Imóvel"),
+          React.createElement("p", {style:{fontSize:"1.05rem", opacity:.9, margin:"0 0 14px"}}, "📍 ", [p.neighborhood, p.city].filter(Boolean).join(" — "), p.city ? "/PR" : ""),
+          React.createElement("div", {style:{display:"flex", gap:18, flexWrap:"wrap", fontSize:"1rem"}},
+            p.bedrooms > 0 && React.createElement("span", null, "🛏 ", React.createElement("strong", null, p.bedrooms), p.bedrooms === 1 ? " Quarto" : " Quartos", p.suites > 0 ? ` (${p.suites} suíte${p.suites > 1 ? "s" : ""})` : ""),
+            p.bathrooms > 0 && React.createElement("span", null, "🚿 ", React.createElement("strong", null, p.bathrooms), p.bathrooms === 1 ? " Banheiro" : " Banheiros"),
+            p.garages > 0 && React.createElement("span", null, "🚗 ", React.createElement("strong", null, p.garages), p.garages === 1 ? " Vaga" : " Vagas"),
+            p.area > 0 && React.createElement("span", null, "📐 ", React.createElement("strong", null, p.area), " m² terreno"),
+            p.builtArea > 0 && React.createElement("span", null, "🏠 ", React.createElement("strong", null, p.builtArea), " m² construída")
+          )
+        ),
+        React.createElement("div", {style:{textAlign:"right"}},
+          React.createElement("div", {style:{fontSize:".78rem", opacity:.7, letterSpacing:".15em", fontWeight:700, marginBottom:4}}, "VALOR"),
+          React.createElement("div", {style:{fontFamily:"var(--font-num)", fontSize:"2.4rem", fontWeight:900, lineHeight:1}}, fmtCurrency(p.price || 0)),
+          p.transaction === "Aluguel" && React.createElement("div", {style:{fontSize:".82rem", opacity:.7, marginTop:2}}, "/mês")
+        )
+      ),
+      // Barra de progresso entre fotos
+      images.length > 1 && React.createElement("div", {style:{display:"flex", gap:4, marginTop:24}},
+        images.map((_, i) => React.createElement("div", {key:i, onClick:()=>{setIdx(i); setAuto(false);}, style:{flex:1, height:4, background: i === idx ? "rgba(220,38,38,.95)" : "rgba(255,255,255,.25)", borderRadius:2, cursor:"pointer", transition:"background .2s"}}))
+      )
+    ),
+
+    React.createElement("style", null, "@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }")
+  );
+}
+
 function InstagramPostMaker({property, settings, onClose, showToast}) {
   const previewRef = useRef(null);
   const [tpl, setTpl] = useState("classic");
