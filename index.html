@@ -5219,20 +5219,40 @@ function App() {
     return () => window.removeEventListener("popstate", onPop);
   }, [props, isAdmin]);
 
-  // Listener em tempo real: qualquer mudança no Firestore aparece na hora
+  // Listener em tempo real + load inicial garantido (pra 1a visita sem cache)
   useEffect(() => {
     if (FIREBASE_CONFIG.apiKey === "COLE_SUA_API_KEY_AQUI") {
       setProps(INITIAL_PROPS); setLoading(false); return;
     }
-    // Se já temos cache local, mostra na hora — sem esperar Firebase
-    setLoading(false);
+    let cancelled = false;
+    // 1) Tenta carregar direto (pra primeira visita aparecer rápido sem precisar de F5)
+    (async () => {
+      for (let i = 0; i < 24 && !cancelled; i++) {
+        const data = await FB.loadAll();
+        if (data && Array.isArray(data)) {
+          if (!cancelled) {
+            setProps(data);
+            setLoading(false);
+            try { localStorage.setItem("g4_props_cache", JSON.stringify(data)); } catch(e) {}
+          }
+          return;
+        }
+        await new Promise(r => setTimeout(r, 250));
+      }
+      if (!cancelled) setLoading(false);
+    })();
+    // 2) Inscreve pra atualizações em tempo real (qualquer mudança no Firestore aparece na hora)
     const unsub = FB.subscribe(data => {
+      if (cancelled) return;
       const arr = data || [];
       setProps(arr);
       setLoading(false);
       try { localStorage.setItem("g4_props_cache", JSON.stringify(arr)); } catch(e) {}
     });
-    return () => { if (typeof unsub === 'function') unsub(); };
+    return () => {
+      cancelled = true;
+      if (typeof unsub === 'function') unsub();
+    };
   }, []);
 
   // Cache local pras configurações
