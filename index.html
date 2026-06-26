@@ -811,6 +811,13 @@ body.lightbox-open .filters-bar { display: none !important; }
 .a-table td { padding: 14px 16px; border-top: 1px solid var(--border-light); font-size: .88rem; vertical-align: middle; }
 .a-table tr:hover td { background: rgba(196,30,30,.02); }
 .a-table-img { width: 64px; height: 46px; border-radius: 8px; object-fit: cover; }
+/* Scroll horizontal sincronizado no topo */
+.a-table-scrolltop { overflow-x: auto; overflow-y: hidden; height: 16px; margin-bottom: -2px; position: sticky; top: 0; z-index: 5; background: var(--bg-accent); border-radius: 8px 8px 0 0; }
+.a-table-scrolltop > div { height: 1px; }
+.a-table-scrolltop::-webkit-scrollbar { height: 14px; }
+.a-table-scrolltop::-webkit-scrollbar-track { background: rgba(196,30,30,.06); border-radius: 8px; }
+.a-table-scrolltop::-webkit-scrollbar-thumb { background: var(--red); border-radius: 8px; border: 2px solid var(--bg-accent); }
+.a-table-scrolltop::-webkit-scrollbar-thumb:hover { background: var(--red-dark); }
 .a-table-actions { display: flex; gap: 6px; }
 
 /* BUTTONS */
@@ -2620,9 +2627,50 @@ function AdminPanel({properties, setProperties, showToast, settings, viewsMap}) 
     showToast("Salvo!","success");
   };
 
+  // Tabela com barra de scroll no topo (sincronizada com a de baixo)
+  const ScrollableTable = ({children}) => {
+    const topRef = React.useRef(null);
+    const bottomRef = React.useRef(null);
+    const innerRef = React.useRef(null);
+    const [innerW, setInnerW] = React.useState(0);
+    React.useEffect(() => {
+      const update = () => { if (innerRef.current) setInnerW(innerRef.current.scrollWidth); };
+      update();
+      const ro = window.ResizeObserver ? new ResizeObserver(update) : null;
+      if (ro && innerRef.current) ro.observe(innerRef.current);
+      return () => { if (ro) ro.disconnect(); };
+    }, [children]);
+    React.useEffect(() => {
+      const top = topRef.current, bot = bottomRef.current;
+      if (!top || !bot) return;
+      let lockedBy = null;
+      const onTop = () => { if (lockedBy === "bot") return; lockedBy = "top"; bot.scrollLeft = top.scrollLeft; setTimeout(() => lockedBy = null, 0); };
+      const onBot = () => { if (lockedBy === "top") return; lockedBy = "bot"; top.scrollLeft = bot.scrollLeft; setTimeout(() => lockedBy = null, 0); };
+      top.addEventListener("scroll", onTop);
+      bot.addEventListener("scroll", onBot);
+      return () => { top.removeEventListener("scroll", onTop); bot.removeEventListener("scroll", onBot); };
+    }, []);
+    return React.createElement(React.Fragment, null,
+      React.createElement("div", {ref: topRef, className: "a-table-scrolltop"},
+        React.createElement("div", {style: {width: innerW}})
+      ),
+      React.createElement("div", {ref: bottomRef, style:{overflowX:"auto"}},
+        React.createElement("div", {ref: innerRef, style:{minWidth:"max-content"}}, children)
+      )
+    );
+  };
   const TableRow = ({p, minimal}) => React.createElement("tr", {key: p.id, style: Object.assign({}, p.sold ? {background:"rgba(30,41,59,.04)",opacity:.75} : p.reserved ? {background:"rgba(220,38,38,.04)"} : {}, selectMode && selectedIds.includes(p.id) ? {background:"rgba(196,30,30,.10)", outline:"2px solid var(--red)"} : {}, selectMode ? {cursor:"pointer"} : {}), onClick: selectMode ? () => toggleSelect(p.id) : undefined},
     selectMode && React.createElement("td", {style:{width:36, textAlign:"center"}}, React.createElement("input", {type:"checkbox", checked: selectedIds.includes(p.id), onChange: () => toggleSelect(p.id), onClick: e => e.stopPropagation(), style:{width:18, height:18, accentColor:"var(--red)", cursor:"pointer"}})),
-    React.createElement("td", null, React.createElement("div", {style:{position:"relative",display:"inline-block"}}, React.createElement("img", {className: "a-table-img", src: p.images[0] || "https://via.placeholder.com/64x46", alt: "", style: p.sold ? {filter:"saturate(.2)"} : {}}), p.reserved && !p.sold && React.createElement("div", {style:{position:"absolute",bottom:-2,left:0,right:0,background:"linear-gradient(135deg,#dc2626,#b91c1c)",color:"white",textAlign:"center",fontSize:".52rem",fontWeight:900,padding:"1px 0",letterSpacing:".06em"}}, "RESERVADO"), p.sold && React.createElement("div", {style:{position:"absolute",bottom:-2,left:0,right:0,background:"linear-gradient(135deg,#1e293b,#334155)",color:"white",textAlign:"center",fontSize:".52rem",fontWeight:900,padding:"1px 0",letterSpacing:".06em"}}, "VENDIDO"))),
+    React.createElement("td", null,
+      React.createElement("div", {style:{display:"flex", flexDirection:"column", alignItems:"flex-start", gap:3}},
+        React.createElement("div", {style:{position:"relative",display:"inline-block"}},
+          React.createElement("img", {className: "a-table-img", src: p.images[0] || "https://via.placeholder.com/64x46", alt: "", style: p.sold ? {filter:"saturate(.2)"} : {}}),
+          p.reserved && !p.sold && React.createElement("div", {style:{position:"absolute",bottom:-2,left:0,right:0,background:"linear-gradient(135deg,#dc2626,#b91c1c)",color:"white",textAlign:"center",fontSize:".52rem",fontWeight:900,padding:"1px 0",letterSpacing:".06em"}}, "RESERVADO"),
+          p.sold && React.createElement("div", {style:{position:"absolute",bottom:-2,left:0,right:0,background:"linear-gradient(135deg,#1e293b,#334155)",color:"white",textAlign:"center",fontSize:".52rem",fontWeight:900,padding:"1px 0",letterSpacing:".06em"}}, "VENDIDO")
+        ),
+        p.reference && React.createElement("span", {style:{fontSize:".62rem", fontWeight:700, color:"var(--text-light)", fontFamily:"var(--font-num)", letterSpacing:".04em"}}, "Ref. ", p.reference)
+      )
+    ),
     React.createElement("td", {style:{fontWeight:600,maxWidth:180}}, p.title),
     React.createElement("td", null, p.type),
     React.createElement("td", null, p.city),
@@ -2693,7 +2741,7 @@ function AdminPanel({properties, setProperties, showToast, settings, viewsMap}) 
           React.createElement("h3", {style:{fontFamily:"var(--font-display)",fontSize:"1.5rem",letterSpacing:".03em",textTransform:"uppercase"}}, "Últimos Imóveis"),
           React.createElement("button", {className: "btn-sm btn-outline-sm", onClick:()=>setAp("list"), style:{padding:"8px 16px"}}, "Ver todos →")
         ),
-        React.createElement("div", {style:{overflowX:"auto"}}, React.createElement("table", {className: "a-table"}, React.createElement("thead", null, React.createElement("tr", null, ["Foto","Imóvel","Tipo","Cidade","Preço","Views","Visível","Reserva","Status","Ações"].map(h => React.createElement("th", {key:h}, h)))), React.createElement("tbody", null, activeProps.slice(0,5).map(p => React.createElement(TableRow, {key:p.id, p})))))
+        React.createElement(ScrollableTable, null, React.createElement("table", {className: "a-table"}, React.createElement("thead", null, React.createElement("tr", null, ["Foto","Imóvel","Tipo","Cidade","Preço","Views","Visível","Reserva","Status","Ações"].map(h => React.createElement("th", {key:h}, h)))), React.createElement("tbody", null, activeProps.slice(0,5).map(p => React.createElement(TableRow, {key:p.id, p})))))
       ) : ap === 'list' ? React.createElement(React.Fragment, null,
         React.createElement("div", {className: "admin-top"},
           React.createElement("h1", {className: "admin-page-title"}, "Todos os Imóveis"),
@@ -2766,7 +2814,7 @@ function AdminPanel({properties, setProperties, showToast, settings, viewsMap}) 
             React.createElement("p", {style:{color:"var(--text-light)",marginBottom:24}}, "Comece adicionando seu primeiro imóvel ao catálogo"),
             React.createElement("button", {className: "btn-red", onClick: openNew, style:{padding:"16px 36px",fontSize:"1rem"}}, I.plus, " Cadastrar Primeiro Imóvel")
           ) :
-          React.createElement("div", {style:{overflowX:"auto"}}, React.createElement("table", {className: "a-table"}, React.createElement("thead", null, React.createElement("tr", null, (selectMode ? ["",  "Foto","Imóvel","Tipo","Cidade","Preço","Views","Visível","Reserva","Status","Ações"] : ["Foto","Imóvel","Tipo","Cidade","Preço","Views","Visível","Reserva","Status","Ações"]).map((h,i) => React.createElement("th", {key:i}, h)))), React.createElement("tbody", null, activeProps.map(p => React.createElement(TableRow, {key:p.id, p})))))
+          React.createElement(ScrollableTable, null, React.createElement("table", {className: "a-table"}, React.createElement("thead", null, React.createElement("tr", null, (selectMode ? ["",  "Foto","Imóvel","Tipo","Cidade","Preço","Views","Visível","Reserva","Status","Ações"] : ["Foto","Imóvel","Tipo","Cidade","Preço","Views","Visível","Reserva","Status","Ações"]).map((h,i) => React.createElement("th", {key:i}, h)))), React.createElement("tbody", null, activeProps.map(p => React.createElement(TableRow, {key:p.id, p})))))
 
       ) : ap === 'sold' ? React.createElement(React.Fragment, null,
         React.createElement("div", {className: "admin-top"},
@@ -2779,7 +2827,7 @@ function AdminPanel({properties, setProperties, showToast, settings, viewsMap}) 
             React.createElement("h3", {style:{fontFamily:"var(--font-display)",fontSize:"1.5rem",letterSpacing:".03em",textTransform:"uppercase",marginBottom:8}}, "Nenhum Imóvel Vendido"),
             React.createElement("p", {style:{color:"var(--text-light)"}}, "Quando marcar um imóvel como vendido, ele aparecerá aqui")
           ) :
-          React.createElement("div", {style:{overflowX:"auto"}}, React.createElement("table", {className: "a-table"}, React.createElement("thead", null, React.createElement("tr", null, ["Foto","Imóvel","Tipo","Cidade","Preço","Views","Status","Ações"].map(h => React.createElement("th", {key:h}, h)))), React.createElement("tbody", null, soldProps.map(p => React.createElement(TableRow, {key:p.id, p, minimal:true})))))
+          React.createElement(ScrollableTable, null, React.createElement("table", {className: "a-table"}, React.createElement("thead", null, React.createElement("tr", null, ["Foto","Imóvel","Tipo","Cidade","Preço","Views","Status","Ações"].map(h => React.createElement("th", {key:h}, h)))), React.createElement("tbody", null, soldProps.map(p => React.createElement(TableRow, {key:p.id, p, minimal:true})))))
 
       ) : ap === 'inactive' ? React.createElement(React.Fragment, null,
         React.createElement("div", {className: "admin-top"},
@@ -2792,7 +2840,7 @@ function AdminPanel({properties, setProperties, showToast, settings, viewsMap}) 
             React.createElement("h3", {style:{fontFamily:"var(--font-display)",fontSize:"1.5rem",letterSpacing:".03em",textTransform:"uppercase",marginBottom:8}}, "Nenhum Imóvel Inativo"),
             React.createElement("p", {style:{color:"var(--text-light)"}}, "Imóveis desativados aparecerão aqui")
           ) :
-          React.createElement("div", {style:{overflowX:"auto"}}, React.createElement("table", {className: "a-table"}, React.createElement("thead", null, React.createElement("tr", null, ["Foto","Imóvel","Tipo","Cidade","Preço","Views","Status","Ações"].map(h => React.createElement("th", {key:h}, h)))), React.createElement("tbody", null, inactiveProps.map(p => React.createElement(TableRow, {key:p.id, p, minimal:true})))))
+          React.createElement(ScrollableTable, null, React.createElement("table", {className: "a-table"}, React.createElement("thead", null, React.createElement("tr", null, ["Foto","Imóvel","Tipo","Cidade","Preço","Views","Status","Ações"].map(h => React.createElement("th", {key:h}, h)))), React.createElement("tbody", null, inactiveProps.map(p => React.createElement(TableRow, {key:p.id, p, minimal:true})))))
 
       ) : React.createElement(SettingsPanel, {settings, showToast}),
       // Modal de gerador Instagram
