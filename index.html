@@ -804,13 +804,16 @@ body.lightbox-open .filters-bar { display: none !important; }
 /* ADMIN TABLE */
 .a-table { width: 100%; background: white; border-radius: var(--radius); overflow: hidden; border: 1px solid var(--border); }
 .a-table th {
-  background: var(--bg-accent); padding: 14px 16px; text-align: left;
-  font-size: .74rem; font-weight: 700; text-transform: uppercase;
-  letter-spacing: .07em; color: var(--text-light);
+  background: var(--bg-accent); padding: 10px 10px; text-align: left;
+  font-size: .68rem; font-weight: 700; text-transform: uppercase;
+  letter-spacing: .05em; color: var(--text-light); white-space: nowrap;
 }
-.a-table td { padding: 14px 16px; border-top: 1px solid var(--border-light); font-size: .88rem; vertical-align: middle; }
+.a-table td { padding: 10px 10px; border-top: 1px solid var(--border-light); font-size: .82rem; vertical-align: middle; }
 .a-table tr:hover td { background: rgba(196,30,30,.02); }
-.a-table-img { width: 64px; height: 46px; border-radius: 8px; object-fit: cover; }
+.a-table-img { width: 56px; height: 42px; border-radius: 6px; object-fit: cover; }
+.a-table .btn-sm { padding: 7px 11px; font-size: .76rem; white-space: nowrap; }
+.a-table .btn-sm svg { width: 14px; height: 14px; }
+.a-table .btn-sold-sm, .a-table .btn-reserve-sm, .a-table .btn-download-sm { padding: 7px 11px; font-size: .76rem; white-space: nowrap; }
 /* Scroll horizontal sincronizado no topo */
 .a-table-scrolltop { overflow-x: auto; overflow-y: hidden; height: 16px; margin-bottom: -2px; position: sticky; top: 0; z-index: 5; background: var(--bg-accent); border-radius: 8px 8px 0 0; }
 .a-table-scrolltop > div { height: 1px; }
@@ -2671,7 +2674,7 @@ function AdminPanel({properties, setProperties, showToast, settings, viewsMap}) 
         p.reference && React.createElement("span", {style:{fontSize:".62rem", fontWeight:700, color:"var(--text-light)", fontFamily:"var(--font-num)", letterSpacing:".04em"}}, "Ref. ", p.reference)
       )
     ),
-    React.createElement("td", {style:{fontWeight:600,maxWidth:180}}, p.title),
+    React.createElement("td", {style:{fontWeight:600, maxWidth:160, lineHeight:1.3}}, p.title),
     React.createElement("td", null, p.type),
     React.createElement("td", null, p.city),
     React.createElement("td", {style:{fontWeight:600}}, fmtCurrency(p.price)),
@@ -2684,12 +2687,12 @@ function AdminPanel({properties, setProperties, showToast, settings, viewsMap}) 
       React.createElement("span", {className:"status-pill status-active"}, "Ativo")
     ),
     React.createElement("td", null, React.createElement("div", {className: "a-table-actions"},
-      !p.sold && React.createElement("button", {className: "btn-sm btn-outline-sm", onClick:()=>openEdit(p)}, I.edit, " Editar"),
-      React.createElement("button", {className: `btn-sold-sm ${p.sold ? 'on' : 'off'}`, onClick:()=>toggleSold(p.id)}, p.sold ? "↩ Reativar" : "✓ Vendido"),
-      !p.sold && React.createElement("button", {className: "btn-sm btn-outline-sm", onClick:()=>toggleActive(p.id)}, p.active?"Desativar":"Ativar"),
-      React.createElement("button", {className: "btn-download-sm", onClick:(e)=>{e.stopPropagation();downloadPhotos(p)}}, I.photo, " Fotos"),
-      !p.sold && React.createElement("button", {className: "btn-sm btn-outline-sm", onClick:()=>setIgProp(p), title:"Gerar imagem para Instagram", style:{background:"linear-gradient(45deg, #f09433, #e6683c, #dc2743, #cc2366, #bc1888)", color:"white", border:"none"}}, "📸 IG"),
-      React.createElement("button", {className: "btn-sm btn-danger-sm", onClick:()=>del(p.id)}, I.trash)
+      !p.sold && React.createElement("button", {className: "btn-sm btn-outline-sm", onClick:()=>openEdit(p), title:"Editar"}, I.edit),
+      React.createElement("button", {className: `btn-sold-sm ${p.sold ? 'on' : 'off'}`, onClick:()=>toggleSold(p.id), title: p.sold ? "Reativar" : "Marcar como vendido"}, p.sold ? "↩" : "✓"),
+      !p.sold && React.createElement("button", {className: "btn-sm btn-outline-sm", onClick:()=>toggleActive(p.id), title: p.active?"Desativar":"Ativar"}, p.active?"⊘":"✓"),
+      React.createElement("button", {className: "btn-download-sm", onClick:(e)=>{e.stopPropagation();downloadPhotos(p)}, title:"Baixar fotos"}, I.photo),
+      !p.sold && React.createElement("button", {className: "btn-sm btn-outline-sm", onClick:()=>setIgProp(p), title:"Gerar imagem para Instagram", style:{background:"linear-gradient(45deg, #f09433, #e6683c, #dc2743, #cc2366, #bc1888)", color:"white", border:"none"}}, "📸"),
+      React.createElement("button", {className: "btn-sm btn-danger-sm", onClick:()=>del(p.id), title:"Excluir"}, I.trash)
     ))
   );
 
