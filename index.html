@@ -1098,9 +1098,10 @@ button.footer-link { padding-left: 0; }
 .no-data p { color: var(--text-light); }
 
 /* FILTERS BAR */
-.filters-bar { background: white; border-bottom: 1px solid var(--border); padding: 18px 0; position: relative; z-index: 1; margin-top: 88px; }
-.filters-bar.has-admin-bar { margin-top: 122px; padding-top: 14px; }
-@media(max-width:768px) { .filters-bar { padding: 16px 0; } }
+.filters-bar { background: white; border-bottom: 1px solid var(--border); padding: 28px 0 22px; position: relative; z-index: 1; margin-top: 88px; }
+.filters-bar.has-admin-bar { margin-top: 122px; padding-top: 22px; }
+.filters-bar + .section { padding-top: 36px; }
+@media(max-width:768px) { .filters-bar { padding: 20px 0 16px; } .filters-bar + .section { padding-top: 24px; } }
 .filters-inner { max-width: var(--max-w); margin: 0 auto; padding: 0 28px; }
 .page-offset { padding-top: 110px; }
 .page-offset.has-admin-bar { padding-top: 144px; }
