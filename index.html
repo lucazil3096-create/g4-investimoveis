@@ -2448,16 +2448,20 @@ function AdminPanel({properties, setProperties, showToast, settings, viewsMap}) 
   const [fType, setFType] = useState("");
   const [fTransaction, setFTransaction] = useState("");
   const [fCity, setFCity] = useState("");
+  const [fNeighborhood, setFNeighborhood] = useState("");
+  const [fBedrooms, setFBedrooms] = useState("");
   const [fMinPrice, setFMinPrice] = useState("");
   const [fMaxPrice, setFMaxPrice] = useState("");
   const [fSearch, setFSearch] = useState("");
-  const clearFilters = () => { setFType(""); setFTransaction(""); setFCity(""); setFMinPrice(""); setFMaxPrice(""); setFSearch(""); };
-  const hasFilters = fType || fTransaction || fCity || fMinPrice || fMaxPrice || fSearch;
+  const clearFilters = () => { setFType(""); setFTransaction(""); setFCity(""); setFNeighborhood(""); setFBedrooms(""); setFMinPrice(""); setFMaxPrice(""); setFSearch(""); };
+  const hasFilters = fType || fTransaction || fCity || fNeighborhood || fBedrooms || fMinPrice || fMaxPrice || fSearch;
   const applyAdminFilters = (arr) => {
     return arr.filter(p => {
       if (fType && p.type !== fType) return false;
       if (fTransaction && p.transaction !== fTransaction) return false;
       if (fCity && (p.city || "").toLowerCase() !== fCity.toLowerCase()) return false;
+      if (fNeighborhood && (p.neighborhood || "").trim().toLowerCase() !== fNeighborhood.toLowerCase()) return false;
+      if (fBedrooms && (p.bedrooms || 0) < +fBedrooms) return false;
       if (fMinPrice && (p.price || 0) < +fMinPrice) return false;
       if (fMaxPrice && (p.price || 0) > +fMaxPrice) return false;
       if (fSearch) {
@@ -2527,6 +2531,13 @@ function AdminPanel({properties, setProperties, showToast, settings, viewsMap}) 
   const inactiveProps = applyAdminFilters(properties.filter(p=>!p.active&&!p.sold)).sort(sortFn);
   // Pra dropdown de cidades, lista as cidades existentes
   const cityOptions = Array.from(new Set(properties.map(p => p.city).filter(Boolean))).sort();
+  // Pra dropdown de bairros, lista os bairros existentes (filtrado por cidade se selecionada)
+  const neighborhoodOptions = Array.from(new Set(
+    properties
+      .filter(p => !fCity || p.city === fCity)
+      .map(p => (p.neighborhood || "").trim())
+      .filter(Boolean)
+  )).sort();
   const del = async id => {
     const prev = properties;
     setProperties(p => p.filter(x => x.id !== id));
@@ -2791,9 +2802,23 @@ function AdminPanel({properties, setProperties, showToast, settings, viewsMap}) 
             ),
             React.createElement("div", null,
               React.createElement("label", {style:{fontSize:".72rem", fontWeight:700, color:"var(--text-light)", textTransform:"uppercase", letterSpacing:".05em", display:"block", marginBottom:4}}, "📍 Cidade"),
-              React.createElement("select", {value: fCity, onChange: e => setFCity(e.target.value), className:"af-input", style:{height:38, fontSize:".85rem", marginBottom:0, width:"100%"}},
+              React.createElement("select", {value: fCity, onChange: e => { setFCity(e.target.value); setFNeighborhood(""); }, className:"af-input", style:{height:38, fontSize:".85rem", marginBottom:0, width:"100%"}},
                 React.createElement("option", {value:""}, "Todas"),
                 cityOptions.map(c => React.createElement("option", {key:c, value:c}, c))
+              )
+            ),
+            neighborhoodOptions.length > 0 && React.createElement("div", null,
+              React.createElement("label", {style:{fontSize:".72rem", fontWeight:700, color:"var(--text-light)", textTransform:"uppercase", letterSpacing:".05em", display:"block", marginBottom:4}}, "🏘️ Bairro"),
+              React.createElement("select", {value: fNeighborhood, onChange: e => setFNeighborhood(e.target.value), className:"af-input", style:{height:38, fontSize:".85rem", marginBottom:0, width:"100%"}},
+                React.createElement("option", {value:""}, "Todos"),
+                neighborhoodOptions.map(n => React.createElement("option", {key:n, value:n}, n))
+              )
+            ),
+            React.createElement("div", null,
+              React.createElement("label", {style:{fontSize:".72rem", fontWeight:700, color:"var(--text-light)", textTransform:"uppercase", letterSpacing:".05em", display:"block", marginBottom:4}}, "🛏️ Quartos"),
+              React.createElement("select", {value: fBedrooms, onChange: e => setFBedrooms(e.target.value), className:"af-input", style:{height:38, fontSize:".85rem", marginBottom:0, width:"100%"}},
+                React.createElement("option", {value:""}, "Qualquer"),
+                [1,2,3,4,5].map(n => React.createElement("option", {key:n, value:n}, n+"+"))
               )
             ),
             React.createElement("div", null,
