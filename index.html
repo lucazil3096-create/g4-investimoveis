@@ -5235,6 +5235,11 @@ function App() {
     return () => { clearTimeout(t); if (window.__fbAuthUnsub) window.__fbAuthUnsub(); };
   }, []);
 
+  // Se já estiver logado e a URL pedir /admin, pula a tela de login
+  useEffect(() => {
+    if (isAdmin && page === "login") setPage("admin");
+  }, [isAdmin, page]);
+
   // Mapeia page → URL amigável
   const pathFromPage = (pg, prop, cliId) => {
     if (pg === "properties") return "/imoveis";
