@@ -1956,8 +1956,7 @@ function PropertiesPage({properties, searchFilters, setSearchFilters, setSelecte
   const goDetail = p => { setSelectedProp(p); setPage("detail"); };
 
   return React.createElement(React.Fragment, null,
-    isAdmin && React.createElement("div", {className: "page-offset has-admin-bar"}),
-    !isAdmin && React.createElement("div", {className: "filters-bar"},
+    React.createElement("div", {className: `filters-bar ${isAdmin ? 'has-admin-bar' : ''}`},
       React.createElement("div", {className: "filters-inner"},
         React.createElement("div", {className: "filters-row"},
           React.createElement("input", {className: "f-input", type: "text", placeholder: "🔎 Ref. ou título", value: f.ref, onChange: e => upd("ref", e.target.value), style:{minWidth:160}}),
