@@ -1770,8 +1770,8 @@ function PropCard({p, onClick, favs, toggleFav, isAdmin, settings}) {
         p.suites > 0 && React.createElement("div", {className: "card-feat"}, I.bed, " ", React.createElement("strong", null, p.suites), p.suites === 1 ? " Suíte" : " Suítes"),
         p.bathrooms > 0 && React.createElement("div", {className: "card-feat"}, I.bath, " ", React.createElement("strong", null, p.bathrooms), " Ban."),
         p.garages > 0 && React.createElement("div", {className: "card-feat"}, I.car, " ", React.createElement("strong", null, p.garages), " Vagas"),
-        p.area > 0 && React.createElement("div", {className: "card-feat", title:"Área do terreno"}, I.area, " ", React.createElement("strong", null, p.area), " m² ter."),
-        p.builtArea > 0 && React.createElement("div", {className: "card-feat", title:"Área construída"}, I.area, " ", React.createElement("strong", null, p.builtArea), " m² con.")
+        p.area > 0 && React.createElement("div", {className: "card-feat", title:"Área do terreno"}, I.area, " ", React.createElement("strong", null, p.area), " m² terreno"),
+        p.builtArea > 0 && React.createElement("div", {className: "card-feat", title:"Área construída"}, I.area, " ", React.createElement("strong", null, p.builtArea), " m² construída")
       )
     )
   );
@@ -2009,8 +2009,8 @@ function PropertiesPage({properties, searchFilters, setSearchFilters, setSelecte
         p.suites > 0 && React.createElement("div", {className: "card-feat"}, I.bed, " ", React.createElement("strong", null, p.suites), p.suites === 1 ? " Suíte" : " Suítes"),
                   p.bathrooms > 0 && React.createElement("div", {className: "card-feat"}, I.bath, " ", React.createElement("strong", null, p.bathrooms), " Ban."),
                   p.garages > 0 && React.createElement("div", {className: "card-feat"}, I.car, " ", React.createElement("strong", null, p.garages), " Vagas"),
-                  p.area > 0 && React.createElement("div", {className: "card-feat", title:"Terreno"}, I.area, " ", React.createElement("strong", null, p.area), " m² ter."),
-                  p.builtArea > 0 && React.createElement("div", {className: "card-feat", title:"Construída"}, I.area, " ", React.createElement("strong", null, p.builtArea), " m² con.")
+                  p.area > 0 && React.createElement("div", {className: "card-feat", title:"Terreno"}, I.area, " ", React.createElement("strong", null, p.area), " m² terreno"),
+                  p.builtArea > 0 && React.createElement("div", {className: "card-feat", title:"Construída"}, I.area, " ", React.createElement("strong", null, p.builtArea), " m² construída")
                 )
               )
             )
