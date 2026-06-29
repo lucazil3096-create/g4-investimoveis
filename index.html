@@ -1914,11 +1914,39 @@ function CtaBanner({settings}) {
 
 // ===== PROPERTIES PAGE =====
 function PropertiesPage({properties, searchFilters, setSearchFilters, setSelectedProp, setPage, favs, toggleFav, isAdmin, settings}) {
-  const [viewMode, setViewMode] = useState("grid");
-  const [sortBy, setSortBy] = useState("recent");
-  const [f, setF] = useState({type: searchFilters.type || "", transaction: searchFilters.transaction || "", city: searchFilters.city || "", neighborhood: searchFilters.neighborhood || "", minPrice: "", maxPrice: "", bedrooms: "", ref: ""});
-  const upd = (k, v) => setF(prev => ({...prev, [k]: v, ...(k==='city' ? {neighborhood: ''} : {})}));
+  const [viewMode, setViewMode] = useState(() => searchFilters._viewMode || "grid");
+  const [sortBy, setSortBy] = useState(() => searchFilters._sortBy || "recent");
+  const [f, setF] = useState({
+    type: searchFilters.type || "",
+    transaction: searchFilters.transaction || "",
+    city: searchFilters.city || "",
+    neighborhood: searchFilters.neighborhood || "",
+    minPrice: searchFilters.minPrice || "",
+    maxPrice: searchFilters.maxPrice || "",
+    bedrooms: searchFilters.bedrooms || "",
+    ref: searchFilters.ref || ""
+  });
+  const upd = (k, v) => {
+    setF(prev => {
+      const next = {...prev, [k]: v, ...(k==='city' ? {neighborhood: ''} : {})};
+      setSearchFilters({...next, _viewMode: viewMode, _sortBy: sortBy});
+      return next;
+    });
+  };
   const clear = () => { setF({type:"",transaction:"",city:"",neighborhood:"",minPrice:"",maxPrice:"",bedrooms:"",ref:""}); setSearchFilters({}); };
+  // Salva view mode e sort no searchFilters (pra persistir)
+  React.useEffect(() => { setSearchFilters(prev => ({...prev, _viewMode: viewMode, _sortBy: sortBy})); }, [viewMode, sortBy]);
+  // Restaura o scroll quando volta da página de detalhe
+  React.useEffect(() => {
+    try {
+      const saved = sessionStorage.getItem("g4_properties_scroll");
+      if (saved) {
+        const y = parseInt(saved, 10);
+        if (!isNaN(y)) setTimeout(() => window.scrollTo({top: y, behavior: "instant"}), 50);
+        sessionStorage.removeItem("g4_properties_scroll");
+      }
+    } catch(e) {}
+  }, []);
 
   const availableNeighborhoods = [...new Set(
     properties
@@ -1953,7 +1981,10 @@ function PropertiesPage({properties, searchFilters, setSearchFilters, setSelecte
     return new Date(b.createdAt) - new Date(a.createdAt);
   });
 
-  const goDetail = p => { setSelectedProp(p); setPage("detail"); };
+  const goDetail = p => {
+    try { sessionStorage.setItem("g4_properties_scroll", String(window.scrollY || 0)); } catch(e) {}
+    setSelectedProp(p); setPage("detail");
+  };
 
   return React.createElement(React.Fragment, null,
     React.createElement("div", {className: `filters-bar ${isAdmin ? 'has-admin-bar' : ''}`},
