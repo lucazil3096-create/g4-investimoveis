@@ -5168,10 +5168,22 @@ function App() {
   const [props, setProps] = useState(() => {
     try {
       const cached = localStorage.getItem("g4_props_cache");
-      if (cached) return JSON.parse(cached);
+      if (cached) {
+        const arr = JSON.parse(cached);
+        if (Array.isArray(arr)) return arr;
+      }
     } catch(e) {}
     return [];
   });
+  // Se ja tem cache, nao mostra tela de "carregando"
+  const hasCached = (() => {
+    try {
+      const cached = localStorage.getItem("g4_props_cache");
+      if (!cached) return false;
+      const arr = JSON.parse(cached);
+      return Array.isArray(arr) && arr.length > 0;
+    } catch(e) { return false; }
+  })();
   const [selProp, setSelProp] = useState(null);
   const [clientSel, setClientSel] = useState(null);
   const [clientSelId, setClientSelId] = useState(null);
@@ -5196,7 +5208,7 @@ function App() {
   const [showTop, setShowTop] = useState(false);
   const [toast, setToast] = useState(null);
   const [sf, setSf] = useState({});
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(!hasCached);
   const [settings, setSettings] = useState(DEFAULT_SETTINGS);
   const [viewsMap, setViewsMap] = useState({});
 
@@ -5358,6 +5370,8 @@ function App() {
       setProps(INITIAL_PROPS); setLoading(false); return;
     }
     let cancelled = false;
+    // Timeout de seguranca: mesmo se Firebase nao responder, mostra a pagina em 4s
+    const failsafe = setTimeout(() => { if (!cancelled) setLoading(false); }, 4000);
     // 1) Tenta carregar direto (pra primeira visita aparecer rápido sem precisar de F5)
     (async () => {
       for (let i = 0; i < 24 && !cancelled; i++) {
@@ -5384,6 +5398,7 @@ function App() {
     });
     return () => {
       cancelled = true;
+      clearTimeout(failsafe);
       if (typeof unsub === 'function') unsub();
     };
   }, []);
