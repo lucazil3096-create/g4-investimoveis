@@ -2127,7 +2127,7 @@ function DetailPage({property: p, setPage, properties, setSelectedProp, favs, to
   }, [p.id]);
 
   // Compartilhamento
-  const shareUrl = `${window.location.origin}/imovel/${p.id}`;
+  const shareUrl = `${window.location.origin}/imovel/${p.reference || p.id}`;
   const shareTitle = `${p.title} — ${p.city}/PR`;
   const sharePrice = canSeePrice ? `\nValor: ${fmtCurrency(p.price)}${p.transaction === "Aluguel" ? "/mês" : ""}` : "";
   const shareText = `${shareTitle}${sharePrice}\n${shareUrl}`;
@@ -5280,7 +5280,7 @@ function App() {
     if (pg === "contact") return "/contato";
     if (pg === "privacy") return "/privacidade";
     if (pg === "login" || pg === "admin") return "/admin";
-    if (pg === "detail" && prop) return `/imovel/${prop.id}`;
+    if (pg === "detail" && prop) return `/imovel/${prop.reference || prop.id}`;
     if (pg === "client" && cliId) return `/cliente/${cliId}`;
     return "/";
   };
@@ -5291,11 +5291,12 @@ function App() {
     const params = new URLSearchParams(window.location.search);
     const hash = (window.location.hash || "").toLowerCase();
 
-    // /imovel/ID
+    // /imovel/ID ou /imovel/REFERENCIA
     if (path.startsWith("/imovel/")) {
-      const propId = path.slice("/imovel/".length).replace(/\/$/, "");
-      if (propId && props.length > 0) {
-        const target = props.find(x => x.id === propId);
+      const propKey = path.slice("/imovel/".length).replace(/\/$/, "");
+      if (propKey && props.length > 0) {
+        const target = props.find(x => String(x.reference || "").toLowerCase() === propKey.toLowerCase())
+                    || props.find(x => x.id === propKey);
         if (target) { setSelProp(target); setPage("detail"); return; }
       }
     }
@@ -5340,8 +5341,9 @@ function App() {
     const onPop = () => {
       const path = (window.location.pathname || "").toLowerCase();
       if (path.startsWith("/imovel/")) {
-        const propId = path.slice("/imovel/".length).replace(/\/$/, "");
-        const target = props.find(x => x.id === propId);
+        const propKey = path.slice("/imovel/".length).replace(/\/$/, "");
+        const target = props.find(x => String(x.reference || "").toLowerCase() === propKey.toLowerCase())
+                    || props.find(x => x.id === propKey);
         if (target) { setSelProp(target); setPage("detail"); return; }
       }
       if (path.startsWith("/cliente/")) {
