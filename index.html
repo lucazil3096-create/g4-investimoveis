@@ -5218,6 +5218,13 @@ function App() {
   const [loading, setLoading] = useState(!hasCached);
   const [settings, setSettings] = useState(DEFAULT_SETTINGS);
   const [viewsMap, setViewsMap] = useState({});
+  // Detecta se a URL inicial e um deep link (imovel/X ou cliente/X) - se for, segura o loading ate resolver
+  const [deepLinkPending, setDeepLinkPending] = useState(() => {
+    try {
+      const p = (window.location.pathname || "").toLowerCase();
+      return p.startsWith("/imovel/") || p.startsWith("/cliente/");
+    } catch(e) { return false; }
+  });
 
   useEffect(() => {
     const unsub = FB.subscribeSettings(data => {
@@ -5304,7 +5311,9 @@ function App() {
       if (propKey && props.length > 0) {
         const target = props.find(x => String(x.reference || "").toLowerCase() === propKey.toLowerCase())
                     || props.find(x => x.id === propKey);
-        if (target) { setSelProp(target); setPage("detail"); return; }
+        if (target) { setSelProp(target); setPage("detail"); setDeepLinkPending(false); return; }
+        // Props carregaram mas nao achou esse imovel - libera o loading
+        setDeepLinkPending(false);
       }
     }
     // /cliente/ID — pagina personalizada do cliente
@@ -5313,6 +5322,7 @@ function App() {
       if (cliId) {
         setClientSelId(cliId);
         setPage("client");
+        setDeepLinkPending(false);
         FB.getSelection(cliId).then(sel => {
           if (sel) setClientSel(sel); else setClientSel({propertyIds: null});
         });
@@ -5445,10 +5455,17 @@ function App() {
     window.open(`https://wa.me/${WHATSAPP}?text=${encodeURIComponent("Olá! Gostaria de informações sobre imóveis.")}`, "_blank");
   };
 
+  // Timeout de seguranca pro deep link: se demorar muito, libera
+  React.useEffect(() => {
+    if (!deepLinkPending) return;
+    const t = setTimeout(() => setDeepLinkPending(false), 6000);
+    return () => clearTimeout(t);
+  }, [deepLinkPending]);
+
   return React.createElement(React.Fragment, null,
-    loading ? React.createElement("div", {style:{display:"flex",alignItems:"center",justifyContent:"center",minHeight:"100vh",background:"var(--bg-cream)",flexDirection:"column",gap:16}},
+    (loading || deepLinkPending) ? React.createElement("div", {style:{display:"flex",alignItems:"center",justifyContent:"center",minHeight:"100vh",background:"var(--bg-cream)",flexDirection:"column",gap:16}},
       React.createElement("img", {src: LOGO_SRC, style:{height:80}}),
-      React.createElement("div", {style:{fontSize:".9rem",color:"var(--text-light)"}}, "Carregando imóveis...")
+      React.createElement("div", {style:{fontSize:".9rem",color:"var(--text-light)"}}, deepLinkPending ? "Abrindo imóvel..." : "Carregando imóveis...")
     ) : React.createElement(React.Fragment, null,
     isAdmin && page !== "admin" && React.createElement("div", {className: "admin-bar"}, I.eye, " MODO ADMIN — Você está vendo todos os preços (catálogo interno)", !firebaseOK && " | ⚠ MODO DEMO"),
     React.createElement(Header, {page, setPage, scrolled, isAdmin, setIsAdmin: setAdmin, settings}),
