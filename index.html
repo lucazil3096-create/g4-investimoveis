@@ -2140,7 +2140,14 @@ function DetailPage({property: p, setPage, properties, setSelectedProp, favs, to
   const shareWpp = () => { window.open(`https://wa.me/?text=${encodeURIComponent(shareText)}`, "_blank"); setShareOpen(false); };
   const shareFb = () => { window.open(`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(shareUrl)}`, "_blank"); setShareOpen(false); };
   const shareCopy = async () => {
-    try { await navigator.clipboard.writeText(shareUrl); alert("Link copiado!"); } catch(e) { prompt("Copie o link:", shareUrl); }
+    // Celular: abre menu nativo de compartilhar (WhatsApp, Telegram, Messenger, SMS, Email, etc)
+    if (navigator.share) {
+      try { await navigator.share({title: shareTitle, text: shareText, url: shareUrl}); setShareOpen(false); return; }
+      catch(e) { /* usuario cancelou ou erro - cai pro fallback */ }
+    }
+    // Desktop: copia link
+    try { await navigator.clipboard.writeText(shareUrl); alert("Link copiado!"); }
+    catch(e) { prompt("Copie o link:", shareUrl); }
     setShareOpen(false);
   };
   const doPrint = () => window.print();
@@ -2329,7 +2336,7 @@ function DetailPage({property: p, setPage, properties, setSelectedProp, favs, to
                 React.createElement("div", {style:{position:"absolute", top:"100%", right:0, marginTop:6, background:"white", borderRadius:12, boxShadow:"0 8px 32px rgba(0,0,0,.2)", border:"1px solid var(--border)", padding:8, zIndex:51, minWidth:200, display:"flex", flexDirection:"column", gap:4}},
                   React.createElement("button", {onClick:shareWpp, style:{display:"flex", alignItems:"center", gap:10, padding:"10px 12px", border:"none", background:"none", cursor:"pointer", borderRadius:8, textAlign:"left", fontSize:".9rem", fontFamily:"inherit"}, onMouseEnter:e=>e.currentTarget.style.background="#f1f5f9", onMouseLeave:e=>e.currentTarget.style.background="none"}, React.createElement("span",{style:{color:"#16a34a"}}, I.wpp), " WhatsApp"),
                   React.createElement("button", {onClick:shareFb, style:{display:"flex", alignItems:"center", gap:10, padding:"10px 12px", border:"none", background:"none", cursor:"pointer", borderRadius:8, textAlign:"left", fontSize:".9rem", fontFamily:"inherit"}, onMouseEnter:e=>e.currentTarget.style.background="#f1f5f9", onMouseLeave:e=>e.currentTarget.style.background="none"}, "📘 Facebook"),
-                  React.createElement("button", {onClick:shareCopy, style:{display:"flex", alignItems:"center", gap:10, padding:"10px 12px", border:"none", background:"none", cursor:"pointer", borderRadius:8, textAlign:"left", fontSize:".9rem", fontFamily:"inherit"}, onMouseEnter:e=>e.currentTarget.style.background="#f1f5f9", onMouseLeave:e=>e.currentTarget.style.background="none"}, "🔗 Copiar link")
+                  React.createElement("button", {onClick:shareCopy, style:{display:"flex", alignItems:"center", gap:10, padding:"10px 12px", border:"none", background:"none", cursor:"pointer", borderRadius:8, textAlign:"left", fontSize:".9rem", fontFamily:"inherit"}, onMouseEnter:e=>e.currentTarget.style.background="#f1f5f9", onMouseLeave:e=>e.currentTarget.style.background="none"}, (typeof navigator !== "undefined" && navigator.share) ? "📤 Compartilhar (mais opções)" : "🔗 Copiar link")
                 )
               )
             ),
