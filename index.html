@@ -5335,8 +5335,10 @@ function App() {
     if (wantsAdmin && !isAdmin) { setPage("login"); return; }
   }, [props]);
 
-  // Sincroniza URL quando muda de página
+  // Sincroniza URL quando muda de página (mas pula a primeira renderização pra nao sobrescrever URL compartilhada)
+  const skipUrlSync = React.useRef(true);
   useEffect(() => {
+    if (skipUrlSync.current) { skipUrlSync.current = false; return; }
     const newPath = pathFromPage(page, selProp, clientSelId);
     if (window.location.pathname !== newPath) {
       try { window.history.pushState({page, propId: selProp ? selProp.id : null}, "", newPath); } catch(e) {}
