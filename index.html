@@ -109,6 +109,24 @@ a { text-decoration: none; color: inherit; }
 @keyframes fadeIn { from{opacity:0}to{opacity:1} }
 @keyframes pulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.08); } }
 @keyframes kenburns { 0% { transform: scale(1); } 100% { transform: scale(1.06); } }
+@keyframes priceDropShake {
+  0%, 100% { transform: scale(1) rotate(-2deg); box-shadow: 0 4px 16px rgba(34,197,94,.5); }
+  25% { transform: scale(1.12) rotate(2deg); box-shadow: 0 6px 24px rgba(34,197,94,.75); }
+  50% { transform: scale(1.08) rotate(-2deg); box-shadow: 0 8px 32px rgba(34,197,94,.85); }
+  75% { transform: scale(1.12) rotate(2deg); box-shadow: 0 6px 24px rgba(34,197,94,.75); }
+}
+.badge-drop {
+  background: linear-gradient(135deg, #16a34a 0%, #22c55e 50%, #4ade80 100%) !important;
+  color: white !important;
+  font-weight: 900 !important;
+  font-size: .78rem !important;
+  padding: 6px 12px !important;
+  letter-spacing: .06em !important;
+  animation: priceDropShake 1.4s ease-in-out infinite !important;
+  border: 2px solid white !important;
+  text-shadow: 0 1px 2px rgba(0,0,0,.25);
+  transform-origin: center;
+}
 .feat-slide {
   position: relative; width: 100%; aspect-ratio: 16/8; min-height: 460px; max-height: 640px;
   border-radius: 20px; overflow: hidden; cursor: pointer; box-shadow: 0 16px 48px rgba(0,0,0,.18);
@@ -1772,7 +1790,7 @@ function PropCard({p, onClick, favs, toggleFav, isAdmin, settings}) {
         React.createElement("span", {className: "badge badge-type"}, p.type),
         React.createElement("span", {className: `badge badge-transaction ${p.transaction==="Aluguel"?"aluguel":p.transaction==="Temporada"?"temporada":""}`}, p.transaction),
         isAdmin && p.featured && !p.reserved && React.createElement("span", {className: "badge badge-featured"}, "Destaque"),
-        p.priceReduced && !p.sold && React.createElement("span", {className: "badge", style:{background:"linear-gradient(135deg,#22c55e,#16a34a)", color:"white", animation:"pulse 2s ease-in-out infinite", boxShadow:"0 2px 8px rgba(34,197,94,.4)"}}, "💰 PREÇO BAIXOU"),
+        p.priceReduced && !p.sold && React.createElement("span", {className: "badge badge-drop"}, "🔥 PREÇO BAIXOU!"),
         isAdmin && !p.showPrice && React.createElement("span", {className: "badge", style:{background:"rgba(212,160,18,.9)",color:"#1a1a1a"}}, "Preço Oculto")
       ),
       React.createElement("button", {className: "card-fav", onClick: e => { e.stopPropagation(); toggleFav(p.id); }}, isFav ? I.heartFill : I.heart)
@@ -1835,7 +1853,7 @@ function FeaturedSection({properties, setPage, setSelectedProp, favs, toggleFav,
       React.createElement("div", {className: "feat-slide-badges"},
         React.createElement("span", {className: "badge badge-type"}, p.type),
         React.createElement("span", {className: `badge badge-transaction ${p.transaction==="Aluguel"?"aluguel":p.transaction==="Temporada"?"temporada":""}`}, p.transaction),
-        p.priceReduced && React.createElement("span", {className: "badge", style:{background:"linear-gradient(135deg,#22c55e,#16a34a)", color:"white", animation:"pulse 2s ease-in-out infinite"}}, "💰 PREÇO BAIXOU"),
+        p.priceReduced && React.createElement("span", {className: "badge badge-drop"}, "🔥 PREÇO BAIXOU!"),
         p.reserved && React.createElement("span", {className: "badge badge-reserved"}, "⚡ RESERVADO")
       ),
       React.createElement("div", {className: "feat-slide-content"},
@@ -2203,7 +2221,7 @@ function DetailPage({property: p, setPage, properties, setSelectedProp, favs, to
         React.createElement("div", {className: "dt-location"}, I.pin, " ", p.address, p.number ? `, ${p.number}` : "", " — ", p.neighborhood, ", ", p.city),
         React.createElement("div", {className: "dt-price-box"},
           canSeePrice ? React.createElement(React.Fragment, null,
-            p.priceReduced && !p.sold && React.createElement("div", {style:{background:"linear-gradient(135deg,#22c55e,#16a34a)", color:"white", padding:"6px 14px", borderRadius:6, fontSize:".78rem", fontWeight:900, letterSpacing:".1em", display:"inline-flex", alignItems:"center", gap:6, marginBottom:8, boxShadow:"0 4px 12px rgba(34,197,94,.35)"}}, "💰 PREÇO BAIXOU"),
+            p.priceReduced && !p.sold && React.createElement("div", {className:"badge-drop", style:{padding:"10px 20px", borderRadius:8, fontSize:".95rem", display:"inline-flex", alignItems:"center", gap:8, marginBottom:12}}, "🔥 PREÇO BAIXOU!"),
             p.priceReduced && p.oldPrice > p.price && React.createElement("div", {style:{fontSize:"1rem", color:"rgba(255,255,255,.5)", textDecoration:"line-through", marginBottom:4}}, "De ", fmtCurrency(p.oldPrice)),
             React.createElement("div", {className: "dt-price-val"}, fmtCurrency(p.price), p.transaction === "Aluguel" ? "/mês" : ""),
             React.createElement("div", {className: "dt-price-label"}, p.transaction, !p.showPrice && isAdmin ? " — Preço oculto para visitantes" : "")
