@@ -2789,7 +2789,7 @@ function AdminPanel({properties, setProperties, showToast, settings, viewsMap}) 
     React.createElement("aside", {className: "admin-side"},
       React.createElement("div", {className: "admin-side-logo"}, React.createElement("img", {src: (settings && settings.logoUrl) || LOGO_SRC, alt: "G4"})),
       React.createElement("button", {className: "admin-side-new", onClick: openNew}, I.plus, " NOVO IMÓVEL"),
-      React.createElement("button", {onClick: () => setShowPresentAll(true), style:{width:"calc(100% - 32px)",margin:"0 16px 12px",padding:"12px 16px",background:"linear-gradient(135deg,#1e293b,#334155)",color:"#fff",border:"2px solid #475569",borderRadius:8,fontWeight:800,fontSize:".82rem",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",gap:6}}, "📺 Apresentar TV"),
+      React.createElement("button", {onClick: () => window.open("/apresentar", "_blank", "width=1280,height=720,menubar=no,toolbar=no"), style:{width:"calc(100% - 32px)",margin:"0 16px 12px",padding:"12px 16px",background:"linear-gradient(135deg,#1e293b,#334155)",color:"#fff",border:"2px solid #475569",borderRadius:8,fontWeight:800,fontSize:".82rem",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",gap:6}}, "📺 Apresentar TV"),
       React.createElement("div", {className: "admin-side-label"}, "Menu"),
       React.createElement("button", {className: "admin-side-link", onClick:()=>{setShowForm(false);setAp("dashboard")}}, I.dash, " Dashboard"),
       React.createElement("button", {className: "admin-side-link", onClick:()=>{setShowForm(false);setAp("list")}}, I.home, " Todos os Imóveis"),
@@ -2807,7 +2807,7 @@ function AdminPanel({properties, setProperties, showToast, settings, viewsMap}) 
     React.createElement("aside", {className: "admin-side"},
       React.createElement("div", {className: "admin-side-logo"}, React.createElement("img", {src: (settings && settings.logoUrl) || LOGO_SRC, alt: "G4"})),
       React.createElement("button", {className: "admin-side-new", onClick: openNew}, I.plus, " NOVO IMÓVEL"),
-      React.createElement("button", {onClick: () => setShowPresentAll(true), style:{width:"calc(100% - 32px)",margin:"0 16px 12px",padding:"12px 16px",background:"linear-gradient(135deg,#1e293b,#334155)",color:"#fff",border:"2px solid #475569",borderRadius:8,fontWeight:800,fontSize:".82rem",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",gap:6}}, "📺 Apresentar TV"),
+      React.createElement("button", {onClick: () => window.open("/apresentar", "_blank", "width=1280,height=720,menubar=no,toolbar=no"), style:{width:"calc(100% - 32px)",margin:"0 16px 12px",padding:"12px 16px",background:"linear-gradient(135deg,#1e293b,#334155)",color:"#fff",border:"2px solid #475569",borderRadius:8,fontWeight:800,fontSize:".82rem",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",gap:6}}, "📺 Apresentar TV"),
       React.createElement("div", {className: "admin-side-label"}, "Menu"),
       React.createElement("button", {className: `admin-side-link ${ap==='dashboard'?'active':''}`, onClick:()=>setAp("dashboard")}, I.dash, " Dashboard"),
       React.createElement("button", {className: `admin-side-link ${ap==='list'?'active':''}`, onClick:()=>setAp("list")}, I.home, " Todos os Imóveis"),
@@ -2822,7 +2822,7 @@ function AdminPanel({properties, setProperties, showToast, settings, viewsMap}) 
         React.createElement("div", {className: "admin-top"},
           React.createElement("h1", {className: "admin-page-title"}, "Dashboard"),
           React.createElement("div", {style:{display:"flex",gap:10,flexWrap:"wrap"}},
-            React.createElement("button", {className: "btn-outline-sm", onClick: () => setShowPresentAll(true), style:{padding:"14px 22px",fontSize:".92rem",fontWeight:800,background:"linear-gradient(135deg,#1e293b,#334155)",color:"#fff",border:"2px solid #475569"}}, "📺 Apresentar Todos (TV)"),
+            React.createElement("button", {className: "btn-outline-sm", onClick: () => window.open("/apresentar", "_blank", "width=1280,height=720,menubar=no,toolbar=no"), style:{padding:"14px 22px",fontSize:".92rem",fontWeight:800,background:"linear-gradient(135deg,#1e293b,#334155)",color:"#fff",border:"2px solid #475569"}}, "📺 Apresentar Todos (TV)"),
             React.createElement("button", {className: "btn-red", onClick: openNew, style:{padding:"14px 28px",fontSize:".95rem"}}, I.plus, " Adicionar Novo Imóvel")
           )
         ),
@@ -5521,6 +5521,7 @@ function App() {
     if (pg === "contact") return "/contato";
     if (pg === "privacy") return "/privacidade";
     if (pg === "login" || pg === "admin") return "/admin";
+    if (pg === "presentTV") return "/apresentar";
     if (pg === "detail" && prop) return `/imovel/${prop.reference || prop.id}`;
     if (pg === "client" && cliId) return `/cliente/${cliId}`;
     return "/";
@@ -5564,6 +5565,7 @@ function App() {
     }
     // Rotas simples
     if (path === "/imoveis") { setPage("properties"); return; }
+    if (path === "/apresentar") { setPage("presentTV"); return; }
     if (path === "/sobre") { setPage("about"); return; }
     if (path === "/contato") { setPage("contact"); return; }
     if (path === "/privacidade") { setPage("privacy"); return; }
@@ -5688,6 +5690,15 @@ function App() {
     const t = setTimeout(() => setDeepLinkPending(false), 6000);
     return () => clearTimeout(t);
   }, [deepLinkPending]);
+
+  // Modo apresentacao: renderiza SO a apresentacao (sem header, footer, cookie banner)
+  if (page === "presentTV") {
+    if (loading) return React.createElement("div", {style:{display:"flex",alignItems:"center",justifyContent:"center",minHeight:"100vh",background:"#000",flexDirection:"column",gap:16,color:"#fff"}},
+      React.createElement("img", {src: LOGO_SRC, style:{height:80}}),
+      React.createElement("div", {style:{fontSize:".9rem",opacity:.7}}, "Carregando imóveis...")
+    );
+    return React.createElement(PresentationAllMode, {properties: props.filter(p=>p.active&&!p.sold), settings, onClose: () => window.close()});
+  }
 
   return React.createElement(React.Fragment, null,
     (loading || deepLinkPending) ? React.createElement("div", {style:{display:"flex",alignItems:"center",justifyContent:"center",minHeight:"100vh",background:"var(--bg-cream)",flexDirection:"column",gap:16}},

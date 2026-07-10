@@ -7,6 +7,7 @@
     { "source": "/contato", "destination": "/index.html" },
     { "source": "/privacidade", "destination": "/index.html" },
     { "source": "/admin", "destination": "/index.html" },
-    { "source": "/admin/(.*)", "destination": "/index.html" }
+    { "source": "/admin/(.*)", "destination": "/index.html" },
+    { "source": "/apresentar", "destination": "/index.html" }
   ]
 }
