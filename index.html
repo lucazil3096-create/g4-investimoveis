@@ -3786,11 +3786,22 @@ function PresentationAllMode({properties, settings, onClose}) {
     };
   }, [list.length, onClose]);
 
-  // Fullscreen real
-  useEffect(() => {
+  // Fullscreen manual (nao ativa sozinho pra permitir uso do menu do Chrome > Transmitir)
+  const [isFullscreen, setIsFullscreen] = useState(false);
+  const [showCastHelp, setShowCastHelp] = useState(true);
+  const toggleFullscreen = () => {
     const el = document.documentElement;
-    if (el.requestFullscreen) { try { el.requestFullscreen(); } catch(e) {} }
+    if (!document.fullscreenElement) {
+      if (el.requestFullscreen) { try { el.requestFullscreen(); setIsFullscreen(true); } catch(e) {} }
+    } else {
+      if (document.exitFullscreen) { try { document.exitFullscreen(); setIsFullscreen(false); } catch(e) {} }
+    }
+  };
+  useEffect(() => {
+    const onFsChange = () => setIsFullscreen(!!document.fullscreenElement);
+    document.addEventListener("fullscreenchange", onFsChange);
     return () => {
+      document.removeEventListener("fullscreenchange", onFsChange);
       if (document.fullscreenElement && document.exitFullscreen) {
         try { document.exitFullscreen(); } catch(e) {}
       }
@@ -3828,8 +3839,25 @@ function PresentationAllMode({properties, settings, onClose}) {
         React.createElement("button", {onClick: () => setSeconds(v => Math.max(2, v - 1)), title: "Mais rápido (-)", style:{background:"rgba(255,255,255,.12)", color:"#fff", border:"none", width:48, height:48, borderRadius:"50%", cursor:"pointer", fontSize:"1.2rem"}}, "−"),
         React.createElement("button", {onClick: () => setSeconds(v => Math.min(20, v + 1)), title: "Mais lento (+)", style:{background:"rgba(255,255,255,.12)", color:"#fff", border:"none", width:48, height:48, borderRadius:"50%", cursor:"pointer", fontSize:"1.2rem"}}, "+"),
         React.createElement("button", {onClick: () => setAuto(a => !a), title: auto ? "Pausar (Espaço)" : "Reproduzir (Espaço)", style:{background:"rgba(255,255,255,.12)", color:"#fff", border:"none", width:48, height:48, borderRadius:"50%", cursor:"pointer", fontSize:"1.2rem"}}, auto ? "⏸" : "▶"),
+        React.createElement("button", {onClick: () => setShowCastHelp(v => !v), title: "Como transmitir para TV", style:{background:"rgba(59,130,246,.7)", color:"#fff", border:"none", width:48, height:48, borderRadius:"50%", cursor:"pointer", fontSize:"1.2rem"}}, "📺"),
+        React.createElement("button", {onClick: toggleFullscreen, title: isFullscreen ? "Sair tela cheia" : "Tela cheia", style:{background:"rgba(255,255,255,.12)", color:"#fff", border:"none", width:48, height:48, borderRadius:"50%", cursor:"pointer", fontSize:"1.2rem"}}, isFullscreen ? "⇲" : "⛶"),
         React.createElement("button", {onClick: onClose, title: "Sair (Esc)", style:{background:"rgba(220,38,38,.95)", color:"#fff", border:"2px solid #fff", width:48, height:48, borderRadius:"50%", cursor:"pointer", fontSize:"1.3rem", fontWeight:900, boxShadow:"0 4px 14px rgba(0,0,0,.4)"}}, "✕")
       )
+    ),
+    // Painel de ajuda de transmissao (Chromecast)
+    showCastHelp && !isFullscreen && React.createElement("div", {style:{position:"absolute", top:100, right:28, background:"rgba(15,23,42,.96)", border:"2px solid #3b82f6", borderRadius:12, padding:"18px 22px", color:"#fff", maxWidth:340, zIndex:10, boxShadow:"0 10px 40px rgba(0,0,0,.6)"}},
+      React.createElement("div", {style:{display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:10}},
+        React.createElement("strong", {style:{fontSize:".95rem"}}, "📺 Como transmitir para a TV:"),
+        React.createElement("button", {onClick:()=>setShowCastHelp(false), style:{background:"none", border:"none", color:"#fff", cursor:"pointer", fontSize:"1.2rem"}}, "✕")
+      ),
+      React.createElement("ol", {style:{margin:"6px 0", paddingLeft:22, fontSize:".85rem", lineHeight:1.6}},
+        React.createElement("li", null, "Clica no menu ", React.createElement("strong",null,"⋮"), " do Chrome (canto superior direito)"),
+        React.createElement("li", null, "Selecionar ", React.createElement("strong",null,"Transmitir…")),
+        React.createElement("li", null, "Escolhe o Chromecast da TV"),
+        React.createElement("li", null, "Em ", React.createElement("strong",null,"Fontes"), ", escolhe ", React.createElement("strong",null,'"Transmitir separador"')),
+        React.createElement("li", null, "Clica em ", React.createElement("strong",null,"⛶ Tela cheia"), " aqui pra ampliar na TV")
+      ),
+      React.createElement("p", {style:{fontSize:".75rem", opacity:.75, marginTop:8, marginBottom:0}}, "💡 Depois de transmitir, pode minimizar o Chrome e usar o PC normalmente — a TV continua mostrando.")
     ),
     // Setas de navegacao
     list.length > 1 && React.createElement(React.Fragment, null,
