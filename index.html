@@ -3058,15 +3058,16 @@ function MapAllProperties({properties, settings, showToast}) {
       }
       .map-print-header { display: none; margin-bottom: 20px; text-align:center; padding: 10px 0; border-bottom: 2px solid #c41e1e; }
     `),
-    React.createElement("div", {className:"admin-top no-print"},
-      React.createElement("h1", {className:"admin-page-title"}, "Mapa dos Imóveis"),
-      React.createElement("div", {style:{display:"flex", gap:10, flexWrap:"wrap"}},
-        React.createElement("button", {className:"btn-outline-sm", onClick: () => window.location.reload(), style:{padding:"12px 20px"}}, "🔄 Atualizar"),
-        React.createElement("button", {className:"btn-outline-sm", onClick: openRoute, disabled: withCoords.length === 0, style:{padding:"12px 20px", background: withCoords.length > 0 ? "#16a34a" : "#94a3b8", color:"white", border:"none", opacity: withCoords.length === 0 ? 0.5 : 1}}, "🚗 Gerar rota no Google Maps"),
-        React.createElement("button", {onClick: doPdf, disabled: genPdf || (withCoords.length + withoutCoords.length) === 0, style:{padding:"12px 22px", background: genPdf ? "#94a3b8" : "#dc2626", color:"white", border:"none", borderRadius:8, fontWeight:800, cursor: genPdf ? "wait" : "pointer", fontSize:".9rem"}}, genPdf ? "⏳ Gerando..." : "📄 Baixar PDF"),
-        React.createElement("button", {onClick: startInspection, disabled: (withCoords.length + withoutCoords.length) === 0, style:{padding:"12px 22px", background:"#7c3aed", color:"white", border:"none", borderRadius:8, fontWeight:800, cursor:"pointer", fontSize:".9rem"}}, "📱 Iniciar Checagem Digital"),
-        React.createElement("button", {className:"btn-outline-sm", onClick: doPrint, style:{padding:"12px 22px"}}, "🖨️ Imprimir")
-      )
+    // Titulo
+    React.createElement("h1", {className:"admin-page-title no-print", style:{marginBottom:20}}, "📍 Mapa dos Imóveis"),
+    // Barra de ACOES bem visivel (sticky no topo pra sempre poder acessar)
+    React.createElement("div", {className:"no-print", style:{position:"sticky", top:0, background:"var(--bg-dark)", padding:"14px 18px", borderRadius:10, marginBottom:20, zIndex:50, boxShadow:"0 4px 20px rgba(0,0,0,.15)", display:"flex", gap:10, flexWrap:"wrap", alignItems:"center"}},
+      React.createElement("strong", {style:{color:"#fff", fontSize:".82rem", letterSpacing:".08em", textTransform:"uppercase", marginRight:10}}, "Ações:"),
+      React.createElement("button", {onClick: () => window.location.reload(), style:{padding:"10px 18px", background:"rgba(255,255,255,.12)", color:"#fff", border:"1px solid rgba(255,255,255,.2)", borderRadius:6, cursor:"pointer", fontWeight:700, fontSize:".85rem"}}, "🔄 Atualizar"),
+      React.createElement("button", {onClick: openRoute, disabled: withCoords.length === 0, style:{padding:"10px 18px", background:"#16a34a", color:"#fff", border:"none", borderRadius:6, cursor:"pointer", fontWeight:800, fontSize:".85rem", opacity: withCoords.length === 0 ? 0.4 : 1}}, "🚗 Gerar rota"),
+      React.createElement("button", {onClick: doPdf, disabled: genPdf || (withCoords.length + withoutCoords.length) === 0, style:{padding:"10px 18px", background: genPdf ? "#94a3b8" : "#dc2626", color:"#fff", border:"none", borderRadius:6, fontWeight:800, cursor: genPdf ? "wait" : "pointer", fontSize:".85rem"}}, genPdf ? "⏳ Gerando PDF..." : "📄 Baixar PDF"),
+      React.createElement("button", {onClick: startInspection, disabled: creatingInspection || (withCoords.length + withoutCoords.length) === 0, style:{padding:"10px 18px", background:"#7c3aed", color:"#fff", border:"none", borderRadius:6, fontWeight:800, cursor: creatingInspection ? "wait" : "pointer", fontSize:".85rem"}}, creatingInspection ? "⏳ Criando..." : "📱 Iniciar Checagem"),
+      React.createElement("button", {onClick: doPrint, style:{padding:"10px 18px", background:"rgba(255,255,255,.12)", color:"#fff", border:"1px solid rgba(255,255,255,.2)", borderRadius:6, cursor:"pointer", fontWeight:700, fontSize:".85rem"}}, "🖨️ Imprimir")
     ),
     // Cabecalho para impressao
     React.createElement("div", {className:"map-print-header"},
