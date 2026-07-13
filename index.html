@@ -2684,13 +2684,21 @@ function MapAllProperties({properties, settings, showToast}) {
     // Estilos de impressao
     React.createElement("style", null, `
       @media print {
-        body.print-map-active .admin-side, body.print-map-active .admin-bar, body.print-map-active .no-print { display: none !important; }
-        body.print-map-active .admin-main { padding: 0 !important; }
-        body.print-map-active .map-print-hide { display: none !important; }
-        body.print-map-active #admin-map-container { height: 500px !important; page-break-inside: avoid; }
+        @page { size: A4; margin: 12mm; }
+        body.print-map-active .admin-side,
+        body.print-map-active .admin-bar,
+        body.print-map-active .header,
+        body.print-map-active .wpp-float,
+        body.print-map-active .no-print,
+        body.print-map-active .cookie-banner,
+        body.print-map-active .toast { display: none !important; }
+        body.print-map-active .admin-main { padding: 0 !important; margin: 0 !important; width: 100% !important; max-width: 100% !important; }
+        body.print-map-active #admin-map-container { height: 380px !important; page-break-inside: avoid; page-break-after: always; break-after: page; }
         body.print-map-active .map-print-header { display: block !important; }
+        body.print-map-active table { font-size: 10pt !important; }
+        body.print-map-active tr { page-break-inside: avoid; break-inside: avoid; }
       }
-      .map-print-header { display: none; margin-bottom: 20px; text-align:center; }
+      .map-print-header { display: none; margin-bottom: 20px; text-align:center; padding: 10px 0; border-bottom: 2px solid #c41e1e; }
     `),
     React.createElement("div", {className:"admin-top no-print"},
       React.createElement("h1", {className:"admin-page-title"}, "Mapa dos Imóveis"),
@@ -2737,28 +2745,58 @@ function MapAllProperties({properties, settings, showToast}) {
     ),
     withCoords.length > 0 && withoutCoords.length > 0 && React.createElement("div", {className:"no-print", style:{padding:"10px 14px", background:"rgba(59,130,246,.08)", border:"1px solid rgba(59,130,246,.3)", borderRadius:8, fontSize:".82rem", color:"#1e40af", marginBottom:14}}, "🔍 Buscando localização de ", withoutCoords.length, " imóvel(is) no Google... (aparecem no mapa quando encontrar)"),
     React.createElement("div", {id:"admin-map-container", ref: mapRef, style:{width:"100%", height: 560, borderRadius:12, border:"1px solid var(--border)", background:"#e0e0e0", marginBottom:20, display: filteredAll.length > 0 ? "block" : "none"}}),
-    // Lista de imoveis (para checagem visual + local para anotar)
-    React.createElement("div", {style:{background:"white", borderRadius:10, border:"1px solid var(--border)", padding:"18px 22px"}},
-      React.createElement("h3", {style:{margin:"0 0 14px", fontSize:"1.05rem", fontFamily:"var(--font-display)", letterSpacing:".05em", textTransform:"uppercase"}}, "Lista para checagem (", withCoords.length + withoutCoords.length, ")"),
-      React.createElement("table", {style:{width:"100%", borderCollapse:"collapse", fontSize:".85rem"}},
-        React.createElement("thead", null,
-          React.createElement("tr", {style:{borderBottom:"2px solid var(--border)"}},
-            ["Ref.", "Tipo", "Título", "Bairro", "Cidade", "Placa ✓", "Obs."].map(h => React.createElement("th", {key:h, style:{textAlign:"left", padding:"8px 6px", fontWeight:800, fontSize:".72rem", textTransform:"uppercase", letterSpacing:".05em", color:"var(--text-light)"}}, h))
-          )
-        ),
-        React.createElement("tbody", null,
-          [...withCoords, ...withoutCoords].map(p => React.createElement("tr", {key:p.id, style:{borderBottom:"1px solid var(--border-light)"}},
-            React.createElement("td", {style:{padding:"10px 6px", fontWeight:800, fontFamily:"var(--font-num)"}}, p.reference || "—"),
-            React.createElement("td", {style:{padding:"10px 6px"}}, p.type || "—"),
-            React.createElement("td", {style:{padding:"10px 6px", maxWidth:280}}, p.title || "—"),
-            React.createElement("td", {style:{padding:"10px 6px"}}, p.neighborhood || "—"),
-            React.createElement("td", {style:{padding:"10px 6px"}}, p.city || "—"),
-            React.createElement("td", {style:{padding:"10px 6px", textAlign:"center"}}, "☐"),
-            React.createElement("td", {style:{padding:"10px 6px", borderBottom:"1px solid var(--border-light)", minWidth:180}}, "")
-          ))
-        )
-      )
-    )
+    // Lista de imoveis agrupada por bairro (para checagem visual + local para anotar)
+    (() => {
+      const allProps = [...withCoords, ...withoutCoords];
+      // Agrupa por bairro
+      const byNeighborhood = {};
+      allProps.forEach(p => {
+        const key = (p.neighborhood || "SEM BAIRRO").trim();
+        if (!byNeighborhood[key]) byNeighborhood[key] = [];
+        byNeighborhood[key].push(p);
+      });
+      // Ordena bairros por nome (com "SEM BAIRRO" no fim)
+      const orderedKeys = Object.keys(byNeighborhood).sort((a, b) => {
+        if (a === "SEM BAIRRO") return 1;
+        if (b === "SEM BAIRRO") return -1;
+        return a.localeCompare(b);
+      });
+      return React.createElement("div", {style:{background:"white", borderRadius:10, border:"1px solid var(--border)", padding:"18px 22px"}},
+        React.createElement("h3", {style:{margin:"0 0 14px", fontSize:"1.05rem", fontFamily:"var(--font-display)", letterSpacing:".05em", textTransform:"uppercase"}}, "Relatório de Visita — Agrupado por Bairro (", allProps.length, " imóveis · ", orderedKeys.length, " bairros)"),
+        orderedKeys.map(bairro => {
+          const props = byNeighborhood[bairro];
+          const cidade = props[0].city || "";
+          return React.createElement("div", {key:bairro, style:{marginBottom:24, pageBreakInside:"avoid", breakInside:"avoid"}},
+            // Cabecalho do bairro
+            React.createElement("div", {style:{background:"var(--bg-accent)", padding:"10px 14px", borderRadius:8, marginBottom:8, display:"flex", justifyContent:"space-between", alignItems:"center", borderLeft:"5px solid var(--red)"}},
+              React.createElement("div", null,
+                React.createElement("strong", {style:{fontSize:".95rem", textTransform:"uppercase", letterSpacing:".05em"}}, "📍 ", bairro),
+                cidade && React.createElement("span", {style:{fontSize:".78rem", color:"var(--text-light)", marginLeft:10}}, "— ", cidade)
+              ),
+              React.createElement("span", {style:{background:"var(--red)", color:"white", padding:"3px 12px", borderRadius:12, fontSize:".72rem", fontWeight:800}}, props.length, " imóvel", props.length !== 1 ? "is" : "")
+            ),
+            // Tabela do bairro
+            React.createElement("table", {style:{width:"100%", borderCollapse:"collapse", fontSize:".82rem", marginBottom:8}},
+              React.createElement("thead", null,
+                React.createElement("tr", {style:{borderBottom:"2px solid var(--border)"}},
+                  ["Ref.", "Tipo", "Título", "Endereço/Rua", "Placa ✓", "Obs. da visita"].map(h => React.createElement("th", {key:h, style:{textAlign:"left", padding:"6px 6px", fontWeight:800, fontSize:".68rem", textTransform:"uppercase", letterSpacing:".05em", color:"var(--text-light)"}}, h))
+                )
+              ),
+              React.createElement("tbody", null,
+                props.map(p => React.createElement("tr", {key:p.id, style:{borderBottom:"1px solid var(--border-light)"}},
+                  React.createElement("td", {style:{padding:"10px 6px", fontWeight:800, fontFamily:"var(--font-num)"}}, p.reference || "—"),
+                  React.createElement("td", {style:{padding:"10px 6px"}}, p.type || "—"),
+                  React.createElement("td", {style:{padding:"10px 6px", maxWidth:220}}, p.title || "—"),
+                  React.createElement("td", {style:{padding:"10px 6px", fontSize:".76rem", color:"var(--text-light)"}}, p.address || "—"),
+                  React.createElement("td", {style:{padding:"10px 6px", textAlign:"center", fontSize:"1rem"}}, "☐"),
+                  React.createElement("td", {style:{padding:"10px 6px", minWidth:180, borderBottom:"1px dashed #ccc"}}, "")
+                ))
+              )
+            )
+          );
+        })
+      );
+    })()
   );
 }
 
