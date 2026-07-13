@@ -2707,6 +2707,16 @@ function MapAllProperties({properties, settings, showToast}) {
   const [selectedCity, setSelectedCity] = useState("");
   const [selectedType, setSelectedType] = useState("");
   const [ready, setReady] = useState(false);
+  // Historico de checagens
+  const [pastInspections, setPastInspections] = useState([]);
+  const [loadingHistory, setLoadingHistory] = useState(true);
+  const loadHistory = React.useCallback(async () => {
+    setLoadingHistory(true);
+    const list = await FB.listInspections();
+    setPastInspections(list);
+    setLoadingHistory(false);
+  }, []);
+  useEffect(() => { loadHistory(); }, [loadHistory]);
   // Cache de geocodificacao (imovel_id → {lat, lng}) — evita chamar Google toda vez
   const [geoCache, setGeoCache] = useState(() => {
     try { return JSON.parse(localStorage.getItem("g4_geo_cache") || "{}"); } catch(e) { return {}; }
@@ -2991,7 +3001,31 @@ function MapAllProperties({properties, settings, showToast}) {
     // Abre em nova aba e copia link
     try { await navigator.clipboard.writeText(url); } catch(e) {}
     window.open(url, "_blank");
-    showToast && showToast("Link da checagem copiado! Abra no celular pra usar em campo.", "success");
+    showToast && showToast("Link copiado! Enviei pra WhatsApp e abra no celular.", "success");
+    loadHistory(); // atualiza a lista de checagens
+  };
+
+  // Deletar uma checagem antiga
+  const deleteInspection = async (id) => {
+    if (!window.confirm("Excluir essa checagem? Não pode desfazer.")) return;
+    if (!window.firebase) return;
+    try {
+      await window.firebase.firestore().collection("inspections").doc(id).delete();
+      loadHistory();
+      showToast && showToast("Checagem excluída", "success");
+    } catch(e) { showToast && showToast("Erro ao excluir: " + e.message, "error"); }
+  };
+  // Copiar link
+  const copyInspectionLink = async (id) => {
+    const url = `${window.location.origin}/checagem/${id}`;
+    try { await navigator.clipboard.writeText(url); showToast && showToast("Link copiado!", "success"); }
+    catch(e) { prompt("Copie o link:", url); }
+  };
+  // Manda pelo whatsapp
+  const shareInspectionWpp = (id, title) => {
+    const url = `${window.location.origin}/checagem/${id}`;
+    const msg = `📋 ${title || "Checagem G4"}\n\n🔗 Link pra ir marcando no celular:\n${url}\n\nBasta abrir o link, tocar em "Placa OK / Sem placa / Danificada" em cada imóvel e digitar observação se necessário. Salva sozinho.`;
+    window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`, "_blank");
   };
 
   // Abre o Google Maps com rota entre todos os imoveis (waypoints)
@@ -3122,7 +3156,56 @@ function MapAllProperties({properties, settings, showToast}) {
           );
         })
       );
-    })()
+    })(),
+    // Historico de checagens digitais
+    React.createElement("div", {className:"no-print", style:{background:"white", borderRadius:10, border:"1px solid var(--border)", padding:"18px 22px", marginTop:20}},
+      React.createElement("div", {style:{display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:14, flexWrap:"wrap", gap:10}},
+        React.createElement("h3", {style:{margin:0, fontSize:"1.05rem", fontFamily:"var(--font-display)", letterSpacing:".05em", textTransform:"uppercase"}}, "📱 Histórico de Checagens Digitais (", pastInspections.length, ")"),
+        React.createElement("button", {onClick: loadHistory, style:{padding:"6px 14px", background:"var(--bg-accent)", border:"1px solid var(--border)", borderRadius:6, cursor:"pointer", fontSize:".78rem", fontWeight:700}}, "🔄 Atualizar")
+      ),
+      loadingHistory ? React.createElement("p", {style:{color:"var(--text-light)", textAlign:"center", padding:"20px 0"}}, "Carregando...") :
+      pastInspections.length === 0 ? React.createElement("div", {style:{textAlign:"center", padding:"30px 20px", color:"var(--text-light)"}},
+        React.createElement("div", {style:{fontSize:32, marginBottom:8}}, "📋"),
+        React.createElement("p", null, "Nenhuma checagem criada ainda."),
+        React.createElement("p", {style:{fontSize:".82rem", marginTop:4}}, "Clica em '📱 Iniciar Checagem Digital' pra criar a primeira.")
+      ) :
+      React.createElement("table", {style:{width:"100%", borderCollapse:"collapse", fontSize:".85rem"}},
+        React.createElement("thead", null,
+          React.createElement("tr", {style:{borderBottom:"2px solid var(--border)"}},
+            ["Data", "Título", "Imóveis", "Progresso", "Ações"].map(h => React.createElement("th", {key:h, style:{textAlign:"left", padding:"8px 6px", fontSize:".72rem", textTransform:"uppercase", letterSpacing:".05em", color:"var(--text-light)", fontWeight:800}}, h))
+          )
+        ),
+        React.createElement("tbody", null,
+          pastInspections.map(insp => {
+            const total = (insp.properties || []).length;
+            const done = Object.values(insp.items || {}).filter(it => it && it.placa).length;
+            const pct = total > 0 ? Math.round((done / total) * 100) : 0;
+            const dt = insp.createdAt ? new Date(insp.createdAt) : null;
+            return React.createElement("tr", {key: insp.id, style:{borderBottom:"1px solid var(--border-light)"}},
+              React.createElement("td", {style:{padding:"12px 6px", fontWeight:700, whiteSpace:"nowrap"}}, dt ? dt.toLocaleDateString("pt-BR") : "—"),
+              React.createElement("td", {style:{padding:"12px 6px"}}, insp.title || "Checagem", insp.city && React.createElement("span",{style:{color:"var(--text-light)", fontSize:".78rem", marginLeft:6}},"— ", insp.city)),
+              React.createElement("td", {style:{padding:"12px 6px"}}, total),
+              React.createElement("td", {style:{padding:"12px 6px", minWidth:140}},
+                React.createElement("div", {style:{display:"flex", alignItems:"center", gap:8}},
+                  React.createElement("div", {style:{flex:1, height:8, background:"var(--bg-accent)", borderRadius:4, overflow:"hidden", maxWidth:100}},
+                    React.createElement("div", {style:{height:"100%", width:`${pct}%`, background: pct === 100 ? "#22c55e" : pct > 50 ? "#3b82f6" : "#f59e0b"}})
+                  ),
+                  React.createElement("span", {style:{fontSize:".78rem", fontWeight:700, color: pct === 100 ? "#22c55e" : "var(--text)"}}, done, "/", total)
+                )
+              ),
+              React.createElement("td", {style:{padding:"12px 6px", whiteSpace:"nowrap"}},
+                React.createElement("div", {style:{display:"flex", gap:6}},
+                  React.createElement("button", {onClick: () => window.open(`/checagem/${insp.id}`, "_blank"), title:"Abrir", style:{padding:"6px 10px", background:"#3b82f6", color:"white", border:"none", borderRadius:4, cursor:"pointer", fontSize:".72rem", fontWeight:700}}, "📱 Abrir"),
+                  React.createElement("button", {onClick: () => copyInspectionLink(insp.id), title:"Copiar link", style:{padding:"6px 10px", background:"var(--bg-accent)", border:"1px solid var(--border)", borderRadius:4, cursor:"pointer", fontSize:".72rem"}}, "🔗"),
+                  React.createElement("button", {onClick: () => shareInspectionWpp(insp.id, insp.title), title:"Enviar WhatsApp", style:{padding:"6px 10px", background:"#16a34a", color:"white", border:"none", borderRadius:4, cursor:"pointer", fontSize:".72rem"}}, "📲"),
+                  React.createElement("button", {onClick: () => deleteInspection(insp.id), title:"Excluir", style:{padding:"6px 10px", background:"#dc2626", color:"white", border:"none", borderRadius:4, cursor:"pointer", fontSize:".72rem"}}, "🗑")
+                )
+              )
+            );
+          })
+        )
+      )
+    )
   );
 }
 
