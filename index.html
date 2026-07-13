@@ -1252,6 +1252,7 @@ button.footer-link { padding-left: 0; }
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/modern-screenshot@4.6.0/dist/index.iife.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script type="text/babel">
 const { useState, useEffect, useCallback, useRef } = React;
 
@@ -2670,6 +2671,103 @@ function MapAllProperties({properties, settings, showToast}) {
     setTimeout(() => document.body.classList.remove("print-map-active"), 1000);
   };
 
+  // Gera PDF direto (sem passar pela caixa de impressao)
+  const [genPdf, setGenPdf] = useState(false);
+  const doPdf = async () => {
+    if (!window.jspdf || !window.html2canvas) { alert("Bibliotecas de PDF não carregaram. Recarregue a página."); return; }
+    setGenPdf(true);
+    try {
+      const { jsPDF } = window.jspdf;
+      const pdf = new jsPDF({orientation: "portrait", unit: "mm", format: "a4"});
+      const pageW = 210, pageH = 297, margin = 10;
+      // Cabecalho
+      pdf.setFontSize(16); pdf.setFont(undefined, "bold");
+      pdf.text("G4 INVESTIMOVEIS — RELATORIO DE VISITA", pageW/2, margin + 8, {align:"center"});
+      pdf.setFontSize(10); pdf.setFont(undefined, "normal");
+      pdf.text(`Data: ${new Date().toLocaleDateString("pt-BR")}   |   Imoveis: ${withCoords.length + withoutCoords.length}${selectedCity ? "   |   Cidade: " + selectedCity : ""}${selectedType ? "   |   Tipo: " + selectedType : ""}`, pageW/2, margin + 14, {align:"center"});
+      pdf.setDrawColor(196, 30, 30); pdf.setLineWidth(0.6);
+      pdf.line(margin, margin + 17, pageW - margin, margin + 17);
+      let y = margin + 24;
+      // Print mapa (screenshot do container)
+      const mapEl = document.getElementById("admin-map-container");
+      if (mapEl && withCoords.length > 0) {
+        try {
+          const canvas = await window.html2canvas(mapEl, {useCORS: true, allowTaint: true, backgroundColor:"#fff"});
+          const imgData = canvas.toDataURL("image/jpeg", 0.85);
+          const imgW = pageW - 2 * margin;
+          const imgH = (canvas.height / canvas.width) * imgW;
+          const maxH = 100;
+          const finalH = Math.min(imgH, maxH);
+          pdf.addImage(imgData, "JPEG", margin, y, imgW, finalH);
+          y += finalH + 6;
+        } catch(e) { console.error("Erro ao capturar mapa:", e); }
+      }
+      // Lista agrupada por bairro
+      const allProps = [...withCoords, ...withoutCoords];
+      const byN = {};
+      allProps.forEach(p => { const k = (p.neighborhood || "SEM BAIRRO").trim(); (byN[k] = byN[k] || []).push(p); });
+      const keys = Object.keys(byN).sort((a,b) => a === "SEM BAIRRO" ? 1 : b === "SEM BAIRRO" ? -1 : a.localeCompare(b));
+      pdf.setFontSize(11); pdf.setFont(undefined, "bold");
+      pdf.text(`Imoveis agrupados por bairro (${keys.length} bairro${keys.length!==1?"s":""})`, margin, y);
+      y += 6;
+      const colW = [15, 22, 60, 55, 12, 26]; // Ref, Tipo, Titulo, Endereco, ✓, Obs
+      const colX = [margin]; for (let i = 1; i < colW.length; i++) colX.push(colX[i-1] + colW[i-1]);
+      for (const bairro of keys) {
+        const props = byN[bairro];
+        const cidade = props[0].city || "";
+        // Espaco pro cabecalho + primeira linha
+        if (y > pageH - 40) { pdf.addPage(); y = margin + 6; }
+        // Cabecalho do bairro
+        pdf.setFillColor(240, 235, 220); pdf.rect(margin, y - 2, pageW - 2 * margin, 8, "F");
+        pdf.setDrawColor(196, 30, 30); pdf.setLineWidth(1.5); pdf.line(margin, y - 2, margin, y + 6);
+        pdf.setFontSize(10); pdf.setFont(undefined, "bold"); pdf.setTextColor(30, 30, 30);
+        pdf.text(`${bairro.toUpperCase()}${cidade ? "  — " + cidade : ""}`, margin + 3, y + 3);
+        pdf.setFontSize(8); pdf.setFont(undefined, "normal");
+        pdf.text(`${props.length} imovel${props.length !== 1 ? "s" : ""}`, pageW - margin - 3, y + 3, {align:"right"});
+        y += 10;
+        // Cabecalho da tabela
+        pdf.setFontSize(7); pdf.setFont(undefined, "bold"); pdf.setTextColor(90, 90, 90);
+        ["REF.", "TIPO", "TITULO", "ENDERECO / RUA", "OK", "OBS. VISITA"].forEach((h, i) => pdf.text(h, colX[i] + 1, y));
+        y += 3;
+        pdf.setDrawColor(200, 200, 200); pdf.setLineWidth(0.2); pdf.line(margin, y, pageW - margin, y);
+        y += 3;
+        // Linhas
+        pdf.setFontSize(8); pdf.setFont(undefined, "normal"); pdf.setTextColor(30, 30, 30);
+        for (const p of props) {
+          if (y > pageH - 12) { pdf.addPage(); y = margin + 6; }
+          const rowH = 8;
+          pdf.text(String(p.reference || "—"), colX[0] + 1, y + 3);
+          pdf.text(String(p.type || "—").substring(0, 12), colX[1] + 1, y + 3);
+          pdf.text(String(p.title || "—").substring(0, 32), colX[2] + 1, y + 3);
+          pdf.text(String(p.address || "—").substring(0, 30), colX[3] + 1, y + 3);
+          // Checkbox
+          pdf.setDrawColor(80, 80, 80); pdf.setLineWidth(0.3);
+          pdf.rect(colX[4] + 3, y + 0.5, 4, 4);
+          // Linha tracejada da obs
+          pdf.setDrawColor(160, 160, 160); pdf.setLineWidth(0.2);
+          const dashStart = colX[5] + 1;
+          for (let dx = dashStart; dx < pageW - margin - 1; dx += 2) {
+            pdf.line(dx, y + 5, dx + 1, y + 5);
+          }
+          y += rowH;
+        }
+        y += 4;
+      }
+      // Rodape
+      const totalPages = pdf.internal.getNumberOfPages();
+      for (let i = 1; i <= totalPages; i++) {
+        pdf.setPage(i);
+        pdf.setFontSize(7); pdf.setFont(undefined, "normal"); pdf.setTextColor(150, 150, 150);
+        pdf.text(`G4 Investimoveis — Relatorio de Visita — Pagina ${i}/${totalPages}`, pageW/2, pageH - 5, {align:"center"});
+      }
+      pdf.save(`G4_Relatorio_Visita_${new Date().toLocaleDateString("pt-BR").replace(/\//g,"-")}.pdf`);
+    } catch (err) {
+      console.error("Erro ao gerar PDF:", err);
+      alert("Erro ao gerar PDF: " + (err && err.message || err));
+    }
+    setGenPdf(false);
+  };
+
   // Abre o Google Maps com rota entre todos os imoveis (waypoints)
   const openRoute = () => {
     if (withCoords.length === 0) return;
@@ -2705,7 +2803,8 @@ function MapAllProperties({properties, settings, showToast}) {
       React.createElement("div", {style:{display:"flex", gap:10, flexWrap:"wrap"}},
         React.createElement("button", {className:"btn-outline-sm", onClick: () => window.location.reload(), style:{padding:"12px 20px"}}, "🔄 Atualizar"),
         React.createElement("button", {className:"btn-outline-sm", onClick: openRoute, disabled: withCoords.length === 0, style:{padding:"12px 20px", background: withCoords.length > 0 ? "#16a34a" : "#94a3b8", color:"white", border:"none", opacity: withCoords.length === 0 ? 0.5 : 1}}, "🚗 Gerar rota no Google Maps"),
-        React.createElement("button", {className:"btn-red", onClick: doPrint, style:{padding:"14px 28px", fontSize:".95rem"}}, "🖨️ Imprimir para checagem")
+        React.createElement("button", {onClick: doPdf, disabled: genPdf || (withCoords.length + withoutCoords.length) === 0, style:{padding:"12px 22px", background: genPdf ? "#94a3b8" : "#dc2626", color:"white", border:"none", borderRadius:8, fontWeight:800, cursor: genPdf ? "wait" : "pointer", fontSize:".9rem"}}, genPdf ? "⏳ Gerando..." : "📄 Baixar PDF"),
+        React.createElement("button", {className:"btn-outline-sm", onClick: doPrint, style:{padding:"12px 22px"}}, "🖨️ Imprimir")
       )
     ),
     // Cabecalho para impressao
