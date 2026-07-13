@@ -2516,19 +2516,33 @@ function MapAllProperties({properties, settings, showToast}) {
   const [selectedCity, setSelectedCity] = useState("");
   const [selectedType, setSelectedType] = useState("");
   const [ready, setReady] = useState(false);
+  // Cache de geocodificacao (imovel_id → {lat, lng}) — evita chamar Google toda vez
+  const [geoCache, setGeoCache] = useState(() => {
+    try { return JSON.parse(localStorage.getItem("g4_geo_cache") || "{}"); } catch(e) { return {}; }
+  });
+  const saveGeoCache = (cache) => {
+    setGeoCache(cache);
+    try { localStorage.setItem("g4_geo_cache", JSON.stringify(cache)); } catch(e) {}
+  };
 
-  // Imoveis com coordenadas
-  const withCoords = React.useMemo(() => (properties || []).filter(p =>
+  const filteredAll = React.useMemo(() => (properties || []).filter(p =>
+    (!selectedCity || p.city === selectedCity) && (!selectedType || p.type === selectedType)
+  ), [properties, selectedCity, selectedType]);
+
+  // Imoveis com coordenadas ORIGINAIS (lat/lng cadastradas manualmente)
+  const rawWithCoords = filteredAll.filter(p =>
     p.lat && p.lng && !isNaN(+p.lat) && !isNaN(+p.lng)
-    && (!selectedCity || p.city === selectedCity)
-    && (!selectedType || p.type === selectedType)
-  ), [properties, selectedCity, selectedType]);
-
-  const withoutCoords = React.useMemo(() => (properties || []).filter(p =>
-    (!p.lat || !p.lng || isNaN(+p.lat) || isNaN(+p.lng))
-    && (!selectedCity || p.city === selectedCity)
-    && (!selectedType || p.type === selectedType)
-  ), [properties, selectedCity, selectedType]);
+  );
+  // Imoveis SEM coordenadas cadastradas
+  const rawWithoutCoords = filteredAll.filter(p =>
+    !p.lat || !p.lng || isNaN(+p.lat) || isNaN(+p.lng)
+  );
+  // Adiciona coordenadas do cache (geocodificados anteriormente) aos imoveis sem lat/lng
+  const withCoords = [
+    ...rawWithCoords,
+    ...rawWithoutCoords.filter(p => geoCache[p.id]).map(p => ({...p, lat: geoCache[p.id].lat, lng: geoCache[p.id].lng, _geocoded: true}))
+  ];
+  const withoutCoords = rawWithoutCoords.filter(p => !geoCache[p.id]);
 
   const cities = Array.from(new Set((properties || []).map(p => p.city).filter(Boolean))).sort();
   const types = Array.from(new Set((properties || []).map(p => p.type).filter(Boolean))).sort();
@@ -2541,6 +2555,43 @@ function MapAllProperties({properties, settings, showToast}) {
     }, 200);
     return () => clearInterval(check);
   }, []);
+
+  // Geocodifica automaticamente os imoveis sem coordenadas (baseado em endereco)
+  useEffect(() => {
+    if (!ready || withoutCoords.length === 0) return;
+    if (!window.google || !window.google.maps || !window.google.maps.Geocoder) return;
+    const geocoder = new window.google.maps.Geocoder();
+    let cancelled = false;
+    const newCache = {...geoCache};
+    (async () => {
+      for (const p of withoutCoords) {
+        if (cancelled) return;
+        if (newCache[p.id]) continue;
+        // Monta o endereco completo pra buscar no Google
+        const parts = [p.neighborhood, p.city, "PR", "Brasil"].filter(Boolean);
+        const address = parts.join(", ");
+        if (!address || !p.city) continue;
+        try {
+          const result = await new Promise((resolve, reject) => {
+            geocoder.geocode({address, region: "BR"}, (results, status) => {
+              if (status === "OK" && results && results[0]) resolve(results[0]);
+              else reject(status);
+            });
+          });
+          if (cancelled) return;
+          const loc = result.geometry.location;
+          newCache[p.id] = {lat: loc.lat(), lng: loc.lng()};
+          // Salva incremental pra nao perder progresso
+          saveGeoCache({...newCache});
+        } catch(e) {
+          // Ignora erro pontual e segue
+        }
+        // Delay pra nao estourar limite de requisicoes do Google (~10 req/s eh seguro)
+        await new Promise(r => setTimeout(r, 250));
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [ready, withoutCoords.length]);
 
   // Renderiza o mapa com os pins
   useEffect(() => {
@@ -2644,11 +2695,17 @@ function MapAllProperties({properties, settings, showToast}) {
       React.createElement("span", {style:{display:"flex",alignItems:"center",gap:6}}, React.createElement("span",{style:{width:14, height:14, borderRadius:"50%", background:"#334155", border:"2px solid white", boxShadow:"0 1px 3px rgba(0,0,0,.3)"}}), "Vendido")
     ),
     // Mapa
-    withCoords.length === 0 && React.createElement("div", {style:{padding:"40px 24px", background:"white", borderRadius:10, border:"1px solid var(--border)", textAlign:"center", marginBottom:20}},
-      React.createElement("div", {style:{fontSize:32, marginBottom:8}}, "🗺️"),
-      React.createElement("h3", null, "Nenhum imóvel com localização no mapa"),
-      React.createElement("p", {style:{color:"var(--text-light)"}}, "Adicione coordenadas nos imóveis (Editar → Localização → clicar no mapa)")
+    withCoords.length === 0 && withoutCoords.length > 0 && React.createElement("div", {style:{padding:"40px 24px", background:"white", borderRadius:10, border:"1px solid var(--border)", textAlign:"center", marginBottom:20}},
+      React.createElement("div", {style:{fontSize:32, marginBottom:8}}, "🔍"),
+      React.createElement("h3", null, "Buscando localização dos imóveis no Google..."),
+      React.createElement("p", {style:{color:"var(--text-light)"}}, "Aguarda alguns segundos. Estamos consultando o Google Maps por cada bairro/cidade.")
     ),
+    withCoords.length === 0 && withoutCoords.length === 0 && React.createElement("div", {style:{padding:"40px 24px", background:"white", borderRadius:10, border:"1px solid var(--border)", textAlign:"center", marginBottom:20}},
+      React.createElement("div", {style:{fontSize:32, marginBottom:8}}, "🗺️"),
+      React.createElement("h3", null, "Nenhum imóvel encontrado"),
+      React.createElement("p", {style:{color:"var(--text-light)"}}, "Ajuste os filtros ou cadastre imóveis primeiro")
+    ),
+    withCoords.length > 0 && withoutCoords.length > 0 && React.createElement("div", {className:"no-print", style:{padding:"10px 14px", background:"rgba(59,130,246,.08)", border:"1px solid rgba(59,130,246,.3)", borderRadius:8, fontSize:".82rem", color:"#1e40af", marginBottom:14}}, "🔍 Buscando localização de ", withoutCoords.length, " imóvel(is) no Google... (aparecem no mapa quando encontrar)"),
     withCoords.length > 0 && React.createElement("div", {id:"admin-map-container", ref: mapRef, style:{width:"100%", height: 560, borderRadius:12, border:"1px solid var(--border)", background:"#e0e0e0", marginBottom:20}}),
     // Lista de imoveis (para checagem visual + local para anotar)
     React.createElement("div", {style:{background:"white", borderRadius:10, border:"1px solid var(--border)", padding:"18px 22px"}},
