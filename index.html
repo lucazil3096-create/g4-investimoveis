@@ -2651,6 +2651,16 @@ function MapAllProperties({properties, settings, showToast}) {
     setTimeout(() => document.body.classList.remove("print-map-active"), 1000);
   };
 
+  // Abre o Google Maps com rota entre todos os imoveis (waypoints)
+  const openRoute = () => {
+    if (withCoords.length === 0) return;
+    // Google Maps directions aceita ate 10 waypoints. Se tiver mais, pega os primeiros 10.
+    const pts = withCoords.slice(0, 10).map(p => `${(+p.lat).toFixed(6)},${(+p.lng).toFixed(6)}`);
+    const url = `https://www.google.com/maps/dir/${pts.join("/")}`;
+    window.open(url, "_blank");
+    if (withCoords.length > 10) showToast && showToast(`Google Maps aceita até 10 pontos. Mostrando os ${Math.min(10, withCoords.length)} primeiros.`, "info");
+  };
+
   return React.createElement(React.Fragment, null,
     // Estilos de impressao
     React.createElement("style", null, `
@@ -2665,8 +2675,9 @@ function MapAllProperties({properties, settings, showToast}) {
     `),
     React.createElement("div", {className:"admin-top no-print"},
       React.createElement("h1", {className:"admin-page-title"}, "Mapa dos Imóveis"),
-      React.createElement("div", {style:{display:"flex", gap:10}},
+      React.createElement("div", {style:{display:"flex", gap:10, flexWrap:"wrap"}},
         React.createElement("button", {className:"btn-outline-sm", onClick: () => window.location.reload(), style:{padding:"12px 20px"}}, "🔄 Atualizar"),
+        React.createElement("button", {className:"btn-outline-sm", onClick: openRoute, disabled: withCoords.length === 0, style:{padding:"12px 20px", background: withCoords.length > 0 ? "#16a34a" : "#94a3b8", color:"white", border:"none", opacity: withCoords.length === 0 ? 0.5 : 1}}, "🚗 Gerar rota no Google Maps"),
         React.createElement("button", {className:"btn-red", onClick: doPrint, style:{padding:"14px 28px", fontSize:".95rem"}}, "🖨️ Imprimir para checagem")
       )
     ),
