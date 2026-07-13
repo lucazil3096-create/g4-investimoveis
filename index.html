@@ -2648,6 +2648,36 @@ function InspectionPage({inspectionId, settings}) {
       inspection.optimized && React.createElement("div", {style:{background:"#dcfce7", border:"1px solid #16a34a", padding:"10px 14px", borderRadius:8, marginBottom:16, fontSize:".82rem", color:"#166534", fontWeight:700, display:"flex", alignItems:"center", gap:8}},
         "🚗 Rota econômica ativa — visita os bairros na ordem mais próxima pra economizar combustível"
       ),
+      // ===== CARD DE PROBLEMAS ENCONTRADOS =====
+      (missing > 0 || damaged > 0) && (() => {
+        const problemProps = props.filter(p => {
+          const st = items[p.id];
+          return st && (st.placa === "faltando" || st.placa === "danificada");
+        });
+        return React.createElement("details", {open: true, style:{background:"#fef2f2", border:"2px solid #dc2626", borderRadius:10, marginBottom:20, padding:"14px 18px"}},
+          React.createElement("summary", {style:{cursor:"pointer", fontWeight:800, fontSize:"1rem", color:"#991b1b", listStyle:"none"}},
+            "⚠️ ", missing + damaged, " problema", (missing + damaged) !== 1 ? "s" : "", " encontrado", (missing + damaged) !== 1 ? "s" : "",
+            React.createElement("span", {style:{fontSize:".78rem", color:"#7f1d1d", marginLeft:8, fontWeight:600}},
+              " · ", missing, " sem placa · ", damaged, " danificada", damaged !== 1 ? "s" : ""
+            )
+          ),
+          React.createElement("div", {style:{marginTop:12, display:"grid", gap:8}},
+            problemProps.map(p => {
+              const st = items[p.id];
+              const isMiss = st.placa === "faltando";
+              return React.createElement("div", {key:p.id, style:{background:"white", padding:"10px 12px", borderRadius:6, borderLeft:`4px solid ${isMiss ? "#dc2626" : "#f59e0b"}`, display:"flex", justifyContent:"space-between", alignItems:"flex-start", gap:10, flexWrap:"wrap"}},
+                React.createElement("div", null,
+                  React.createElement("div", {style:{fontSize:".82rem", fontWeight:800}}, isMiss ? "❌ SEM PLACA" : "⚠️ DANIFICADA", " · Ref. ", p.reference || "—"),
+                  React.createElement("div", {style:{fontSize:".85rem", marginTop:2}}, p.title),
+                  React.createElement("div", {style:{fontSize:".72rem", color:"var(--text-light)", marginTop:2}}, "📍 ", p.neighborhood, p.address && ` · ${p.address}`),
+                  st.obs && React.createElement("div", {style:{fontSize:".78rem", color:"var(--text)", marginTop:6, padding:"6px 8px", background:"#fef3c7", borderRadius:4}}, "📝 ", st.obs)
+                ),
+                p.lat && p.lng && React.createElement("a", {href:`https://www.google.com/maps/dir/?api=1&destination=${p.lat},${p.lng}`, target:"_blank", style:{background:"#3b82f6", color:"white", padding:"6px 10px", borderRadius:6, fontSize:".72rem", fontWeight:800, textDecoration:"none", whiteSpace:"nowrap"}}, "🚗 Ir")
+              );
+            })
+          )
+        );
+      })(),
       keys.map((bairro, bIdx) => {
         const bProps = byN[bairro];
         const cidade = bProps[0].city || "";
@@ -3332,13 +3362,17 @@ function MapAllProperties({properties, settings, showToast}) {
       React.createElement("table", {style:{width:"100%", borderCollapse:"collapse", fontSize:".85rem"}},
         React.createElement("thead", null,
           React.createElement("tr", {style:{borderBottom:"2px solid var(--border)"}},
-            ["Data", "Título", "Imóveis", "Progresso", "Ações"].map(h => React.createElement("th", {key:h, style:{textAlign:"left", padding:"8px 6px", fontSize:".72rem", textTransform:"uppercase", letterSpacing:".05em", color:"var(--text-light)", fontWeight:800}}, h))
+            ["Data", "Título", "Imóveis", "Progresso", "Problemas", "Ações"].map(h => React.createElement("th", {key:h, style:{textAlign:"left", padding:"8px 6px", fontSize:".72rem", textTransform:"uppercase", letterSpacing:".05em", color:"var(--text-light)", fontWeight:800}}, h))
           )
         ),
         React.createElement("tbody", null,
           pastInspections.map(insp => {
             const total = (insp.properties || []).length;
-            const done = Object.values(insp.items || {}).filter(it => it && it.placa).length;
+            const itemsList = Object.values(insp.items || {});
+            const done = itemsList.filter(it => it && it.placa).length;
+            const missing = itemsList.filter(it => it && it.placa === "faltando").length;
+            const damaged = itemsList.filter(it => it && it.placa === "danificada").length;
+            const problems = missing + damaged;
             const pct = total > 0 ? Math.round((done / total) * 100) : 0;
             const dt = insp.createdAt ? new Date(insp.createdAt) : null;
             return React.createElement("tr", {key: insp.id, style:{borderBottom:"1px solid var(--border-light)"}},
@@ -3351,6 +3385,13 @@ function MapAllProperties({properties, settings, showToast}) {
                     React.createElement("div", {style:{height:"100%", width:`${pct}%`, background: pct === 100 ? "#22c55e" : pct > 50 ? "#3b82f6" : "#f59e0b"}})
                   ),
                   React.createElement("span", {style:{fontSize:".78rem", fontWeight:700, color: pct === 100 ? "#22c55e" : "var(--text)"}}, done, "/", total)
+                )
+              ),
+              React.createElement("td", {style:{padding:"12px 6px", whiteSpace:"nowrap"}},
+                problems === 0 ? React.createElement("span", {style:{color:"#16a34a", fontWeight:700, fontSize:".78rem"}}, done === 0 ? "—" : "✅ Nenhum") :
+                React.createElement("div", {style:{display:"flex", gap:4, flexWrap:"wrap"}},
+                  missing > 0 && React.createElement("span", {title:"Sem placa", style:{background:"#fee2e2", color:"#991b1b", padding:"2px 8px", borderRadius:12, fontSize:".72rem", fontWeight:800}}, "❌ ", missing),
+                  damaged > 0 && React.createElement("span", {title:"Danificada", style:{background:"#fef3c7", color:"#92400e", padding:"2px 8px", borderRadius:12, fontSize:".72rem", fontWeight:800}}, "⚠️ ", damaged)
                 )
               ),
               React.createElement("td", {style:{padding:"12px 6px", whiteSpace:"nowrap"}},
