@@ -2547,13 +2547,12 @@ function MapAllProperties({properties, settings, showToast}) {
   const cities = Array.from(new Set((properties || []).map(p => p.city).filter(Boolean))).sort();
   const types = Array.from(new Set((properties || []).map(p => p.type).filter(Boolean))).sort();
 
-  // Carrega o Google Maps
+  // Carrega o Google Maps (força o carregamento se ainda nao foi carregado)
   useEffect(() => {
     if (window.google && window.google.maps) { setReady(true); return; }
-    const check = setInterval(() => {
-      if (window.google && window.google.maps) { setReady(true); clearInterval(check); }
-    }, 200);
-    return () => clearInterval(check);
+    let cancelled = false;
+    loadGoogleMaps().then(() => { if (!cancelled) setReady(true); }).catch(e => console.error("Falha ao carregar Google Maps:", e));
+    return () => { cancelled = true; };
   }, []);
 
   // Geocodifica automaticamente os imoveis sem coordenadas (baseado em endereco)
@@ -2593,32 +2592,47 @@ function MapAllProperties({properties, settings, showToast}) {
     return () => { cancelled = true; };
   }, [ready, withoutCoords.length]);
 
-  // Renderiza o mapa com os pins
+  // Refs do mapa (criado uma vez, marcadores atualizam separado)
+  const mapInstanceRef = React.useRef(null);
+  const markersRef = React.useRef([]);
+
+  // Cria o mapa (roda uma vez quando Google Maps fica pronto e o div existe)
   useEffect(() => {
-    if (!ready || !mapRef.current || withCoords.length === 0) return;
-    const bounds = new window.google.maps.LatLngBounds();
-    withCoords.forEach(p => bounds.extend({lat: +p.lat, lng: +p.lng}));
-    const map = new window.google.maps.Map(mapRef.current, {
-      center: bounds.getCenter(),
-      zoom: 14,
+    if (!ready || !mapRef.current || mapInstanceRef.current) return;
+    // Centro padrao Mambore/PR (usado se nao tiver imoveis ainda)
+    const defaultCenter = {lat: -24.316, lng: -52.516};
+    mapInstanceRef.current = new window.google.maps.Map(mapRef.current, {
+      center: defaultCenter,
+      zoom: 13,
       mapTypeId: "roadmap",
       streetViewControl: false,
       fullscreenControl: true,
       mapTypeControl: true
     });
-    map.fitBounds(bounds, 60);
-    const markers = [];
+  }, [ready]);
+
+  // Atualiza marcadores quando withCoords muda
+  useEffect(() => {
+    const map = mapInstanceRef.current;
+    if (!ready || !map) return;
+    // Remove marcadores antigos
+    markersRef.current.forEach(m => m.setMap(null));
+    markersRef.current = [];
+    if (withCoords.length === 0) return;
+    const bounds = new window.google.maps.LatLngBounds();
     withCoords.forEach((p, i) => {
+      const pos = {lat: +p.lat, lng: +p.lng};
+      bounds.extend(pos);
       const isRented = p.transaction === "Aluguel";
       const isSold = p.sold;
       const isReserved = p.reserved;
-      let color = "#c41e1e"; // Venda
+      let color = "#c41e1e";
       if (isRented) color = "#1e40af";
       if (isReserved) color = "#d4a012";
       if (isSold) color = "#334155";
       const label = p.reference ? String(p.reference) : String(i+1);
       const marker = new window.google.maps.Marker({
-        position: {lat: +p.lat, lng: +p.lng},
+        position: pos,
         map,
         title: `Ref. ${p.reference || i+1} · ${p.title}`,
         label: {text: label, color: "#fff", fontSize: "12px", fontWeight: "700"},
@@ -2640,9 +2654,14 @@ function MapAllProperties({properties, settings, showToast}) {
         </div>`
       });
       marker.addListener("click", () => info.open(map, marker));
-      markers.push(marker);
+      markersRef.current.push(marker);
     });
-    return () => markers.forEach(m => m.setMap(null));
+    if (withCoords.length === 1) {
+      map.setCenter(withCoords[0] && {lat: +withCoords[0].lat, lng: +withCoords[0].lng});
+      map.setZoom(15);
+    } else {
+      map.fitBounds(bounds, 60);
+    }
   }, [ready, withCoords]);
 
   const doPrint = () => {
@@ -2717,7 +2736,7 @@ function MapAllProperties({properties, settings, showToast}) {
       React.createElement("p", {style:{color:"var(--text-light)"}}, "Ajuste os filtros ou cadastre imóveis primeiro")
     ),
     withCoords.length > 0 && withoutCoords.length > 0 && React.createElement("div", {className:"no-print", style:{padding:"10px 14px", background:"rgba(59,130,246,.08)", border:"1px solid rgba(59,130,246,.3)", borderRadius:8, fontSize:".82rem", color:"#1e40af", marginBottom:14}}, "🔍 Buscando localização de ", withoutCoords.length, " imóvel(is) no Google... (aparecem no mapa quando encontrar)"),
-    withCoords.length > 0 && React.createElement("div", {id:"admin-map-container", ref: mapRef, style:{width:"100%", height: 560, borderRadius:12, border:"1px solid var(--border)", background:"#e0e0e0", marginBottom:20}}),
+    React.createElement("div", {id:"admin-map-container", ref: mapRef, style:{width:"100%", height: 560, borderRadius:12, border:"1px solid var(--border)", background:"#e0e0e0", marginBottom:20, display: filteredAll.length > 0 ? "block" : "none"}}),
     // Lista de imoveis (para checagem visual + local para anotar)
     React.createElement("div", {style:{background:"white", borderRadius:10, border:"1px solid var(--border)", padding:"18px 22px"}},
       React.createElement("h3", {style:{margin:"0 0 14px", fontSize:"1.05rem", fontFamily:"var(--font-display)", letterSpacing:".05em", textTransform:"uppercase"}}, "Lista para checagem (", withCoords.length + withoutCoords.length, ")"),
