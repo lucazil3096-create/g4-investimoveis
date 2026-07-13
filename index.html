@@ -1387,6 +1387,53 @@ const FB = {
     }
     return null;
   },
+  // Checagem/Inspecao mensal — salva no Firestore para acessar do celular
+  async saveInspection(inspection) {
+    if (!initFirebase()) return {ok: false, error: "Firebase desconectado"};
+    try {
+      await db.collection("inspections").doc(inspection.id).set(inspection);
+      return {ok: true};
+    } catch(e) { console.error("Save inspection error:", e); return {ok: false, error: fbErrMsg(e)}; }
+  },
+  async getInspection(id, maxRetries = 24) {
+    if (!id) return null;
+    for (let i = 0; i < maxRetries; i++) {
+      if (initFirebase()) {
+        try {
+          const snap = await db.collection("inspections").doc(id).get();
+          return snap.exists ? snap.data() : null;
+        } catch(e) { if (i === maxRetries - 1) return null; }
+      }
+      await new Promise(r => setTimeout(r, 250));
+    }
+    return null;
+  },
+  subscribeInspection(id, cb) {
+    if (!initFirebase() || !id) { cb(null); return () => {}; }
+    try {
+      return db.collection("inspections").doc(id).onSnapshot(
+        snap => cb(snap.exists ? snap.data() : null),
+        err => console.error("Inspection snapshot error:", err)
+      );
+    } catch(e) { cb(null); return () => {}; }
+  },
+  async updateInspectionItem(inspectionId, propId, data) {
+    if (!initFirebase() || !inspectionId || !propId) return {ok: false};
+    try {
+      await db.collection("inspections").doc(inspectionId).update({
+        [`items.${propId}`]: data,
+        updatedAt: new Date().toISOString()
+      });
+      return {ok: true};
+    } catch(e) { console.error("Update inspection item error:", e); return {ok: false, error: fbErrMsg(e)}; }
+  },
+  async listInspections() {
+    if (!initFirebase()) return [];
+    try {
+      const snap = await db.collection("inspections").orderBy("createdAt", "desc").limit(20).get();
+      return snap.docs.map(d => ({id: d.id, ...d.data()}));
+    } catch(e) { console.error("List inspections error:", e); return []; }
+  },
   async incrementViews(propId) {
     if (!initFirebase() || !propId) return;
     try {
@@ -2511,6 +2558,149 @@ function AdminLogin({setIsAdmin, setPage, showToast}) {
 }
 
 
+// ===== PAGINA DE CHECAGEM DIGITAL (acessivel do celular) =====
+function InspectionPage({inspectionId, settings}) {
+  const [inspection, setInspection] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState({});
+
+  useEffect(() => {
+    if (!inspectionId) return;
+    const unsub = FB.subscribeInspection(inspectionId, data => {
+      setInspection(data);
+      setLoading(false);
+    });
+    return () => { if (typeof unsub === 'function') unsub(); };
+  }, [inspectionId]);
+
+  const updateItem = async (propId, field, value) => {
+    if (!inspection) return;
+    const current = inspection.items && inspection.items[propId] || {};
+    const nextItem = {...current, [field]: value, checkedAt: new Date().toISOString()};
+    // Optimistic update
+    setInspection(prev => ({...prev, items: {...(prev.items || {}), [propId]: nextItem}}));
+    setSaving(s => ({...s, [propId]: true}));
+    await FB.updateInspectionItem(inspectionId, propId, nextItem);
+    setSaving(s => ({...s, [propId]: false}));
+  };
+
+  if (loading) {
+    return React.createElement("div", {style:{minHeight:"100vh", display:"flex", alignItems:"center", justifyContent:"center", flexDirection:"column", gap:16, background:"var(--bg)"}},
+      React.createElement("div", {style:{fontSize:32}}, "🔍"),
+      React.createElement("div", null, "Carregando checagem...")
+    );
+  }
+  if (!inspection) {
+    return React.createElement("div", {style:{minHeight:"100vh", display:"flex", alignItems:"center", justifyContent:"center", flexDirection:"column", gap:16, background:"var(--bg)", padding:24, textAlign:"center"}},
+      React.createElement("div", {style:{fontSize:48}}, "❌"),
+      React.createElement("h2", null, "Checagem não encontrada"),
+      React.createElement("p", {style:{color:"var(--text-light)"}}, "Verifique o link ou peça um novo.")
+    );
+  }
+
+  const items = inspection.items || {};
+  const props = inspection.properties || [];
+  const total = props.length;
+  const checked = Object.values(items).filter(it => it && it.placa === "ok").length;
+  const missing = Object.values(items).filter(it => it && it.placa === "faltando").length;
+  const damaged = Object.values(items).filter(it => it && it.placa === "danificada").length;
+  const pending = total - Object.values(items).filter(it => it && it.placa).length;
+
+  // Agrupa por bairro
+  const byN = {};
+  props.forEach(p => {
+    const k = (p.neighborhood || "SEM BAIRRO").trim();
+    (byN[k] = byN[k] || []).push(p);
+  });
+  const keys = Object.keys(byN).sort((a,b) => a === "SEM BAIRRO" ? 1 : b === "SEM BAIRRO" ? -1 : a.localeCompare(b));
+  const s = settings || {};
+
+  return React.createElement("div", {style:{minHeight:"100vh", background:"var(--bg)", paddingBottom:60}},
+    // Cabecalho fixo com progresso
+    React.createElement("div", {style:{position:"sticky", top:0, background:"var(--bg-dark)", color:"#fff", padding:"16px 20px", zIndex:100, boxShadow:"0 2px 12px rgba(0,0,0,.3)"}},
+      React.createElement("div", {style:{display:"flex", alignItems:"center", gap:10, marginBottom:10}},
+        s.logoUrl && React.createElement("img", {src: s.logoUrl, style:{height:36}}),
+        React.createElement("div", {style:{flex:1}},
+          React.createElement("div", {style:{fontSize:".72rem", opacity:.7, letterSpacing:".1em"}}, "CHECAGEM DIGITAL"),
+          React.createElement("div", {style:{fontWeight:800, fontSize:"1rem"}}, inspection.title || "Checagem")
+        )
+      ),
+      // Barra de progresso
+      React.createElement("div", {style:{height:8, background:"rgba(255,255,255,.15)", borderRadius:4, overflow:"hidden", marginBottom:8}},
+        React.createElement("div", {style:{height:"100%", width:`${((total - pending) / Math.max(total, 1)) * 100}%`, background:"linear-gradient(90deg, #22c55e, #16a34a)", transition:"width .3s"}})
+      ),
+      React.createElement("div", {style:{display:"flex", justifyContent:"space-between", fontSize:".78rem", gap:12, flexWrap:"wrap"}},
+        React.createElement("span", null, "✅ ", React.createElement("strong",null,checked), " OK"),
+        React.createElement("span", null, "❌ ", React.createElement("strong",null,missing), " sem placa"),
+        React.createElement("span", null, "⚠️ ", React.createElement("strong",null,damaged), " danificada"),
+        React.createElement("span", null, "⏳ ", React.createElement("strong",null,pending), " pendente")
+      )
+    ),
+    React.createElement("div", {style:{padding:"16px", maxWidth:900, margin:"0 auto"}},
+      keys.map(bairro => {
+        const bProps = byN[bairro];
+        const cidade = bProps[0].city || "";
+        const bChecked = bProps.filter(p => items[p.id] && items[p.id].placa).length;
+        return React.createElement("div", {key:bairro, style:{marginBottom:24}},
+          React.createElement("div", {style:{background:"var(--red)", color:"white", padding:"10px 16px", borderRadius:"10px 10px 0 0", display:"flex", justifyContent:"space-between", alignItems:"center", fontWeight:800}},
+            React.createElement("div", null, "📍 ", bairro, cidade && React.createElement("span",{style:{opacity:.75, fontSize:".78rem", fontWeight:400, marginLeft:8}},"— ", cidade)),
+            React.createElement("span", {style:{background:"rgba(255,255,255,.25)", padding:"3px 10px", borderRadius:12, fontSize:".78rem"}}, bChecked, "/", bProps.length)
+          ),
+          React.createElement("div", {style:{background:"white", border:"1px solid var(--border)", borderTop:"none", borderRadius:"0 0 10px 10px"}},
+            bProps.map((p, idx) => {
+              const it = items[p.id] || {};
+              const isChecked = !!it.placa;
+              return React.createElement("div", {key:p.id, style:{padding:"14px 16px", borderBottom: idx < bProps.length - 1 ? "1px solid var(--border-light)" : "none", background: isChecked ? "rgba(34,197,94,.04)" : "white"}},
+                React.createElement("div", {style:{display:"flex", justifyContent:"space-between", alignItems:"flex-start", gap:12, marginBottom:10}},
+                  React.createElement("div", {style:{flex:1}},
+                    React.createElement("div", {style:{display:"flex", alignItems:"center", gap:8, marginBottom:2}},
+                      React.createElement("span", {style:{fontWeight:900, fontSize:"1.05rem", color:"var(--red)", fontFamily:"var(--font-num)"}}, "Ref. ", p.reference || "—"),
+                      React.createElement("span", {style:{fontSize:".72rem", background:"var(--bg-accent)", padding:"2px 8px", borderRadius:4}}, p.type)
+                    ),
+                    React.createElement("div", {style:{fontSize:".92rem", fontWeight:700}}, p.title),
+                    p.address && React.createElement("div", {style:{fontSize:".78rem", color:"var(--text-light)", marginTop:2}}, "🗺️ ", p.address)
+                  ),
+                  p.lat && p.lng && React.createElement("a", {href:`https://www.google.com/maps/dir/?api=1&destination=${p.lat},${p.lng}`, target:"_blank", style:{background:"#3b82f6", color:"white", padding:"6px 10px", borderRadius:6, fontSize:".72rem", fontWeight:800, textDecoration:"none", whiteSpace:"nowrap"}}, "🚗 Ir")
+                ),
+                // Botoes de status
+                React.createElement("div", {style:{display:"flex", gap:6, flexWrap:"wrap", marginBottom:10}},
+                  [
+                    {v:"ok", l:"✅ Placa OK", c:"#22c55e"},
+                    {v:"faltando", l:"❌ Sem placa", c:"#dc2626"},
+                    {v:"danificada", l:"⚠️ Danificada", c:"#f59e0b"}
+                  ].map(opt => React.createElement("button", {
+                    key: opt.v,
+                    onClick: () => updateItem(p.id, "placa", it.placa === opt.v ? "" : opt.v),
+                    style:{
+                      flex: "1 1 auto",
+                      padding: "10px 12px",
+                      background: it.placa === opt.v ? opt.c : "white",
+                      color: it.placa === opt.v ? "white" : opt.c,
+                      border: `2px solid ${opt.c}`,
+                      borderRadius: 8,
+                      fontWeight: 800,
+                      fontSize: ".82rem",
+                      cursor: "pointer"
+                    }
+                  }, opt.l))
+                ),
+                // Campo de observacao
+                React.createElement("textarea", {
+                  value: it.obs || "",
+                  onChange: e => updateItem(p.id, "obs", e.target.value),
+                  placeholder: "Observação da visita (opcional)...",
+                  style:{width:"100%", padding:"8px 10px", border:"1px solid var(--border)", borderRadius:6, fontSize:".82rem", fontFamily:"inherit", minHeight:44, resize:"vertical"}
+                }),
+                saving[p.id] && React.createElement("div", {style:{fontSize:".7rem", color:"var(--text-light)", marginTop:4}}, "💾 Salvando...")
+              );
+            })
+          )
+        );
+      })
+    )
+  );
+}
+
 // ===== MAPA DE TODOS OS IMOVEIS (para inspecao mensal) =====
 function MapAllProperties({properties, settings, showToast}) {
   const mapRef = React.useRef(null);
@@ -2768,6 +2958,42 @@ function MapAllProperties({properties, settings, showToast}) {
     setGenPdf(false);
   };
 
+  // Cria uma checagem digital no Firebase e abre o link em nova aba
+  const [creatingInspection, setCreatingInspection] = useState(false);
+  const startInspection = async () => {
+    const allProps = [...withCoords, ...withoutCoords];
+    if (allProps.length === 0) return;
+    setCreatingInspection(true);
+    const id = (window.crypto && crypto.randomUUID) ? crypto.randomUUID() : ("insp-" + Date.now().toString(36) + Math.random().toString(36).slice(2,8));
+    const inspection = {
+      id,
+      createdAt: new Date().toISOString(),
+      title: `Checagem ${new Date().toLocaleDateString("pt-BR")}`,
+      city: selectedCity || "",
+      type: selectedType || "",
+      properties: allProps.map(p => ({
+        id: p.id,
+        reference: p.reference || "",
+        title: p.title || "",
+        type: p.type || "",
+        neighborhood: p.neighborhood || "",
+        city: p.city || "",
+        address: p.address || "",
+        lat: p.lat || null,
+        lng: p.lng || null
+      })),
+      items: {}
+    };
+    const res = await FB.saveInspection(inspection);
+    setCreatingInspection(false);
+    if (!res.ok) { showToast && showToast("Erro ao criar checagem: " + (res.error || ""), "error"); return; }
+    const url = `${window.location.origin}/checagem/${id}`;
+    // Abre em nova aba e copia link
+    try { await navigator.clipboard.writeText(url); } catch(e) {}
+    window.open(url, "_blank");
+    showToast && showToast("Link da checagem copiado! Abra no celular pra usar em campo.", "success");
+  };
+
   // Abre o Google Maps com rota entre todos os imoveis (waypoints)
   const openRoute = () => {
     if (withCoords.length === 0) return;
@@ -2804,6 +3030,7 @@ function MapAllProperties({properties, settings, showToast}) {
         React.createElement("button", {className:"btn-outline-sm", onClick: () => window.location.reload(), style:{padding:"12px 20px"}}, "🔄 Atualizar"),
         React.createElement("button", {className:"btn-outline-sm", onClick: openRoute, disabled: withCoords.length === 0, style:{padding:"12px 20px", background: withCoords.length > 0 ? "#16a34a" : "#94a3b8", color:"white", border:"none", opacity: withCoords.length === 0 ? 0.5 : 1}}, "🚗 Gerar rota no Google Maps"),
         React.createElement("button", {onClick: doPdf, disabled: genPdf || (withCoords.length + withoutCoords.length) === 0, style:{padding:"12px 22px", background: genPdf ? "#94a3b8" : "#dc2626", color:"white", border:"none", borderRadius:8, fontWeight:800, cursor: genPdf ? "wait" : "pointer", fontSize:".9rem"}}, genPdf ? "⏳ Gerando..." : "📄 Baixar PDF"),
+        React.createElement("button", {onClick: startInspection, disabled: (withCoords.length + withoutCoords.length) === 0, style:{padding:"12px 22px", background:"#7c3aed", color:"white", border:"none", borderRadius:8, fontWeight:800, cursor:"pointer", fontSize:".9rem"}}, "📱 Iniciar Checagem Digital"),
         React.createElement("button", {className:"btn-outline-sm", onClick: doPrint, style:{padding:"12px 22px"}}, "🖨️ Imprimir")
       )
     ),
@@ -5826,6 +6053,7 @@ function App() {
   const [selProp, setSelProp] = useState(null);
   const [clientSel, setClientSel] = useState(null);
   const [clientSelId, setClientSelId] = useState(null);
+  const [inspectionId, setInspectionId] = useState(null);
   const [isAdmin, setIsAdmin] = useState(() => {
     try { return sessionStorage.getItem("g4_admin") === "true"; } catch(e) { return false; }
   });
@@ -5927,6 +6155,7 @@ function App() {
     if (pg === "privacy") return "/privacidade";
     if (pg === "login" || pg === "admin") return "/admin";
     if (pg === "presentTV") return "/apresentar";
+    if (pg === "inspection") return window.location.pathname;
     if (pg === "detail" && prop) return `/imovel/${prop.reference || prop.id}`;
     if (pg === "client" && cliId) return `/cliente/${cliId}`;
     return "/";
@@ -5947,6 +6176,16 @@ function App() {
         if (target) { setSelProp(target); setPage("detail"); setDeepLinkPending(false); return; }
         // Props carregaram mas nao achou esse imovel - libera o loading
         setDeepLinkPending(false);
+      }
+    }
+    // /checagem/ID — pagina de checagem digital dos imoveis
+    if (path.startsWith("/checagem/")) {
+      const inspId = path.slice("/checagem/".length).replace(/\/$/, "");
+      if (inspId) {
+        setInspectionId(inspId);
+        setPage("inspection");
+        setDeepLinkPending(false);
+        return;
       }
     }
     // /cliente/ID — pagina personalizada do cliente
@@ -6103,6 +6342,11 @@ function App() {
       React.createElement("div", {style:{fontSize:".9rem",opacity:.7}}, "Carregando imóveis...")
     );
     return React.createElement(PresentationAllMode, {properties: props.filter(p=>p.active&&!p.sold), settings, onClose: () => window.close()});
+  }
+
+  // Modo checagem digital: renderiza SO a pagina de checagem (funciona no celular)
+  if (page === "inspection") {
+    return React.createElement(InspectionPage, {inspectionId, settings});
   }
 
   return React.createElement(React.Fragment, null,

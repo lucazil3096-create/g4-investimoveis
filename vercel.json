@@ -8,6 +8,7 @@
     { "source": "/privacidade", "destination": "/index.html" },
     { "source": "/admin", "destination": "/index.html" },
     { "source": "/admin/(.*)", "destination": "/index.html" },
-    { "source": "/apresentar", "destination": "/index.html" }
+    { "source": "/apresentar", "destination": "/index.html" },
+    { "source": "/checagem/(.*)", "destination": "/index.html" }
   ]
 }
