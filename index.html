@@ -2510,6 +2510,171 @@ function AdminLogin({setIsAdmin, setPage, showToast}) {
 }
 
 
+// ===== MAPA DE TODOS OS IMOVEIS (para inspecao mensal) =====
+function MapAllProperties({properties, settings, showToast}) {
+  const mapRef = React.useRef(null);
+  const [selectedCity, setSelectedCity] = useState("");
+  const [selectedType, setSelectedType] = useState("");
+  const [ready, setReady] = useState(false);
+
+  // Imoveis com coordenadas
+  const withCoords = React.useMemo(() => (properties || []).filter(p =>
+    p.lat && p.lng && !isNaN(+p.lat) && !isNaN(+p.lng)
+    && (!selectedCity || p.city === selectedCity)
+    && (!selectedType || p.type === selectedType)
+  ), [properties, selectedCity, selectedType]);
+
+  const withoutCoords = React.useMemo(() => (properties || []).filter(p =>
+    (!p.lat || !p.lng || isNaN(+p.lat) || isNaN(+p.lng))
+    && (!selectedCity || p.city === selectedCity)
+    && (!selectedType || p.type === selectedType)
+  ), [properties, selectedCity, selectedType]);
+
+  const cities = Array.from(new Set((properties || []).map(p => p.city).filter(Boolean))).sort();
+  const types = Array.from(new Set((properties || []).map(p => p.type).filter(Boolean))).sort();
+
+  // Carrega o Google Maps
+  useEffect(() => {
+    if (window.google && window.google.maps) { setReady(true); return; }
+    const check = setInterval(() => {
+      if (window.google && window.google.maps) { setReady(true); clearInterval(check); }
+    }, 200);
+    return () => clearInterval(check);
+  }, []);
+
+  // Renderiza o mapa com os pins
+  useEffect(() => {
+    if (!ready || !mapRef.current || withCoords.length === 0) return;
+    const bounds = new window.google.maps.LatLngBounds();
+    withCoords.forEach(p => bounds.extend({lat: +p.lat, lng: +p.lng}));
+    const map = new window.google.maps.Map(mapRef.current, {
+      center: bounds.getCenter(),
+      zoom: 14,
+      mapTypeId: "roadmap",
+      streetViewControl: false,
+      fullscreenControl: true,
+      mapTypeControl: true
+    });
+    map.fitBounds(bounds, 60);
+    const markers = [];
+    withCoords.forEach((p, i) => {
+      const isRented = p.transaction === "Aluguel";
+      const isSold = p.sold;
+      const isReserved = p.reserved;
+      let color = "#c41e1e"; // Venda
+      if (isRented) color = "#1e40af";
+      if (isReserved) color = "#d4a012";
+      if (isSold) color = "#334155";
+      const label = p.reference ? String(p.reference) : String(i+1);
+      const marker = new window.google.maps.Marker({
+        position: {lat: +p.lat, lng: +p.lng},
+        map,
+        title: `Ref. ${p.reference || i+1} · ${p.title}`,
+        label: {text: label, color: "#fff", fontSize: "12px", fontWeight: "700"},
+        icon: {
+          path: window.google.maps.SymbolPath.CIRCLE,
+          scale: 16,
+          fillColor: color,
+          fillOpacity: 0.95,
+          strokeColor: "#fff",
+          strokeWeight: 2
+        }
+      });
+      const info = new window.google.maps.InfoWindow({
+        content: `<div style="font-family:Arial,sans-serif;font-size:13px;max-width:220px">
+          <strong>Ref. ${p.reference || "-"} · ${p.type || ""}</strong><br>
+          <span>${(p.title || "").replace(/</g,"&lt;")}</span><br>
+          <span style="color:#666">${[p.neighborhood, p.city].filter(Boolean).join(" — ")}</span><br>
+          <span style="color:${color};font-weight:700">${(p.transaction || "").toUpperCase()}${isSold ? " (VENDIDO)" : ""}${isReserved ? " (RESERVADO)" : ""}</span>
+        </div>`
+      });
+      marker.addListener("click", () => info.open(map, marker));
+      markers.push(marker);
+    });
+    return () => markers.forEach(m => m.setMap(null));
+  }, [ready, withCoords]);
+
+  const doPrint = () => {
+    document.body.classList.add("print-map-active");
+    window.print();
+    setTimeout(() => document.body.classList.remove("print-map-active"), 1000);
+  };
+
+  return React.createElement(React.Fragment, null,
+    // Estilos de impressao
+    React.createElement("style", null, `
+      @media print {
+        body.print-map-active .admin-side, body.print-map-active .admin-bar, body.print-map-active .no-print { display: none !important; }
+        body.print-map-active .admin-main { padding: 0 !important; }
+        body.print-map-active .map-print-hide { display: none !important; }
+        body.print-map-active #admin-map-container { height: 500px !important; page-break-inside: avoid; }
+        body.print-map-active .map-print-header { display: block !important; }
+      }
+      .map-print-header { display: none; margin-bottom: 20px; text-align:center; }
+    `),
+    React.createElement("div", {className:"admin-top no-print"},
+      React.createElement("h1", {className:"admin-page-title"}, "Mapa dos Imóveis"),
+      React.createElement("div", {style:{display:"flex", gap:10}},
+        React.createElement("button", {className:"btn-outline-sm", onClick: () => window.location.reload(), style:{padding:"12px 20px"}}, "🔄 Atualizar"),
+        React.createElement("button", {className:"btn-red", onClick: doPrint, style:{padding:"14px 28px", fontSize:".95rem"}}, "🖨️ Imprimir para checagem")
+      )
+    ),
+    // Cabecalho para impressao
+    React.createElement("div", {className:"map-print-header"},
+      React.createElement("h2", {style:{margin:0, fontFamily:"var(--font-display)"}}, "G4 Investimóveis — Checagem Mensal de Imóveis"),
+      React.createElement("p", {style:{margin:"6px 0 0", fontSize:".85rem"}}, "Data: ", new Date().toLocaleDateString("pt-BR"), " · ", withCoords.length + withoutCoords.length, " imóvel(is)")
+    ),
+    // Filtros
+    React.createElement("div", {className:"no-print", style:{display:"flex", gap:10, marginBottom:14, flexWrap:"wrap"}},
+      React.createElement("select", {value: selectedCity, onChange: e => setSelectedCity(e.target.value), className:"af-input", style:{height:40, minWidth:180, marginBottom:0}},
+        React.createElement("option", {value:""}, "🏙️ Todas as cidades"),
+        cities.map(c => React.createElement("option", {key:c, value:c}, c))
+      ),
+      React.createElement("select", {value: selectedType, onChange: e => setSelectedType(e.target.value), className:"af-input", style:{height:40, minWidth:180, marginBottom:0}},
+        React.createElement("option", {value:""}, "🏠 Todos os tipos"),
+        types.map(t => React.createElement("option", {key:t, value:t}, t))
+      ),
+      (selectedCity || selectedType) && React.createElement("button", {className:"btn-outline-sm", onClick: () => { setSelectedCity(""); setSelectedType(""); }, style:{height:40}}, "✕ Limpar")
+    ),
+    // Legenda
+    React.createElement("div", {className:"no-print", style:{display:"flex", gap:16, marginBottom:14, flexWrap:"wrap", fontSize:".82rem"}},
+      React.createElement("span", {style:{display:"flex",alignItems:"center",gap:6}}, React.createElement("span",{style:{width:14, height:14, borderRadius:"50%", background:"#c41e1e", border:"2px solid white", boxShadow:"0 1px 3px rgba(0,0,0,.3)"}}), "Venda"),
+      React.createElement("span", {style:{display:"flex",alignItems:"center",gap:6}}, React.createElement("span",{style:{width:14, height:14, borderRadius:"50%", background:"#1e40af", border:"2px solid white", boxShadow:"0 1px 3px rgba(0,0,0,.3)"}}), "Aluguel"),
+      React.createElement("span", {style:{display:"flex",alignItems:"center",gap:6}}, React.createElement("span",{style:{width:14, height:14, borderRadius:"50%", background:"#d4a012", border:"2px solid white", boxShadow:"0 1px 3px rgba(0,0,0,.3)"}}), "Reservado"),
+      React.createElement("span", {style:{display:"flex",alignItems:"center",gap:6}}, React.createElement("span",{style:{width:14, height:14, borderRadius:"50%", background:"#334155", border:"2px solid white", boxShadow:"0 1px 3px rgba(0,0,0,.3)"}}), "Vendido")
+    ),
+    // Mapa
+    withCoords.length === 0 && React.createElement("div", {style:{padding:"40px 24px", background:"white", borderRadius:10, border:"1px solid var(--border)", textAlign:"center", marginBottom:20}},
+      React.createElement("div", {style:{fontSize:32, marginBottom:8}}, "🗺️"),
+      React.createElement("h3", null, "Nenhum imóvel com localização no mapa"),
+      React.createElement("p", {style:{color:"var(--text-light)"}}, "Adicione coordenadas nos imóveis (Editar → Localização → clicar no mapa)")
+    ),
+    withCoords.length > 0 && React.createElement("div", {id:"admin-map-container", ref: mapRef, style:{width:"100%", height: 560, borderRadius:12, border:"1px solid var(--border)", background:"#e0e0e0", marginBottom:20}}),
+    // Lista de imoveis (para checagem visual + local para anotar)
+    React.createElement("div", {style:{background:"white", borderRadius:10, border:"1px solid var(--border)", padding:"18px 22px"}},
+      React.createElement("h3", {style:{margin:"0 0 14px", fontSize:"1.05rem", fontFamily:"var(--font-display)", letterSpacing:".05em", textTransform:"uppercase"}}, "Lista para checagem (", withCoords.length + withoutCoords.length, ")"),
+      React.createElement("table", {style:{width:"100%", borderCollapse:"collapse", fontSize:".85rem"}},
+        React.createElement("thead", null,
+          React.createElement("tr", {style:{borderBottom:"2px solid var(--border)"}},
+            ["Ref.", "Tipo", "Título", "Bairro", "Cidade", "Placa ✓", "Obs."].map(h => React.createElement("th", {key:h, style:{textAlign:"left", padding:"8px 6px", fontWeight:800, fontSize:".72rem", textTransform:"uppercase", letterSpacing:".05em", color:"var(--text-light)"}}, h))
+          )
+        ),
+        React.createElement("tbody", null,
+          [...withCoords, ...withoutCoords].map(p => React.createElement("tr", {key:p.id, style:{borderBottom:"1px solid var(--border-light)"}},
+            React.createElement("td", {style:{padding:"10px 6px", fontWeight:800, fontFamily:"var(--font-num)"}}, p.reference || "—"),
+            React.createElement("td", {style:{padding:"10px 6px"}}, p.type || "—"),
+            React.createElement("td", {style:{padding:"10px 6px", maxWidth:280}}, p.title || "—"),
+            React.createElement("td", {style:{padding:"10px 6px"}}, p.neighborhood || "—"),
+            React.createElement("td", {style:{padding:"10px 6px"}}, p.city || "—"),
+            React.createElement("td", {style:{padding:"10px 6px", textAlign:"center"}}, "☐"),
+            React.createElement("td", {style:{padding:"10px 6px", borderBottom:"1px solid var(--border-light)", minWidth:180}}, "")
+          ))
+        )
+      )
+    )
+  );
+}
+
 // ===== ADMIN PANEL =====
 function AdminPanel({properties, setProperties, showToast, settings, viewsMap}) {
   const [adminSort, setAdminSort] = useState(() => {
@@ -2811,6 +2976,7 @@ function AdminPanel({properties, setProperties, showToast, settings, viewsMap}) 
       React.createElement("div", {className: "admin-side-label"}, "Menu"),
       React.createElement("button", {className: `admin-side-link ${ap==='dashboard'?'active':''}`, onClick:()=>setAp("dashboard")}, I.dash, " Dashboard"),
       React.createElement("button", {className: `admin-side-link ${ap==='list'?'active':''}`, onClick:()=>setAp("list")}, I.home, " Todos os Imóveis"),
+      React.createElement("button", {className: `admin-side-link ${ap==='map'?'active':''}`, onClick:()=>setAp("map")}, I.pin, " Mapa dos Imóveis"),
       React.createElement("div", {className: "admin-side-label"}, "Arquivo"),
       React.createElement("button", {className: `admin-side-link ${ap==='sold'?'active':''}`, onClick:()=>setAp("sold")}, I.check, " Vendidos", soldCount > 0 && React.createElement("span",{style:{marginLeft:"auto",background:"#334155",color:"white",padding:"2px 8px",borderRadius:50,fontSize:".68rem",fontWeight:800}},soldCount)),
       React.createElement("button", {className: `admin-side-link ${ap==='inactive'?'active':''}`, onClick:()=>setAp("inactive")}, I.eyeOff, " Inativos", inactiveCount > 0 && React.createElement("span",{style:{marginLeft:"auto",background:"var(--text-light)",color:"white",padding:"2px 8px",borderRadius:50,fontSize:".68rem",fontWeight:800}},inactiveCount)),
@@ -2955,7 +3121,7 @@ function AdminPanel({properties, setProperties, showToast, settings, viewsMap}) 
           ) :
           React.createElement(ScrollableTable, null, React.createElement("table", {className: "a-table"}, React.createElement("thead", null, React.createElement("tr", null, ["Foto","Imóvel","Tipo","Cidade","Preço","Views","Status","Ações"].map(h => React.createElement("th", {key:h}, h)))), React.createElement("tbody", null, inactiveProps.map(p => React.createElement(TableRow, {key:p.id, p, minimal:true})))))
 
-      ) : React.createElement(SettingsPanel, {settings, showToast}),
+      ) : ap === 'map' ? React.createElement(MapAllProperties, {properties: activeProps, settings, showToast}) : React.createElement(SettingsPanel, {settings, showToast}),
       // Modal de gerador Instagram
       igProp && React.createElement(InstagramPostMaker, {property: igProp, settings, showToast, onClose: () => setIgProp(null)}),
       // Apresentacao de todos os imoveis (TV/Chromecast)
