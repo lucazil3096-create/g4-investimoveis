@@ -3823,7 +3823,8 @@ function PresentationAllMode({properties, settings, onClose}) {
     React.createElement("img", {
       key: idx,
       src: slide.img,
-      style: {width:"100%", height:"100%", objectFit:"contain", animation:"fadeIn .5s ease"},
+      draggable: false,
+      style: {width:"100%", height:"100%", objectFit:"contain", animation:"fadeIn .5s ease", pointerEvents:"none", userSelect:"none"},
       alt: p.title
     }),
     // Overlay topo - controles
@@ -3911,6 +3912,7 @@ function InstagramPostMaker({property, settings, onClose, showToast}) {
   const [showPriceIG, setShowPriceIG] = useState(true);
   const [highlightBadge, setHighlightBadge] = useState(""); // "", "opportunity", "price_drop", "exclusive", "new"
   const [badgeScale, setBadgeScale] = useState(100); // 50-150%
+  const [oldPriceInput, setOldPriceInput] = useState(""); // Preco antigo digitado no campo (para "DE R$ X por R$ Y")
   const s = settings || DEFAULT_SETTINGS;
   const p = property || {};
   const wpp = s.whatsappNumber || WHATSAPP;
@@ -3941,7 +3943,7 @@ function InstagramPostMaker({property, settings, onClose, showToast}) {
 
   // No gerador IG, o toggle "Mostrar valor" tem prioridade sobre o showPrice geral do imovel
   const priceStr = (showPriceIG && p.price > 0) ? fmtCurrency(p.price) : "VALOR SOB CONSULTA";
-  const oldPriceStr = p.oldPrice ? fmtCurrency(p.oldPrice) : "";
+  const oldPriceStr = oldPriceInput ? fmtCurrency(+oldPriceInput) : (p.oldPrice ? fmtCurrency(p.oldPrice) : "");
   const badges = {
     opportunity: { text: "🔥 OPORTUNIDADE", color: "#f59e0b", bg: "#fff7ed" },
     price_drop: { text: "💰 BAIXOU O PREÇO", color: "#16a34a", bg: "#f0fdf4" },
@@ -4698,6 +4700,18 @@ function InstagramPostMaker({property, settings, onClose, showToast}) {
               React.createElement("span", null, "Padrão"),
               React.createElement("span", null, "Gigante")
             )
+          ),
+          // Campo de preco antigo (so aparece quando escolhe "BAIXOU O PRECO")
+          highlightBadge === "price_drop" && React.createElement("div", {style:{marginBottom:18, padding:"12px 14px", background:"rgba(22,163,74,.06)", borderRadius:8, border:"1px solid rgba(22,163,74,.2)"}},
+            React.createElement("label", {style:{fontSize:".82rem", fontWeight:800, color:"#16a34a", display:"block", marginBottom:8}},
+              "💰 Preço antigo (opcional)"
+            ),
+            React.createElement("div", {style:{display:"flex", alignItems:"center", gap:8}},
+              React.createElement("span", {style:{fontSize:".85rem", fontWeight:700, color:"var(--text-light)"}}, "De R$"),
+              React.createElement("input", {type:"text", inputMode:"numeric", value: oldPriceInput ? Number(oldPriceInput).toLocaleString("pt-BR") : "", onChange: e => setOldPriceInput(e.target.value.replace(/\D/g,"")), placeholder:"Ex: 200.000", className:"af-input", style:{flex:1, marginBottom:0, fontSize:".9rem", fontWeight:700}}),
+              oldPriceInput && React.createElement("button", {type:"button", onClick:()=>setOldPriceInput(""), style:{background:"none", border:"none", color:"var(--text-light)", cursor:"pointer", fontSize:"1.1rem", padding:"4px 8px"}, title:"Limpar"}, "✕")
+            ),
+            React.createElement("p", {style:{fontSize:".72rem", color:"var(--text-light)", marginTop:8, marginBottom:0, lineHeight:1.4}}, "Aparece como ", React.createElement("strong",null,"De R$ 200.000 por R$ ", (p.price ? Number(p.price).toLocaleString("pt-BR") : "170.000"))," na imagem. Deixe vazio pra mostrar só o preço atual.")
           ),
           React.createElement("h4", {style:{fontSize:".82rem", fontWeight:800, textTransform:"uppercase", letterSpacing:".08em", color:"var(--text-light)", marginBottom:10}}, "Texto extra (opcional)"),
           React.createElement("textarea", {className:"af-input af-textarea", value: customCta, onChange: e => setCustomCta(e.target.value), placeholder:"Ex: AGENDE SUA VISITA HOJE!", style:{minHeight: 60, fontSize:".85rem", marginBottom:18}}),
