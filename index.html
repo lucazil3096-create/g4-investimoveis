@@ -2606,13 +2606,21 @@ function InspectionPage({inspectionId, settings}) {
   const damaged = Object.values(items).filter(it => it && it.placa === "danificada").length;
   const pending = total - Object.values(items).filter(it => it && it.placa).length;
 
-  // Agrupa por bairro
+  // Agrupa por bairro (respeita ordem otimizada se ela foi salva)
   const byN = {};
   props.forEach(p => {
     const k = (p.neighborhood || "SEM BAIRRO").trim();
     (byN[k] = byN[k] || []).push(p);
   });
-  const keys = Object.keys(byN).sort((a,b) => a === "SEM BAIRRO" ? 1 : b === "SEM BAIRRO" ? -1 : a.localeCompare(b));
+  // Se a checagem tem ordem de bairros salva (economia de combustivel), respeita
+  let keys;
+  if (inspection.orderedNeighborhoods && inspection.orderedNeighborhoods.length > 0) {
+    keys = inspection.orderedNeighborhoods.filter(n => byN[n]);
+    // Adiciona bairros que existem em byN mas nao estao na lista otimizada (fallback)
+    Object.keys(byN).forEach(k => { if (!keys.includes(k)) keys.push(k); });
+  } else {
+    keys = Object.keys(byN).sort((a,b) => a === "SEM BAIRRO" ? 1 : b === "SEM BAIRRO" ? -1 : a.localeCompare(b));
+  }
   const s = settings || {};
 
   return React.createElement("div", {style:{minHeight:"100vh", background:"var(--bg)", paddingBottom:60}},
@@ -2637,14 +2645,29 @@ function InspectionPage({inspectionId, settings}) {
       )
     ),
     React.createElement("div", {style:{padding:"16px", maxWidth:900, margin:"0 auto"}},
-      keys.map(bairro => {
+      inspection.optimized && React.createElement("div", {style:{background:"#dcfce7", border:"1px solid #16a34a", padding:"10px 14px", borderRadius:8, marginBottom:16, fontSize:".82rem", color:"#166534", fontWeight:700, display:"flex", alignItems:"center", gap:8}},
+        "🚗 Rota econômica ativa — visita os bairros na ordem mais próxima pra economizar combustível"
+      ),
+      keys.map((bairro, bIdx) => {
         const bProps = byN[bairro];
         const cidade = bProps[0].city || "";
         const bChecked = bProps.filter(p => items[p.id] && items[p.id].placa).length;
         return React.createElement("div", {key:bairro, style:{marginBottom:24}},
-          React.createElement("div", {style:{background:"var(--red)", color:"white", padding:"10px 16px", borderRadius:"10px 10px 0 0", display:"flex", justifyContent:"space-between", alignItems:"center", fontWeight:800}},
-            React.createElement("div", null, "📍 ", bairro, cidade && React.createElement("span",{style:{opacity:.75, fontSize:".78rem", fontWeight:400, marginLeft:8}},"— ", cidade)),
-            React.createElement("span", {style:{background:"rgba(255,255,255,.25)", padding:"3px 10px", borderRadius:12, fontSize:".78rem"}}, bChecked, "/", bProps.length)
+          React.createElement("div", {style:{background:"var(--red)", color:"white", padding:"10px 16px", borderRadius:"10px 10px 0 0", display:"flex", justifyContent:"space-between", alignItems:"center", fontWeight:800, gap:10, flexWrap:"wrap"}},
+            React.createElement("div", {style:{display:"flex", alignItems:"center", gap:10, flex:"1 1 auto"}},
+              inspection.optimized && React.createElement("span", {style:{background:"#16a34a", color:"white", padding:"3px 9px", borderRadius:14, fontSize:".78rem", fontWeight:900, minWidth:28, textAlign:"center"}}, "#", bIdx + 1),
+              React.createElement("div", null, "📍 ", bairro, cidade && React.createElement("span",{style:{opacity:.75, fontSize:".78rem", fontWeight:400, marginLeft:8}},"— ", cidade))
+            ),
+            React.createElement("div", {style:{display:"flex", gap:8, alignItems:"center"}},
+              // Botao rota deste bairro
+              (() => {
+                const coords = bProps.filter(p => p.lat && p.lng);
+                if (coords.length === 0) return null;
+                const pts = coords.slice(0, 10).map(p => `${(+p.lat).toFixed(6)},${(+p.lng).toFixed(6)}`).join("/");
+                return React.createElement("a", {href:`https://www.google.com/maps/dir/${pts}`, target:"_blank", style:{background:"rgba(255,255,255,.25)", color:"white", padding:"5px 10px", borderRadius:6, fontSize:".72rem", fontWeight:800, textDecoration:"none"}}, "🚗 Rota");
+              })(),
+              React.createElement("span", {style:{background:"rgba(255,255,255,.25)", padding:"3px 10px", borderRadius:12, fontSize:".78rem"}}, bChecked, "/", bProps.length)
+            )
           ),
           React.createElement("div", {style:{background:"white", border:"1px solid var(--border)", borderTop:"none", borderRadius:"0 0 10px 10px"}},
             bProps.map((p, idx) => {
@@ -3004,13 +3027,64 @@ function MapAllProperties({properties, settings, showToast}) {
     if (allProps.length === 0) return;
     setCreatingInspection(true);
     const id = (window.crypto && crypto.randomUUID) ? crypto.randomUUID() : ("insp-" + Date.now().toString(36) + Math.random().toString(36).slice(2,8));
+    // ===== Ordena por rota otimizada se ativo =====
+    let orderedNeighborhoods = [];
+    let sortedProps = allProps;
+    if (optimizeRoute) {
+      // Agrupa por bairro
+      const byN = {};
+      allProps.forEach(p => {
+        const k = (p.neighborhood || "SEM BAIRRO").trim();
+        (byN[k] = byN[k] || []).push(p);
+      });
+      // Centros de cada bairro
+      const centers = {};
+      Object.keys(byN).forEach(k => {
+        const withC = byN[k].filter(p => p.lat && p.lng);
+        if (withC.length === 0) { centers[k] = null; return; }
+        const sumLat = withC.reduce((s,p) => s + (+p.lat), 0);
+        const sumLng = withC.reduce((s,p) => s + (+p.lng), 0);
+        centers[k] = {name: k, lat: sumLat/withC.length, lng: sumLng/withC.length};
+      });
+      const validCenters = Object.values(centers).filter(c => c);
+      const optCenters = optimizeOrder(validCenters, startCoords);
+      const optKeys = optCenters.map(c => c.name);
+      const invalidKeys = Object.keys(centers).filter(k => !centers[k])
+        .sort((a,b) => a === "SEM BAIRRO" ? 1 : b === "SEM BAIRRO" ? -1 : a.localeCompare(b));
+      orderedNeighborhoods = [...optKeys, ...invalidKeys];
+      // Dentro de cada bairro, ordena os imoveis pelo mais proximo do anterior
+      sortedProps = [];
+      let prevPoint = startCoords;
+      orderedNeighborhoods.forEach(n => {
+        const propsInN = byN[n];
+        const withC = propsInN.filter(p => p.lat && p.lng);
+        const withoutC = propsInN.filter(p => !p.lat || !p.lng);
+        if (withC.length > 0) {
+          const optProps = optimizeOrder(withC, prevPoint);
+          sortedProps.push(...optProps);
+          prevPoint = optProps[optProps.length - 1];
+        }
+        sortedProps.push(...withoutC);
+      });
+    } else {
+      // Sem otimizacao: ordena por bairro alfabeticamente
+      const byN = {};
+      allProps.forEach(p => {
+        const k = (p.neighborhood || "SEM BAIRRO").trim();
+        (byN[k] = byN[k] || []).push(p);
+      });
+      orderedNeighborhoods = Object.keys(byN).sort((a,b) => a === "SEM BAIRRO" ? 1 : b === "SEM BAIRRO" ? -1 : a.localeCompare(b));
+      sortedProps = orderedNeighborhoods.flatMap(n => byN[n]);
+    }
     const inspection = {
       id,
       createdAt: new Date().toISOString(),
-      title: `Checagem ${new Date().toLocaleDateString("pt-BR")}`,
+      title: `Checagem ${new Date().toLocaleDateString("pt-BR")}${optimizeRoute ? " (rota econômica)" : ""}`,
       city: selectedCity || "",
       type: selectedType || "",
-      properties: allProps.map(p => ({
+      optimized: optimizeRoute,
+      orderedNeighborhoods,
+      properties: sortedProps.map(p => ({
         id: p.id,
         reference: p.reference || "",
         title: p.title || "",
