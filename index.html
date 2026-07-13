@@ -4057,7 +4057,8 @@ function InstagramPostMaker({property, settings, onClose, showToast}) {
 
     // === Conteúdo inferior ===
     const padX = 60;
-    let y = H - 480; // posição inicial do conteúdo de baixo (~ baseado em padding-bottom 50)
+    const hasOldPrice = highlightBadge === "price_drop" && oldPriceStr;
+    let y = H - 480 - (hasOldPrice ? 60 : 0); // sobe conteudo quando tem preco antigo (caixa fica maior)
 
     // CASA (tipo)
     ctx.fillStyle = t.accent;
@@ -4105,10 +4106,10 @@ function InstagramPostMaker({property, settings, onClose, showToast}) {
     ctx.font = `800 ${priceFontSize}px Arial, Helvetica, sans-serif`;
     const valW = ctx.measureText(priceStr).width;
     ctx.font = "700 28px Arial, Helvetica, sans-serif";
-    const oldW = (highlightBadge === "price_drop" && oldPriceStr) ? ctx.measureText("DE " + oldPriceStr).width : 0;
+    const oldW = hasOldPrice ? ctx.measureText("DE " + oldPriceStr).width : 0;
     const innerW = Math.max(lblW, valW, oldW);
     const pbW = innerW + 80;
-    const pbH = (highlightBadge === "price_drop" && oldPriceStr) ? 156 : 120;
+    const pbH = hasOldPrice ? 148 : 120;
     roundRect(ctx, padX, y, pbW, pbH, 14);
     ctx.fillStyle = t.primary;
     ctx.fill();
@@ -4118,24 +4119,23 @@ function InstagramPostMaker({property, settings, onClose, showToast}) {
     ctx.textBaseline = "top";
     ctx.globalAlpha = 0.9;
     ctx.font = "700 22px Arial, Helvetica, sans-serif";
-    ctx.fillText("VALOR", padX + 40, y + 22);
+    ctx.fillText("VALOR", padX + 40, y + 18);
     ctx.globalAlpha = 1;
     // De (preço antigo riscado)
-    let pTextY = y + 56;
-    if (highlightBadge === "price_drop" && oldPriceStr) {
-      ctx.font = "700 28px Arial, Helvetica, sans-serif";
-      ctx.globalAlpha = 0.7;
+    let pTextY = y + 50;
+    if (hasOldPrice) {
+      ctx.font = "700 26px Arial, Helvetica, sans-serif";
+      ctx.globalAlpha = 0.75;
       ctx.fillText("DE " + oldPriceStr, padX + 40, pTextY);
-      // Linha riscando
       const oldW2 = ctx.measureText("DE " + oldPriceStr).width;
       ctx.strokeStyle = "#fff";
       ctx.lineWidth = 2;
       ctx.beginPath();
-      ctx.moveTo(padX + 40, pTextY + 16);
-      ctx.lineTo(padX + 40 + oldW2, pTextY + 16);
+      ctx.moveTo(padX + 40, pTextY + 14);
+      ctx.lineTo(padX + 40 + oldW2, pTextY + 14);
       ctx.stroke();
       ctx.globalAlpha = 1;
-      pTextY += 36;
+      pTextY += 32;
     }
     // Preço grande
     ctx.font = `800 ${priceFontSize}px Arial, Helvetica, sans-serif`;
@@ -4143,12 +4143,13 @@ function InstagramPostMaker({property, settings, onClose, showToast}) {
     ctx.fillText(priceStr, padX + 40, pTextY);
     y += pbH + 30;
 
-    // CTA: Telefone + Ref
+    // CTA: Telefone + Ref (fica embaixo da caixa de preço, com fallback pra parte inferior)
     ctx.fillStyle = "#fff";
     ctx.font = "800 28px Arial, Helvetica, sans-serif";
     ctx.textBaseline = "middle";
     ctx.textAlign = "left";
-    const phoneY = H - 80;
+    // y aqui esta apos a caixa de preco (ja teve pbH+30 somado). Pega o maior entre esse y ou H-80.
+    const phoneY = Math.max(H - 80, y + 10);
     ctx.fillStyle = t.accent;
     ctx.fillText("📞", padX, phoneY);
     ctx.fillStyle = "#fff";
