@@ -4067,9 +4067,9 @@ function SettingsPanel({settings, showToast}) {
         React.createElement("div", {key:"logoSize", className:"af-group full", style:{background:"rgba(59,130,246,.05)", border:"1px solid rgba(59,130,246,.2)", borderRadius:8, padding:"14px 18px", marginBottom:14}},
           React.createElement("label", {style:{fontSize:".85rem", fontWeight:800, display:"flex", justifyContent:"space-between", marginBottom:8}},
             React.createElement("span", null, "📏 Tamanho da logo no topo"),
-            React.createElement("span", {style:{color:"#3b82f6"}}, (f.logoSize || 96), "px")
+            React.createElement("span", {style:{color:"#3b82f6"}}, (s.logoSize || 96), "px")
           ),
-          React.createElement("input", {type:"range", min:48, max:180, step:4, value: f.logoSize || 96, onChange: e => upd("logoSize", +e.target.value), style:{width:"100%", accentColor:"#3b82f6"}}),
+          React.createElement("input", {type:"range", min:48, max:180, step:4, value: s.logoSize || 96, onChange: e => upd("logoSize", +e.target.value), style:{width:"100%", accentColor:"#3b82f6"}}),
           React.createElement("div", {style:{display:"flex", justifyContent:"space-between", fontSize:".72rem", color:"var(--text-light)", marginTop:2}},
             React.createElement("span", null, "Pequena (48px)"),
             React.createElement("span", null, "Padrão (96px)"),
