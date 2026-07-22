@@ -1563,6 +1563,7 @@ let ALL_FEATURES = ["Piscina","Churrasqueira","Garagem","Quintal","Área de Serv
 
 const DEFAULT_SETTINGS = {
   logoUrl: "",
+  logoSize: 96,
   watermarkEnabled: true,
   watermarkUrl: "",
   watermarkOpacity: 35,
@@ -1746,7 +1747,7 @@ function Header({page, setPage, scrolled, isAdmin, setIsAdmin, settings}) {
   return React.createElement("header", {className: `header ${scrolled ? 'scrolled' : ''} ${showAdminBar ? 'has-admin-bar' : ''}`},
     React.createElement("div", {className: "header-inner"},
       React.createElement("a", {className: "logo-link", onClick: (e) => { e.preventDefault(); nav("home"); }, href: "#"},
-        React.createElement("img", {src: logoSrc, alt: "G4 Investimóveis", className: "logo-img"})
+        React.createElement("img", {src: logoSrc, alt: "G4 Investimóveis", className: "logo-img", style: (settings && settings.logoSize) ? {height: `${settings.logoSize}px`} : {}})
       ),
       React.createElement("button", {className: "mobile-toggle", onClick: () => setMenuOpen(!menuOpen)}, menuOpen ? I.close : I.menu),
       React.createElement("nav", {className: `nav ${menuOpen ? 'open' : ''}`},
@@ -4062,6 +4063,19 @@ function SettingsPanel({settings, showToast}) {
     React.createElement("div", {className: "admin-form-card"},
       Sec({title: "🏢 Dados da empresa", children: [
         ImgField({key:"logo", label:"Logo (aparece no topo, rodapé, login)", k:"logoUrl", fileRef: logoFileRef, preview: true, help:"PNG transparente funciona melhor. Recomendado 400x120px."}),
+        // Slider de tamanho da logo no header
+        React.createElement("div", {key:"logoSize", className:"af-group full", style:{background:"rgba(59,130,246,.05)", border:"1px solid rgba(59,130,246,.2)", borderRadius:8, padding:"14px 18px", marginBottom:14}},
+          React.createElement("label", {style:{fontSize:".85rem", fontWeight:800, display:"flex", justifyContent:"space-between", marginBottom:8}},
+            React.createElement("span", null, "📏 Tamanho da logo no topo"),
+            React.createElement("span", {style:{color:"#3b82f6"}}, (f.logoSize || 96), "px")
+          ),
+          React.createElement("input", {type:"range", min:48, max:180, step:4, value: f.logoSize || 96, onChange: e => upd("logoSize", +e.target.value), style:{width:"100%", accentColor:"#3b82f6"}}),
+          React.createElement("div", {style:{display:"flex", justifyContent:"space-between", fontSize:".72rem", color:"var(--text-light)", marginTop:2}},
+            React.createElement("span", null, "Pequena (48px)"),
+            React.createElement("span", null, "Padrão (96px)"),
+            React.createElement("span", null, "Gigante (180px)")
+          )
+        ),
         Field({key:"cname", label:"Nome da empresa", k:"companyName", placeholder:"G4 Investimóveis"}),
         Field({key:"owner", label:"Nome do responsável", k:"ownerName", placeholder:"Luiz Fernando Raiffer de Oliveira"}),
         Field({key:"creci", label:"CRECI", k:"creci", placeholder:"F30864"})
