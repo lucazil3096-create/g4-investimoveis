@@ -6562,14 +6562,17 @@ function App() {
       setProps(INITIAL_PROPS); setLoading(false); return;
     }
     let cancelled = false;
-    // Timeout de seguranca: mesmo se Firebase nao responder, mostra a pagina em 4s
-    const failsafe = setTimeout(() => { if (!cancelled) setLoading(false); }, 4000);
+    let gotData = false;
+    // Timeout de seguranca AUMENTADO: 10s antes de desistir e mostrar pagina vazia
+    // (Firebase pode demorar em conexoes lentas ou primeira visita)
+    const failsafe = setTimeout(() => { if (!cancelled && !gotData) setLoading(false); }, 10000);
     // 1) Tenta carregar direto (pra primeira visita aparecer rápido sem precisar de F5)
     (async () => {
-      for (let i = 0; i < 24 && !cancelled; i++) {
+      for (let i = 0; i < 40 && !cancelled; i++) {
         const data = await FB.loadAll();
-        if (data && Array.isArray(data)) {
+        if (data && Array.isArray(data) && data.length > 0) {
           if (!cancelled) {
+            gotData = true;
             setProps(data);
             setLoading(false);
             try { localStorage.setItem("g4_props_cache", JSON.stringify(data)); } catch(e) {}
@@ -6584,6 +6587,8 @@ function App() {
     const unsub = FB.subscribe(data => {
       if (cancelled) return;
       const arr = data || [];
+      // So marca gotData se vier dados reais (evita mostrar pagina vazia)
+      if (arr.length > 0) gotData = true;
       setProps(arr);
       setLoading(false);
       try { localStorage.setItem("g4_props_cache", JSON.stringify(arr)); } catch(e) {}
