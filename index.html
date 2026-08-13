@@ -2815,17 +2815,21 @@ function VisitSheetPage({properties, settings, showToast}) {
     // Estilos de impressao
     React.createElement("style", null, `
       @media print {
-        @page { size: A4; margin: 12mm; }
+        @page { size: A4; margin: 10mm; }
         body.print-visit-active .admin-side,
         body.print-visit-active .admin-bar,
         body.print-visit-active .header,
         body.print-visit-active .wpp-float,
         body.print-visit-active .no-print,
-        body.print-visit-active .cookie-banner { display: none !important; }
+        body.print-visit-active .cookie-banner,
+        body.print-visit-active .toast,
+        body.print-visit-active .scroll-top { display: none !important; }
         body.print-visit-active .admin-main { padding: 0 !important; margin: 0 !important; width: 100% !important; max-width: 100% !important; }
-        body.print-visit-active .visit-sheet { page-break-inside: avoid; break-inside: avoid; }
-        body.print-visit-active .visit-prop { page-break-inside: avoid; break-inside: avoid; }
-        body.print-visit-active .visit-prop:not(:first-of-type) { page-break-before: always; break-before: page; }
+        body.print-visit-active .visit-sheet { border: none !important; padding: 0 !important; max-width: 100% !important; box-shadow: none !important; }
+        body.print-visit-active .visit-sheet > * { page-break-inside: avoid; break-inside: avoid; }
+        body.print-visit-active .visit-prop { page-break-after: always; break-after: page; margin: 0 !important; border: 2px solid #333 !important; }
+        body.print-visit-active .visit-prop:last-of-type { page-break-after: auto; break-after: auto; }
+        body.print-visit-active img { max-width: 100% !important; height: auto !important; }
       }
     `),
     // Cabecalho do editor
@@ -2833,8 +2837,13 @@ function VisitSheetPage({properties, settings, showToast}) {
       React.createElement("h1", {className:"admin-page-title"}, "📋 Fichas de Visita"),
       React.createElement("div", {style:{display:"flex", gap:10, flexWrap:"wrap"}},
         selectedIds.length > 0 && React.createElement("button", {onClick: clearAll, className:"btn-outline-sm", style:{padding:"12px 20px"}}, "✕ Limpar tudo"),
-        React.createElement("button", {onClick: doPrint, className:"btn-red", style:{padding:"14px 28px", fontSize:".95rem"}}, "🖨️ Imprimir Ficha")
+        React.createElement("button", {onClick: doPrint, className:"btn-red", style:{padding:"14px 28px", fontSize:".95rem"}}, "🖨️ Imprimir / Salvar PDF")
       )
+    ),
+    // Instrucoes de PDF (visivel so no editor)
+    React.createElement("div", {className:"no-print", style:{padding:"10px 14px", background:"rgba(59,130,246,.08)", border:"1px solid rgba(59,130,246,.3)", borderRadius:8, marginBottom:16, fontSize:".82rem", color:"#1e40af"}},
+      "💡 Ao clicar em 'Imprimir', na janela do navegador escolha ", React.createElement("strong",null,"'Salvar como PDF'"), " no destino pra gerar o arquivo. Ou escolha sua impressora pra imprimir direto. ",
+      React.createElement("strong",null,"Cada imóvel sai em 1 folha separada")
     ),
     // Layout: formulario a esquerda + preview a direita
     React.createElement("div", {className:"no-print", style:{display:"grid", gridTemplateColumns:"1fr", gap:16, marginBottom:20}},
@@ -2932,42 +2941,48 @@ function VisitSheetPage({properties, settings, showToast}) {
           agentName && React.createElement("div", null, React.createElement("strong", null, "Corretor: "), agentName)
         )
       ),
-      // Imoveis
+      // Imoveis - cada um em uma folha A4 separada
       selectedProps.map((p, idx) => {
         const addrParts = [p.address, p.neighborhood, p.city && `${p.city}/PR`].filter(Boolean);
         const addr = addrParts.join(", ");
         const hasCoords = p.lat && p.lng && !isNaN(+p.lat) && !isNaN(+p.lng);
         const mapQuery = hasCoords ? `${p.lat},${p.lng}` : encodeURIComponent(addr || `${p.city}, PR`);
         // Static Maps image (funciona sem carregar JS - perfeito pra imprimir)
-        const staticMapUrl = `https://maps.googleapis.com/maps/api/staticmap?center=${mapQuery}&zoom=16&size=600x300&maptype=roadmap&markers=color:red%7C${mapQuery}&key=${GMAPS_KEY}`;
-        return React.createElement("div", {key:p.id, className:"visit-prop", style:{marginBottom:30, border:"1px solid var(--border)", borderRadius:8, overflow:"hidden"}},
-          // Titulo do imovel
-          React.createElement("div", {style:{background:"var(--red)", color:"white", padding:"10px 16px", display:"flex", justifyContent:"space-between", alignItems:"center", flexWrap:"wrap", gap:8}},
+        const staticMapUrl = `https://maps.googleapis.com/maps/api/staticmap?center=${mapQuery}&zoom=16&size=600x260&maptype=roadmap&markers=color:red%7Clabel:${idx+1}%7C${mapQuery}&key=${GMAPS_KEY}`;
+        return React.createElement("div", {key:p.id, className:"visit-prop", style:{marginBottom:40, border:"2px solid #333", borderRadius:0, overflow:"hidden", position:"relative"}},
+          // Cabecalho do imovel (Referencia + tipo)
+          React.createElement("div", {style:{background:"var(--red)", color:"white", padding:"12px 18px", display:"flex", justifyContent:"space-between", alignItems:"center", flexWrap:"wrap", gap:8}},
             React.createElement("div", {style:{display:"flex", alignItems:"center", gap:12}},
-              React.createElement("span", {style:{background:"white", color:"var(--red)", padding:"4px 12px", borderRadius:14, fontSize:".9rem", fontWeight:900}}, "#", idx+1),
-              React.createElement("strong", {style:{fontSize:"1rem"}}, "Ref. ", p.reference || "—", " · ", p.type)
+              React.createElement("span", {style:{background:"white", color:"var(--red)", padding:"4px 12px", borderRadius:14, fontSize:".95rem", fontWeight:900}}, "#", idx+1, "/", selectedProps.length),
+              React.createElement("strong", {style:{fontSize:"1.05rem"}}, "Ref. ", p.reference || "—", " · ", p.type)
             ),
-            React.createElement("span", {style:{fontSize:".82rem"}}, p.transaction || "Venda")
+            React.createElement("span", {style:{fontSize:".88rem", background:"rgba(255,255,255,.2)", padding:"3px 12px", borderRadius:12, fontWeight:800}}, (p.transaction || "VENDA").toUpperCase())
           ),
-          React.createElement("div", {style:{padding:"14px 18px"}},
+          React.createElement("div", {style:{padding:"14px 20px"}},
+            // Cliente destacado (repete em cada folha)
+            React.createElement("div", {style:{background:"#fff8dc", padding:"8px 12px", borderRadius:4, marginBottom:12, fontSize:".85rem", border:"1px dashed #d4a012"}},
+              React.createElement("strong", null, "👤 Cliente: "), clientName,
+              clientPhone && React.createElement("span", {style:{marginLeft:12}}, "📞 ", clientPhone),
+              React.createElement("span", {style:{marginLeft:12, color:"var(--text-light)"}}, "📅 ", new Date(visitDate + "T12:00:00").toLocaleDateString("pt-BR"))
+            ),
             // Titulo + preco
             React.createElement("div", {style:{display:"flex", justifyContent:"space-between", alignItems:"flex-start", marginBottom:12, gap:12, flexWrap:"wrap"}},
               React.createElement("div", {style:{flex:"1 1 60%"}},
-                React.createElement("h3", {style:{margin:"0 0 4px", fontSize:"1.05rem"}}, p.title || "Imóvel"),
-                React.createElement("p", {style:{margin:0, fontSize:".85rem", color:"var(--text-light)"}}, "📍 ", addr || "Endereço não cadastrado")
+                React.createElement("h3", {style:{margin:"0 0 6px", fontSize:"1.1rem", textTransform:"uppercase", letterSpacing:".02em"}}, p.title || "Imóvel"),
+                React.createElement("p", {style:{margin:0, fontSize:".92rem", fontWeight:600}}, "📍 ", addr || "Endereço não cadastrado")
               ),
-              React.createElement("div", {style:{textAlign:"right"}},
-                React.createElement("div", {style:{fontSize:".7rem", color:"var(--text-light)", letterSpacing:".1em", fontWeight:700}}, "VALOR"),
-                React.createElement("div", {style:{fontFamily:"var(--font-num)", fontWeight:900, fontSize:"1.1rem", color:"var(--red)"}}, p.price > 0 ? fmtCurrency(p.price) : "Consulte")
+              React.createElement("div", {style:{textAlign:"right", padding:"8px 14px", background:"var(--red)", color:"white", borderRadius:6}},
+                React.createElement("div", {style:{fontSize:".68rem", opacity:.9, letterSpacing:".1em", fontWeight:700}}, "VALOR"),
+                React.createElement("div", {style:{fontFamily:"var(--font-num)", fontWeight:900, fontSize:"1.15rem"}}, p.price > 0 ? fmtCurrency(p.price) : "SOB CONSULTA")
               )
             ),
             // Foto + Mapa lado a lado
             React.createElement("div", {style:{display:"grid", gridTemplateColumns:"1fr 1fr", gap:10, marginBottom:12}},
-              p.images && p.images[0] ? React.createElement("img", {src: p.images[0], style:{width:"100%", height:180, objectFit:"cover", borderRadius:6}}) : React.createElement("div", {style:{width:"100%", height:180, background:"var(--bg-accent)", borderRadius:6, display:"flex", alignItems:"center", justifyContent:"center", color:"var(--text-light)"}}, "Sem foto"),
-              React.createElement("img", {src: staticMapUrl, style:{width:"100%", height:180, objectFit:"cover", borderRadius:6}, alt:"Mapa"})
+              p.images && p.images[0] ? React.createElement("img", {src: p.images[0], style:{width:"100%", height:180, objectFit:"cover", borderRadius:4, border:"1px solid #ccc"}}) : React.createElement("div", {style:{width:"100%", height:180, background:"#f5f5f5", borderRadius:4, display:"flex", alignItems:"center", justifyContent:"center", color:"var(--text-light)", border:"1px solid #ccc"}}, "Sem foto"),
+              React.createElement("img", {src: staticMapUrl, style:{width:"100%", height:180, objectFit:"cover", borderRadius:4, border:"1px solid #ccc"}, alt:"Mapa"})
             ),
             // Caracteristicas
-            React.createElement("div", {style:{display:"flex", gap:16, flexWrap:"wrap", fontSize:".82rem", marginBottom:10, padding:"8px 0", borderTop:"1px dashed var(--border)", borderBottom:"1px dashed var(--border)"}},
+            React.createElement("div", {style:{display:"flex", gap:14, flexWrap:"wrap", fontSize:".85rem", marginBottom:14, padding:"8px 12px", background:"var(--bg-accent)", borderRadius:4}},
               p.bedrooms > 0 && React.createElement("span", null, "🛏 ", React.createElement("strong",null,p.bedrooms), p.bedrooms === 1 ? " Quarto" : " Quartos", p.suites > 0 ? ` (${p.suites} suíte${p.suites > 1 ? "s" : ""})` : ""),
               p.bathrooms > 0 && React.createElement("span", null, "🚿 ", React.createElement("strong",null,p.bathrooms), " Banheiros"),
               p.garages > 0 && React.createElement("span", null, "🚗 ", React.createElement("strong",null,p.garages), " Vagas"),
@@ -2975,14 +2990,33 @@ function VisitSheetPage({properties, settings, showToast}) {
               p.builtArea > 0 && React.createElement("span", null, "🏠 ", React.createElement("strong",null,p.builtArea), " m² construída")
             ),
             // Campo pra observacoes do cliente
-            React.createElement("div", {style:{marginTop:8}},
-              React.createElement("div", {style:{fontSize:".72rem", fontWeight:800, color:"var(--text-light)", letterSpacing:".05em", textTransform:"uppercase", marginBottom:4}}, "Observações do cliente:"),
-              React.createElement("div", {style:{minHeight:50, borderBottom:"1px solid #ccc", padding:"4px 0"}}),
-              React.createElement("div", {style:{minHeight:20, borderBottom:"1px solid #ccc", padding:"4px 0", marginTop:6}}),
-              React.createElement("div", {style:{marginTop:14, display:"flex", justifyContent:"space-between", alignItems:"flex-end", gap:20}},
-                React.createElement("div", {style:{flex:1, borderTop:"1px solid #333", paddingTop:6, fontSize:".72rem", textAlign:"center", fontWeight:700}}, "Assinatura do Cliente"),
-                React.createElement("div", {style:{flex:1, borderTop:"1px solid #333", paddingTop:6, fontSize:".72rem", textAlign:"center", fontWeight:700}}, "Assinatura do Corretor")
+            React.createElement("div", {style:{marginBottom:14}},
+              React.createElement("div", {style:{fontSize:".72rem", fontWeight:800, color:"var(--text-light)", letterSpacing:".05em", textTransform:"uppercase", marginBottom:4}}, "Observações do cliente sobre o imóvel:"),
+              React.createElement("div", {style:{minHeight:34, borderBottom:"1px solid #666", padding:"4px 0"}}),
+              React.createElement("div", {style:{minHeight:24, borderBottom:"1px solid #666", padding:"4px 0", marginTop:2}})
+            ),
+            // ===== DECLARACAO JURIDICA =====
+            React.createElement("div", {style:{background:"#fafafa", border:"1px solid #666", padding:"12px 14px", marginBottom:14, fontSize:".78rem", lineHeight:1.5, textAlign:"justify"}},
+              React.createElement("div", {style:{fontSize:".72rem", fontWeight:800, color:"var(--red)", letterSpacing:".05em", textTransform:"uppercase", marginBottom:8, textAlign:"center", borderBottom:"1px solid #ccc", paddingBottom:6}}, "Declaração de Visita"),
+              React.createElement("p", {style:{margin:"0 0 8px"}}, "Declaro que visitei o imóvel acima identificado por intermédio do corretor responsável, reconhecendo sua participação na apresentação e aproximação para eventual negociação."),
+              React.createElement("p", {style:{margin:0}}, "Estou ciente de que eventual negociação posterior, direta com o proprietário ou por terceiros, não afasta a intermediação realizada pelo corretor, observados o contrato de corretagem e a legislação aplicável.")
+            ),
+            // Assinaturas
+            React.createElement("div", {style:{display:"flex", justifyContent:"space-between", alignItems:"flex-end", gap:30, marginTop:20}},
+              React.createElement("div", {style:{flex:1, textAlign:"center"}},
+                React.createElement("div", {style:{borderTop:"1px solid #333", paddingTop:6, fontSize:".78rem", fontWeight:800}}, clientName || "Assinatura do Cliente"),
+                clientCpf && React.createElement("div", {style:{fontSize:".68rem", color:"var(--text-light)"}}, "CPF/RG: ", clientCpf)
+              ),
+              React.createElement("div", {style:{flex:1, textAlign:"center"}},
+                React.createElement("div", {style:{borderTop:"1px solid #333", paddingTop:6, fontSize:".78rem", fontWeight:800}}, agentName || "Assinatura do Corretor"),
+                s.creci && React.createElement("div", {style:{fontSize:".68rem", color:"var(--text-light)"}}, "CRECI: ", s.creci)
               )
+            ),
+            // Rodape
+            React.createElement("div", {style:{marginTop:16, paddingTop:8, borderTop:"1px dashed #999", display:"flex", justifyContent:"space-between", fontSize:".68rem", color:"var(--text-light)"}},
+              React.createElement("span", null, s.companyName || "G4 Investimóveis"),
+              React.createElement("span", null, "📞 ", phoneDisplay),
+              React.createElement("span", null, "Página ", idx+1, " de ", selectedProps.length)
             )
           )
         );
