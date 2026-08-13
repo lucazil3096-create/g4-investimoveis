@@ -2813,6 +2813,56 @@ function VisitSheetPage({properties, settings, showToast}) {
     }, 1000);
   };
 
+  const [generatingPdf, setGeneratingPdf] = useState(false);
+  const doSavePdf = async () => {
+    if (!clientName.trim()) { showToast && showToast("Digite o nome do cliente antes de gerar o PDF", "error"); return; }
+    if (selectedProps.length === 0) { showToast && showToast("Adicione pelo menos 1 imóvel", "error"); return; }
+    if (!window.jspdf || !window.html2canvas) { showToast && showToast("Bibliotecas de PDF não carregaram. Recarregue a página.", "error"); return; }
+    setGeneratingPdf(true);
+    try {
+      const { jsPDF } = window.jspdf;
+      const pdf = new jsPDF({orientation:"portrait", unit:"mm", format:"a4"});
+      const A4_W = 210;
+      const A4_H = 297;
+      const margin = 10;
+      const contentW = A4_W - margin * 2;
+      // Pega cada .visit-prop e transforma em imagem no PDF
+      const propEls = document.querySelectorAll(".visit-prop");
+      let itemsInCurrentPage = 0;
+      let currentY = margin;
+      for (let i = 0; i < propEls.length; i++) {
+        const el = propEls[i];
+        const canvas = await window.html2canvas(el, {scale: 2, useCORS: true, allowTaint: true, backgroundColor:"#ffffff", logging: false});
+        const imgData = canvas.toDataURL("image/jpeg", 0.9);
+        const imgW = contentW;
+        const imgH = (canvas.height * imgW) / canvas.width;
+        // Verifica se cabe na pagina atual
+        if (propsPerPage === 1) {
+          if (i > 0) pdf.addPage();
+          currentY = margin;
+        } else {
+          // 2 por pagina: quebra a cada 2
+          if (i > 0 && i % 2 === 0) {
+            pdf.addPage();
+            currentY = margin;
+            itemsInCurrentPage = 0;
+          }
+        }
+        pdf.addImage(imgData, "JPEG", margin, currentY, imgW, imgH);
+        currentY += imgH + 5;
+        itemsInCurrentPage++;
+      }
+      const safeName = (clientName || "cliente").replace(/[^a-zA-Z0-9]/g, "_");
+      const dtStr = new Date().toISOString().slice(0, 10);
+      pdf.save(`ficha-visita-${safeName}-${dtStr}.pdf`);
+      showToast && showToast("PDF salvo!", "success");
+    } catch(e) {
+      console.error("Erro ao gerar PDF:", e);
+      showToast && showToast("Erro ao gerar PDF: " + (e.message || e), "error");
+    }
+    setGeneratingPdf(false);
+  };
+
   const s = settings || {};
   const wpp = s.whatsappNumber || WHATSAPP;
   const phoneDisplay = (s.phones || "").split("|")[0].trim() || `(${wpp.slice(2,4)}) ${wpp.slice(4,9)}-${wpp.slice(9,13)}`;
@@ -2857,13 +2907,9 @@ function VisitSheetPage({properties, settings, showToast}) {
           React.createElement("button", {onClick: () => setPropsPerPage(2), style:{padding:"6px 12px", background: propsPerPage === 2 ? "var(--red)" : "white", color: propsPerPage === 2 ? "white" : "var(--text)", border:"1px solid var(--border)", borderRadius:6, cursor:"pointer", fontSize:".78rem", fontWeight:700}}, "2 por página")
         ),
         selectedIds.length > 0 && React.createElement("button", {onClick: clearAll, className:"btn-outline-sm", style:{padding:"12px 20px"}}, "✕ Limpar tudo"),
-        React.createElement("button", {onClick: doPrint, className:"btn-red", style:{padding:"14px 28px", fontSize:".95rem"}}, "🖨️ Imprimir / Salvar PDF")
+        React.createElement("button", {onClick: doSavePdf, disabled: generatingPdf, style:{padding:"14px 28px", fontSize:".95rem", background: generatingPdf ? "#94a3b8" : "#16a34a", color:"white", border:"none", borderRadius:8, fontWeight:800, cursor: generatingPdf ? "wait" : "pointer"}}, generatingPdf ? "⏳ Gerando..." : "📄 Salvar PDF"),
+        React.createElement("button", {onClick: doPrint, className:"btn-red", style:{padding:"14px 28px", fontSize:".95rem"}}, "🖨️ Imprimir")
       )
-    ),
-    // Instrucoes de PDF (visivel so no editor)
-    React.createElement("div", {className:"no-print", style:{padding:"10px 14px", background:"rgba(59,130,246,.08)", border:"1px solid rgba(59,130,246,.3)", borderRadius:8, marginBottom:16, fontSize:".82rem", color:"#1e40af"}},
-      "💡 Ao clicar em 'Imprimir', na janela do navegador escolha ", React.createElement("strong",null,"'Salvar como PDF'"), " no destino pra gerar o arquivo. Ou escolha sua impressora pra imprimir direto. ",
-      React.createElement("strong",null,"Cada imóvel sai em 1 folha separada")
     ),
     // Layout: formulario a esquerda + preview a direita
     React.createElement("div", {className:"no-print", style:{display:"grid", gridTemplateColumns:"1fr", gap:16, marginBottom:20}},
@@ -3000,14 +3046,11 @@ function VisitSheetPage({properties, settings, showToast}) {
                 React.createElement("div", {style:{fontFamily:"var(--font-num)", fontWeight:900, fontSize:"1.15rem"}}, p.price > 0 ? fmtCurrency(p.price) : "SOB CONSULTA")
               )
             ),
-            // Foto + Mapa do Google + QR pequeno
-            React.createElement("div", {className:"visit-prop-imgs", style:{display:"grid", gridTemplateColumns:"1fr 1fr", gap:10, marginBottom:12}},
-              p.images && p.images[0] ? React.createElement("img", {src: p.images[0], style:{width:"100%", height:180, objectFit:"cover", borderRadius:4, border:"1px solid #ccc"}}) : React.createElement("div", {style:{width:"100%", height:180, background:"#f5f5f5", borderRadius:4, display:"flex", alignItems:"center", justifyContent:"center", color:"var(--text-light)", border:"1px solid #ccc"}}, "Sem foto"),
-              // Mapa do Google Maps (Static Maps API) com QR no canto pra abrir no celular
-              React.createElement("div", {style:{position:"relative", width:"100%", height:180, borderRadius:4, border:"1px solid #ccc", overflow:"hidden", background:"#f5f5f5"}},
-                React.createElement("img", {src: staticMapUrl, style:{width:"100%", height:"100%", objectFit:"cover"}, alt:"Mapa"}),
-                React.createElement("img", {src: qrCodeUrl, style:{position:"absolute", bottom:6, right:6, width:56, height:56, background:"white", padding:3, borderRadius:4, boxShadow:"0 2px 6px rgba(0,0,0,.4)"}, alt:"QR pra abrir no celular", title:"Escaneie pra abrir no Google Maps"})
-              )
+            // Foto do imovel grande
+            React.createElement("div", {className:"visit-prop-imgs", style:{marginBottom:12}},
+              p.images && p.images[0]
+                ? React.createElement("img", {src: p.images[0], crossOrigin:"anonymous", style:{width:"100%", height:220, objectFit:"cover", borderRadius:4, border:"1px solid #ccc"}})
+                : React.createElement("div", {style:{width:"100%", height:220, background:"#f5f5f5", borderRadius:4, display:"flex", alignItems:"center", justifyContent:"center", color:"var(--text-light)", border:"1px solid #ccc"}}, "Sem foto")
             ),
             // Caracteristicas
             React.createElement("div", {style:{display:"flex", gap:14, flexWrap:"wrap", fontSize:".85rem", marginBottom:14, padding:"8px 12px", background:"var(--bg-accent)", borderRadius:4}},
