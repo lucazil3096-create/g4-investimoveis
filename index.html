@@ -2755,6 +2755,242 @@ function InspectionPage({inspectionId, settings}) {
   );
 }
 
+// ===== FICHAS DE VISITA =====
+function VisitSheetPage({properties, settings, showToast}) {
+  const [clientName, setClientName] = useState("");
+  const [clientPhone, setClientPhone] = useState("");
+  const [clientCpf, setClientCpf] = useState("");
+  const [visitDate, setVisitDate] = useState(new Date().toISOString().slice(0,10));
+  const [agentName, setAgentName] = useState((settings && settings.ownerName) || "");
+  const [selectedIds, setSelectedIds] = useState([]);
+  const [search, setSearch] = useState("");
+  const [showList, setShowList] = useState(false);
+
+  const activeProps = (properties || []).filter(p => p.active && !p.sold);
+  const filteredProps = activeProps.filter(p => {
+    if (!search) return true;
+    const q = search.toLowerCase();
+    const hay = ((p.title || "") + " " + (p.reference || "") + " " + (p.neighborhood || "") + " " + (p.city || "") + " " + (p.type || "")).toLowerCase();
+    return hay.includes(q);
+  });
+  const selectedProps = selectedIds.map(id => activeProps.find(p => p.id === id)).filter(Boolean);
+
+  const toggleSelect = (id) => {
+    setSelectedIds(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]);
+  };
+  const removeSelected = (id) => setSelectedIds(prev => prev.filter(x => x !== id));
+  const moveSelectedUp = (id) => {
+    setSelectedIds(prev => {
+      const i = prev.indexOf(id);
+      if (i <= 0) return prev;
+      const next = [...prev];
+      [next[i-1], next[i]] = [next[i], next[i-1]];
+      return next;
+    });
+  };
+  const moveSelectedDown = (id) => {
+    setSelectedIds(prev => {
+      const i = prev.indexOf(id);
+      if (i < 0 || i >= prev.length - 1) return prev;
+      const next = [...prev];
+      [next[i], next[i+1]] = [next[i+1], next[i]];
+      return next;
+    });
+  };
+  const clearAll = () => setSelectedIds([]);
+
+  const doPrint = () => {
+    if (!clientName.trim()) { showToast && showToast("Digite o nome do cliente antes de imprimir", "error"); return; }
+    if (selectedProps.length === 0) { showToast && showToast("Adicione pelo menos 1 imóvel", "error"); return; }
+    document.body.classList.add("print-visit-active");
+    window.print();
+    setTimeout(() => document.body.classList.remove("print-visit-active"), 1000);
+  };
+
+  const s = settings || {};
+  const wpp = s.whatsappNumber || WHATSAPP;
+  const phoneDisplay = (s.phones || "").split("|")[0].trim() || `(${wpp.slice(2,4)}) ${wpp.slice(4,9)}-${wpp.slice(9,13)}`;
+
+  return React.createElement(React.Fragment, null,
+    // Estilos de impressao
+    React.createElement("style", null, `
+      @media print {
+        @page { size: A4; margin: 12mm; }
+        body.print-visit-active .admin-side,
+        body.print-visit-active .admin-bar,
+        body.print-visit-active .header,
+        body.print-visit-active .wpp-float,
+        body.print-visit-active .no-print,
+        body.print-visit-active .cookie-banner { display: none !important; }
+        body.print-visit-active .admin-main { padding: 0 !important; margin: 0 !important; width: 100% !important; max-width: 100% !important; }
+        body.print-visit-active .visit-sheet { page-break-inside: avoid; break-inside: avoid; }
+        body.print-visit-active .visit-prop { page-break-inside: avoid; break-inside: avoid; }
+        body.print-visit-active .visit-prop:not(:first-of-type) { page-break-before: always; break-before: page; }
+      }
+    `),
+    // Cabecalho do editor
+    React.createElement("div", {className:"admin-top no-print"},
+      React.createElement("h1", {className:"admin-page-title"}, "📋 Fichas de Visita"),
+      React.createElement("div", {style:{display:"flex", gap:10, flexWrap:"wrap"}},
+        selectedIds.length > 0 && React.createElement("button", {onClick: clearAll, className:"btn-outline-sm", style:{padding:"12px 20px"}}, "✕ Limpar tudo"),
+        React.createElement("button", {onClick: doPrint, className:"btn-red", style:{padding:"14px 28px", fontSize:".95rem"}}, "🖨️ Imprimir Ficha")
+      )
+    ),
+    // Layout: formulario a esquerda + preview a direita
+    React.createElement("div", {className:"no-print", style:{display:"grid", gridTemplateColumns:"1fr", gap:16, marginBottom:20}},
+      // Dados do cliente
+      React.createElement("div", {style:{background:"white", padding:"20px 22px", borderRadius:10, border:"1px solid var(--border)"}},
+        React.createElement("h3", {style:{margin:"0 0 14px", fontSize:"1rem", fontFamily:"var(--font-display)", letterSpacing:".05em", textTransform:"uppercase"}}, "👤 Dados do Cliente"),
+        React.createElement("div", {style:{display:"grid", gridTemplateColumns:"repeat(auto-fit, minmax(200px, 1fr))", gap:12}},
+          React.createElement("div", null,
+            React.createElement("label", {style:{fontSize:".75rem", fontWeight:800, color:"var(--text-light)", textTransform:"uppercase", letterSpacing:".05em", display:"block", marginBottom:4}}, "Nome *"),
+            React.createElement("input", {className:"af-input", value: clientName, onChange: e => setClientName(e.target.value), placeholder:"Ex: João da Silva", style:{marginBottom:0}})
+          ),
+          React.createElement("div", null,
+            React.createElement("label", {style:{fontSize:".75rem", fontWeight:800, color:"var(--text-light)", textTransform:"uppercase", letterSpacing:".05em", display:"block", marginBottom:4}}, "Telefone"),
+            React.createElement("input", {className:"af-input", value: clientPhone, onChange: e => setClientPhone(e.target.value), placeholder:"(44) 99999-9999", style:{marginBottom:0}})
+          ),
+          React.createElement("div", null,
+            React.createElement("label", {style:{fontSize:".75rem", fontWeight:800, color:"var(--text-light)", textTransform:"uppercase", letterSpacing:".05em", display:"block", marginBottom:4}}, "CPF/RG"),
+            React.createElement("input", {className:"af-input", value: clientCpf, onChange: e => setClientCpf(e.target.value), placeholder:"000.000.000-00", style:{marginBottom:0}})
+          ),
+          React.createElement("div", null,
+            React.createElement("label", {style:{fontSize:".75rem", fontWeight:800, color:"var(--text-light)", textTransform:"uppercase", letterSpacing:".05em", display:"block", marginBottom:4}}, "Data da visita"),
+            React.createElement("input", {className:"af-input", type:"date", value: visitDate, onChange: e => setVisitDate(e.target.value), style:{marginBottom:0}})
+          ),
+          React.createElement("div", null,
+            React.createElement("label", {style:{fontSize:".75rem", fontWeight:800, color:"var(--text-light)", textTransform:"uppercase", letterSpacing:".05em", display:"block", marginBottom:4}}, "Corretor"),
+            React.createElement("input", {className:"af-input", value: agentName, onChange: e => setAgentName(e.target.value), placeholder:"Nome do corretor", style:{marginBottom:0}})
+          )
+        )
+      ),
+      // Selecao de imoveis
+      React.createElement("div", {style:{background:"white", padding:"20px 22px", borderRadius:10, border:"1px solid var(--border)"}},
+        React.createElement("div", {style:{display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:14, flexWrap:"wrap", gap:10}},
+          React.createElement("h3", {style:{margin:0, fontSize:"1rem", fontFamily:"var(--font-display)", letterSpacing:".05em", textTransform:"uppercase"}}, "🏠 Imóveis Selecionados (", selectedIds.length, ")"),
+          React.createElement("button", {onClick: () => setShowList(v => !v), className:"btn-red", style:{padding:"10px 20px", fontSize:".85rem"}}, showList ? "✕ Fechar lista" : "+ Adicionar imóveis")
+        ),
+        // Lista de imoveis selecionados
+        selectedProps.length === 0 ? React.createElement("div", {style:{textAlign:"center", padding:"30px 20px", color:"var(--text-light)", fontSize:".88rem"}},
+          "Nenhum imóvel selecionado. Clica em '+ Adicionar imóveis' pra começar."
+        ) : React.createElement("div", {style:{display:"flex", flexDirection:"column", gap:8}},
+          selectedProps.map((p, idx) => React.createElement("div", {key:p.id, style:{display:"flex", alignItems:"center", gap:10, padding:"10px 12px", background:"var(--bg-accent)", borderRadius:8}},
+            React.createElement("span", {style:{background:"var(--red)", color:"white", padding:"4px 10px", borderRadius:12, fontSize:".8rem", fontWeight:800, minWidth:32, textAlign:"center"}}, idx+1),
+            p.images && p.images[0] && React.createElement("img", {src:p.images[0], style:{width:48, height:36, objectFit:"cover", borderRadius:4}}),
+            React.createElement("div", {style:{flex:1}},
+              React.createElement("div", {style:{fontWeight:700, fontSize:".9rem"}}, "Ref. ", p.reference || "—", " · ", p.title),
+              React.createElement("div", {style:{fontSize:".76rem", color:"var(--text-light)"}}, p.type, " · ", [p.neighborhood, p.city].filter(Boolean).join(" — "))
+            ),
+            React.createElement("div", {style:{display:"flex", gap:4}},
+              React.createElement("button", {onClick: () => moveSelectedUp(p.id), disabled: idx === 0, style:{padding:"6px 10px", background:"white", border:"1px solid var(--border)", borderRadius:4, cursor: idx === 0 ? "not-allowed" : "pointer", opacity: idx === 0 ? .4 : 1}}, "↑"),
+              React.createElement("button", {onClick: () => moveSelectedDown(p.id), disabled: idx === selectedProps.length - 1, style:{padding:"6px 10px", background:"white", border:"1px solid var(--border)", borderRadius:4, cursor: idx === selectedProps.length - 1 ? "not-allowed" : "pointer", opacity: idx === selectedProps.length - 1 ? .4 : 1}}, "↓"),
+              React.createElement("button", {onClick: () => removeSelected(p.id), style:{padding:"6px 10px", background:"#dc2626", color:"white", border:"none", borderRadius:4, cursor:"pointer"}}, "✕")
+            )
+          ))
+        ),
+        // Selector expandido
+        showList && React.createElement("div", {style:{marginTop:16, padding:"16px", background:"var(--bg-accent)", borderRadius:8}},
+          React.createElement("input", {className:"af-input", value: search, onChange: e => setSearch(e.target.value), placeholder:"🔍 Buscar por ref, título, bairro, cidade...", style:{marginBottom:12}}),
+          React.createElement("div", {style:{maxHeight:400, overflowY:"auto", display:"grid", gridTemplateColumns:"repeat(auto-fill, minmax(240px, 1fr))", gap:8}},
+            filteredProps.map(p => {
+              const isSel = selectedIds.includes(p.id);
+              return React.createElement("div", {key:p.id, onClick: () => toggleSelect(p.id), style:{padding:"10px", background: isSel ? "rgba(196,30,30,.1)" : "white", border: isSel ? "2px solid var(--red)" : "1px solid var(--border)", borderRadius:8, cursor:"pointer", display:"flex", gap:10, alignItems:"center"}},
+                React.createElement("input", {type:"checkbox", checked: isSel, readOnly: true, style:{width:18, height:18, accentColor:"var(--red)"}}),
+                p.images && p.images[0] && React.createElement("img", {src:p.images[0], style:{width:44, height:34, objectFit:"cover", borderRadius:4}}),
+                React.createElement("div", {style:{flex:1, minWidth:0}},
+                  React.createElement("div", {style:{fontWeight:700, fontSize:".85rem", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap"}}, "Ref. ", p.reference || "—"),
+                  React.createElement("div", {style:{fontSize:".72rem", color:"var(--text-light)", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap"}}, p.type, " · ", p.neighborhood)
+                )
+              );
+            })
+          ),
+          filteredProps.length === 0 && React.createElement("p", {style:{textAlign:"center", color:"var(--text-light)", padding:"20px 0"}}, "Nenhum imóvel encontrado")
+        )
+      )
+    ),
+    // Preview / area de impressao
+    selectedProps.length > 0 && clientName.trim() && React.createElement("div", {className:"visit-sheet", style:{background:"white", padding:"30px 36px", borderRadius:10, border:"1px solid var(--border)", maxWidth:900, margin:"0 auto"}},
+      // Cabecalho
+      React.createElement("div", {style:{display:"flex", justifyContent:"space-between", alignItems:"center", paddingBottom:16, borderBottom:"3px solid var(--red)", marginBottom:20, flexWrap:"wrap", gap:12}},
+        React.createElement("div", null,
+          s.logoUrl && React.createElement("img", {src: s.logoUrl, style:{height:60, marginBottom:6}}),
+          React.createElement("h2", {style:{margin:0, fontFamily:"var(--font-display)", fontSize:"1.4rem", letterSpacing:".05em", textTransform:"uppercase"}}, "Ficha de Visita")
+        ),
+        React.createElement("div", {style:{textAlign:"right", fontSize:".82rem"}},
+          React.createElement("div", {style:{fontWeight:800}}, phoneDisplay),
+          React.createElement("div", {style:{color:"var(--text-light)"}}, s.email || EMAIL),
+          s.creci && React.createElement("div", {style:{fontSize:".75rem", color:"var(--text-light)"}}, "CRECI: ", s.creci)
+        )
+      ),
+      // Dados do cliente
+      React.createElement("div", {style:{background:"var(--bg-accent)", padding:"14px 18px", borderRadius:8, marginBottom:24}},
+        React.createElement("div", {style:{display:"grid", gridTemplateColumns:"repeat(auto-fit, minmax(200px, 1fr))", gap:10, fontSize:".9rem"}},
+          React.createElement("div", null, React.createElement("strong", null, "Cliente: "), clientName),
+          clientPhone && React.createElement("div", null, React.createElement("strong", null, "Telefone: "), clientPhone),
+          clientCpf && React.createElement("div", null, React.createElement("strong", null, "CPF/RG: "), clientCpf),
+          React.createElement("div", null, React.createElement("strong", null, "Data: "), new Date(visitDate + "T12:00:00").toLocaleDateString("pt-BR")),
+          agentName && React.createElement("div", null, React.createElement("strong", null, "Corretor: "), agentName)
+        )
+      ),
+      // Imoveis
+      selectedProps.map((p, idx) => {
+        const addrParts = [p.address, p.neighborhood, p.city && `${p.city}/PR`].filter(Boolean);
+        const addr = addrParts.join(", ");
+        const hasCoords = p.lat && p.lng && !isNaN(+p.lat) && !isNaN(+p.lng);
+        const mapQuery = hasCoords ? `${p.lat},${p.lng}` : encodeURIComponent(addr || `${p.city}, PR`);
+        // Static Maps image (funciona sem carregar JS - perfeito pra imprimir)
+        const staticMapUrl = `https://maps.googleapis.com/maps/api/staticmap?center=${mapQuery}&zoom=16&size=600x300&maptype=roadmap&markers=color:red%7C${mapQuery}&key=${GMAPS_KEY}`;
+        return React.createElement("div", {key:p.id, className:"visit-prop", style:{marginBottom:30, border:"1px solid var(--border)", borderRadius:8, overflow:"hidden"}},
+          // Titulo do imovel
+          React.createElement("div", {style:{background:"var(--red)", color:"white", padding:"10px 16px", display:"flex", justifyContent:"space-between", alignItems:"center", flexWrap:"wrap", gap:8}},
+            React.createElement("div", {style:{display:"flex", alignItems:"center", gap:12}},
+              React.createElement("span", {style:{background:"white", color:"var(--red)", padding:"4px 12px", borderRadius:14, fontSize:".9rem", fontWeight:900}}, "#", idx+1),
+              React.createElement("strong", {style:{fontSize:"1rem"}}, "Ref. ", p.reference || "—", " · ", p.type)
+            ),
+            React.createElement("span", {style:{fontSize:".82rem"}}, p.transaction || "Venda")
+          ),
+          React.createElement("div", {style:{padding:"14px 18px"}},
+            // Titulo + preco
+            React.createElement("div", {style:{display:"flex", justifyContent:"space-between", alignItems:"flex-start", marginBottom:12, gap:12, flexWrap:"wrap"}},
+              React.createElement("div", {style:{flex:"1 1 60%"}},
+                React.createElement("h3", {style:{margin:"0 0 4px", fontSize:"1.05rem"}}, p.title || "Imóvel"),
+                React.createElement("p", {style:{margin:0, fontSize:".85rem", color:"var(--text-light)"}}, "📍 ", addr || "Endereço não cadastrado")
+              ),
+              React.createElement("div", {style:{textAlign:"right"}},
+                React.createElement("div", {style:{fontSize:".7rem", color:"var(--text-light)", letterSpacing:".1em", fontWeight:700}}, "VALOR"),
+                React.createElement("div", {style:{fontFamily:"var(--font-num)", fontWeight:900, fontSize:"1.1rem", color:"var(--red)"}}, p.price > 0 ? fmtCurrency(p.price) : "Consulte")
+              )
+            ),
+            // Foto + Mapa lado a lado
+            React.createElement("div", {style:{display:"grid", gridTemplateColumns:"1fr 1fr", gap:10, marginBottom:12}},
+              p.images && p.images[0] ? React.createElement("img", {src: p.images[0], style:{width:"100%", height:180, objectFit:"cover", borderRadius:6}}) : React.createElement("div", {style:{width:"100%", height:180, background:"var(--bg-accent)", borderRadius:6, display:"flex", alignItems:"center", justifyContent:"center", color:"var(--text-light)"}}, "Sem foto"),
+              React.createElement("img", {src: staticMapUrl, style:{width:"100%", height:180, objectFit:"cover", borderRadius:6}, alt:"Mapa"})
+            ),
+            // Caracteristicas
+            React.createElement("div", {style:{display:"flex", gap:16, flexWrap:"wrap", fontSize:".82rem", marginBottom:10, padding:"8px 0", borderTop:"1px dashed var(--border)", borderBottom:"1px dashed var(--border)"}},
+              p.bedrooms > 0 && React.createElement("span", null, "🛏 ", React.createElement("strong",null,p.bedrooms), p.bedrooms === 1 ? " Quarto" : " Quartos", p.suites > 0 ? ` (${p.suites} suíte${p.suites > 1 ? "s" : ""})` : ""),
+              p.bathrooms > 0 && React.createElement("span", null, "🚿 ", React.createElement("strong",null,p.bathrooms), " Banheiros"),
+              p.garages > 0 && React.createElement("span", null, "🚗 ", React.createElement("strong",null,p.garages), " Vagas"),
+              p.area > 0 && React.createElement("span", null, "📐 ", React.createElement("strong",null,p.area), " m² terreno"),
+              p.builtArea > 0 && React.createElement("span", null, "🏠 ", React.createElement("strong",null,p.builtArea), " m² construída")
+            ),
+            // Campo pra observacoes do cliente
+            React.createElement("div", {style:{marginTop:8}},
+              React.createElement("div", {style:{fontSize:".72rem", fontWeight:800, color:"var(--text-light)", letterSpacing:".05em", textTransform:"uppercase", marginBottom:4}}, "Observações do cliente:"),
+              React.createElement("div", {style:{minHeight:50, borderBottom:"1px solid #ccc", padding:"4px 0"}}),
+              React.createElement("div", {style:{minHeight:20, borderBottom:"1px solid #ccc", padding:"4px 0", marginTop:6}}),
+              React.createElement("div", {style:{marginTop:14, display:"flex", justifyContent:"space-between", alignItems:"flex-end", gap:20}},
+                React.createElement("div", {style:{flex:1, borderTop:"1px solid #333", paddingTop:6, fontSize:".72rem", textAlign:"center", fontWeight:700}}, "Assinatura do Cliente"),
+                React.createElement("div", {style:{flex:1, borderTop:"1px solid #333", paddingTop:6, fontSize:".72rem", textAlign:"center", fontWeight:700}}, "Assinatura do Corretor")
+              )
+            )
+          )
+        );
+      })
+    )
+  );
+}
+
 // ===== MAPA DE TODOS OS IMOVEIS (para inspecao mensal) =====
 function MapAllProperties({properties, settings, showToast}) {
   const mapRef = React.useRef(null);
@@ -3713,6 +3949,7 @@ function AdminPanel({properties, setProperties, showToast, settings, viewsMap}) 
       React.createElement("button", {className: `admin-side-link ${ap==='dashboard'?'active':''}`, onClick:()=>setAp("dashboard")}, I.dash, " Dashboard"),
       React.createElement("button", {className: `admin-side-link ${ap==='list'?'active':''}`, onClick:()=>setAp("list")}, I.home, " Todos os Imóveis"),
       React.createElement("button", {className: `admin-side-link ${ap==='map'?'active':''}`, onClick:()=>setAp("map")}, I.pin, " Mapa dos Imóveis"),
+      React.createElement("button", {className: `admin-side-link ${ap==='visits'?'active':''}`, onClick:()=>setAp("visits")}, I.edit, " Fichas de Visita"),
       React.createElement("div", {className: "admin-side-label"}, "Arquivo"),
       React.createElement("button", {className: `admin-side-link ${ap==='sold'?'active':''}`, onClick:()=>setAp("sold")}, I.check, " Vendidos", soldCount > 0 && React.createElement("span",{style:{marginLeft:"auto",background:"#334155",color:"white",padding:"2px 8px",borderRadius:50,fontSize:".68rem",fontWeight:800}},soldCount)),
       React.createElement("button", {className: `admin-side-link ${ap==='inactive'?'active':''}`, onClick:()=>setAp("inactive")}, I.eyeOff, " Inativos", inactiveCount > 0 && React.createElement("span",{style:{marginLeft:"auto",background:"var(--text-light)",color:"white",padding:"2px 8px",borderRadius:50,fontSize:".68rem",fontWeight:800}},inactiveCount)),
@@ -3857,7 +4094,7 @@ function AdminPanel({properties, setProperties, showToast, settings, viewsMap}) 
           ) :
           React.createElement(ScrollableTable, null, React.createElement("table", {className: "a-table"}, React.createElement("thead", null, React.createElement("tr", null, ["Foto","Imóvel","Tipo","Cidade","Preço","Views","Status","Ações"].map(h => React.createElement("th", {key:h}, h)))), React.createElement("tbody", null, inactiveProps.map(p => React.createElement(TableRow, {key:p.id, p, minimal:true})))))
 
-      ) : ap === 'map' ? React.createElement(MapAllProperties, {properties: activeProps, settings, showToast}) : React.createElement(SettingsPanel, {settings, showToast}),
+      ) : ap === 'map' ? React.createElement(MapAllProperties, {properties: activeProps, settings, showToast}) : ap === 'visits' ? React.createElement(VisitSheetPage, {properties, settings, showToast}) : React.createElement(SettingsPanel, {settings, showToast}),
       // Modal de gerador Instagram
       igProp && React.createElement(InstagramPostMaker, {property: igProp, settings, showToast, onClose: () => setIgProp(null)}),
       // Apresentacao de todos os imoveis (TV/Chromecast)
