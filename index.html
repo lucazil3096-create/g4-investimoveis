@@ -2897,9 +2897,9 @@ function VisitSheetPage({properties, settings, showToast}) {
         body.print-visit-active img { max-width: 100% !important; height: auto !important; }
       }
     `),
-    // Cabecalho do editor
-    React.createElement("div", {className:"admin-top no-print"},
-      React.createElement("h1", {className:"admin-page-title"}, "📋 Fichas de Visita"),
+    // Cabecalho do editor - STICKY no topo
+    React.createElement("div", {className:"admin-top no-print", style:{position:"sticky", top:0, zIndex:50, background:"var(--bg)", padding:"12px 0", borderBottom:"2px solid var(--red)", marginBottom:16, flexWrap:"wrap"}},
+      React.createElement("h1", {className:"admin-page-title", style:{margin:0}}, "📋 Fichas de Visita"),
       React.createElement("div", {style:{display:"flex", gap:10, flexWrap:"wrap", alignItems:"center"}},
         React.createElement("div", {style:{display:"flex", alignItems:"center", gap:6, background:"var(--bg-accent)", padding:"6px 10px", borderRadius:8, border:"1px solid var(--border)"}},
           React.createElement("span", {style:{fontSize:".78rem", fontWeight:700, color:"var(--text-light)"}}, "Layout:"),
@@ -2910,6 +2910,21 @@ function VisitSheetPage({properties, settings, showToast}) {
         React.createElement("button", {onClick: doSavePdf, disabled: generatingPdf, style:{padding:"14px 28px", fontSize:".95rem", background: generatingPdf ? "#94a3b8" : "#16a34a", color:"white", border:"none", borderRadius:8, fontWeight:800, cursor: generatingPdf ? "wait" : "pointer"}}, generatingPdf ? "⏳ Gerando..." : "📄 Salvar PDF"),
         React.createElement("button", {onClick: doPrint, className:"btn-red", style:{padding:"14px 28px", fontSize:".95rem"}}, "🖨️ Imprimir")
       )
+    ),
+    // Botao FLUTUANTE de imprimir - sempre visivel no canto inferior direito
+    selectedProps.length > 0 && clientName.trim() && React.createElement("div", {className:"no-print", style:{position:"fixed", bottom:24, right:24, zIndex:100, display:"flex", flexDirection:"column", gap:10}},
+      React.createElement("button", {
+        onClick: doPrint,
+        className:"btn-red",
+        style:{padding:"18px 26px", fontSize:"1rem", fontWeight:900, borderRadius:50, boxShadow:"0 6px 20px rgba(196,30,30,.45)", display:"flex", alignItems:"center", gap:8, border:"3px solid white"},
+        title:"Imprimir ficha de visita"
+      }, "🖨️ Imprimir Ficha"),
+      React.createElement("button", {
+        onClick: doSavePdf,
+        disabled: generatingPdf,
+        style:{padding:"14px 22px", fontSize:".92rem", fontWeight:900, borderRadius:50, background: generatingPdf ? "#94a3b8" : "#16a34a", color:"white", border:"3px solid white", boxShadow:"0 4px 14px rgba(22,163,74,.4)", cursor: generatingPdf ? "wait" : "pointer"},
+        title:"Salvar como PDF"
+      }, generatingPdf ? "⏳ Gerando..." : "📄 Salvar PDF")
     ),
     // Layout: formulario a esquerda + preview a direita
     React.createElement("div", {className:"no-print", style:{display:"grid", gridTemplateColumns:"1fr", gap:16, marginBottom:20}},
