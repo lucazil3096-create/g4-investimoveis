@@ -2765,7 +2765,7 @@ function VisitSheetPage({properties, settings, showToast}) {
   const [selectedIds, setSelectedIds] = useState([]);
   const [search, setSearch] = useState("");
   const [showList, setShowList] = useState(false);
-  const [propsPerPage, setPropsPerPage] = useState(1); // 1 ou 2 imoveis por folha
+  const propsPerPage = 3; // ate 3 imoveis por folha (uma ficha para toda a visita)
 
   const activeProps = (properties || []).filter(p => p.active && !p.sold);
   const filteredProps = activeProps.filter(p => {
@@ -2804,12 +2804,9 @@ function VisitSheetPage({properties, settings, showToast}) {
     if (!clientName.trim()) { showToast && showToast("Digite o nome do cliente antes de imprimir", "error"); return; }
     if (selectedProps.length === 0) { showToast && showToast("Adicione pelo menos 1 imóvel", "error"); return; }
     document.body.classList.add("print-visit-active");
-    document.body.classList.add(`per-page-${propsPerPage}`);
     window.print();
     setTimeout(() => {
       document.body.classList.remove("print-visit-active");
-      document.body.classList.remove("per-page-1");
-      document.body.classList.remove("per-page-2");
     }, 1000);
   };
 
@@ -2823,12 +2820,9 @@ function VisitSheetPage({properties, settings, showToast}) {
     // Da tempo de ler o toast antes de abrir a janela de impressao
     setTimeout(() => {
       document.body.classList.add("print-visit-active");
-      document.body.classList.add(`per-page-${propsPerPage}`);
       window.print();
       setTimeout(() => {
         document.body.classList.remove("print-visit-active");
-        document.body.classList.remove("per-page-1");
-        document.body.classList.remove("per-page-2");
       }, 1000);
     }, 800);
   };
@@ -2873,11 +2867,7 @@ function VisitSheetPage({properties, settings, showToast}) {
     React.createElement("div", {className:"admin-top no-print", style:{position:"sticky", top:0, zIndex:50, background:"var(--bg)", padding:"12px 0", borderBottom:"2px solid var(--red)", marginBottom:16, flexWrap:"wrap"}},
       React.createElement("h1", {className:"admin-page-title", style:{margin:0}}, "📋 Fichas de Visita"),
       React.createElement("div", {style:{display:"flex", gap:10, flexWrap:"wrap", alignItems:"center"}},
-        React.createElement("div", {style:{display:"flex", alignItems:"center", gap:6, background:"var(--bg-accent)", padding:"6px 10px", borderRadius:8, border:"1px solid var(--border)"}},
-          React.createElement("span", {style:{fontSize:".78rem", fontWeight:700, color:"var(--text-light)"}}, "Layout:"),
-          React.createElement("button", {onClick: () => setPropsPerPage(1), style:{padding:"6px 12px", background: propsPerPage === 1 ? "var(--red)" : "white", color: propsPerPage === 1 ? "white" : "var(--text)", border:"1px solid var(--border)", borderRadius:6, cursor:"pointer", fontSize:".78rem", fontWeight:700}}, "1 por página"),
-          React.createElement("button", {onClick: () => setPropsPerPage(2), style:{padding:"6px 12px", background: propsPerPage === 2 ? "var(--red)" : "white", color: propsPerPage === 2 ? "white" : "var(--text)", border:"1px solid var(--border)", borderRadius:6, cursor:"pointer", fontSize:".78rem", fontWeight:700}}, "2 por página")
-        ),
+        React.createElement("span", {style:{fontSize:".78rem", color:"var(--text-light)", fontStyle:"italic"}}, "Até 3 imóveis por folha"),
         selectedIds.length > 0 && React.createElement("button", {onClick: clearAll, className:"btn-outline-sm", style:{padding:"12px 20px"}}, "✕ Limpar tudo"),
         React.createElement("button", {onClick: doSavePdf, disabled: generatingPdf, style:{padding:"14px 28px", fontSize:".95rem", background: generatingPdf ? "#94a3b8" : "#16a34a", color:"white", border:"none", borderRadius:8, fontWeight:800, cursor: generatingPdf ? "wait" : "pointer"}}, generatingPdf ? "⏳ Gerando..." : "📄 Salvar PDF"),
         React.createElement("button", {onClick: doPrint, className:"btn-red", style:{padding:"14px 28px", fontSize:".95rem"}}, "🖨️ Imprimir")
@@ -2977,80 +2967,83 @@ function VisitSheetPage({properties, settings, showToast}) {
         const pageProps = selectedProps.slice(pageIdx * propsPerPage, (pageIdx + 1) * propsPerPage);
         const totalPages = Math.ceil(selectedProps.length / propsPerPage);
         return React.createElement("div", {key: pageIdx, className:"visit-page", style:{marginBottom: pageIdx < totalPages - 1 ? 40 : 0, fontFamily:"'Helvetica Neue', Arial, sans-serif", color:"#111", lineHeight:1.5}},
-          // ===== CABECALHO DA FOLHA (logo + FICHA DE VISITA + cliente + corretor) =====
+          // ===== CABECALHO (logo + FICHA DE VISITA + cliente + corretor) =====
           React.createElement("div", {className:"visit-page-head"},
-            // Logo pequena no topo
             s.logoUrl && React.createElement("div", {style:{marginBottom:8}},
               React.createElement("img", {src: s.logoUrl, style:{height:44}})
             ),
-            // Titulo centralizado
-            React.createElement("h2", {style:{textAlign:"center", fontSize:"1.15rem", fontWeight:900, textDecoration:"underline", margin:"6px 0 22px"}}, "FICHA DE VISITA"),
-            // Dados do cliente
-            React.createElement("div", {style:{marginBottom:14}},
-              React.createElement("div", {style:{fontWeight:900, fontSize:".95rem", marginBottom:4}}, "Dados do cliente"),
+            React.createElement("h2", {style:{textAlign:"center", fontSize:"1.15rem", fontWeight:900, textDecoration:"underline", margin:"6px 0 18px"}}, "FICHA DE VISITA"),
+            React.createElement("div", {style:{marginBottom:12}},
+              React.createElement("div", {style:{fontWeight:900, fontSize:".95rem", marginBottom:3}}, "Dados do cliente"),
               React.createElement("div", {style:{fontSize:".92rem"}},
                 clientName,
                 clientPhone && `, Telefone ${clientPhone}`,
                 clientCpf && `, CPF/RG ${clientCpf}`
               )
             ),
-            // Dados do corretor
-            React.createElement("div", {style:{marginBottom:14}},
-              React.createElement("div", {style:{fontWeight:900, fontSize:".95rem", marginBottom:4}}, "Dados do Corretor"),
+            React.createElement("div", {style:{marginBottom:12}},
+              React.createElement("div", {style:{fontWeight:900, fontSize:".95rem", marginBottom:3}}, "Dados do Corretor"),
               React.createElement("div", {style:{fontSize:".92rem"}},
                 agentName || s.ownerName || "—",
                 s.creci && `, CRECI ${s.creci}`
               )
+            ),
+            React.createElement("div", {style:{marginBottom:12}},
+              React.createElement("div", {style:{fontWeight:900, fontSize:".95rem", marginBottom:3}}, "Data da visita"),
+              React.createElement("div", {style:{fontSize:".92rem"}}, new Date(visitDate + "T12:00:00").toLocaleDateString("pt-BR"))
             )
           ),
-          // ===== IMOVEIS DA FOLHA (1 ou 2) =====
-          pageProps.map((p, subIdx) => {
-            const idx = pageIdx * propsPerPage + subIdx;
-            const addrParts = [p.address, p.neighborhood, p.city && `${p.city}/PR`].filter(Boolean);
-            const addr = addrParts.join(", ");
-            const priceStr = p.price > 0 ? fmtCurrency(p.price) : "SOB CONSULTA";
-            const refStr = p.reference || "—";
-            return React.createElement("div", {key:p.id, className:"visit-prop", style:{marginBottom: subIdx < pageProps.length - 1 ? 26 : 0, borderBottom: subIdx < pageProps.length - 1 ? "1px dashed #999" : "none", paddingBottom: subIdx < pageProps.length - 1 ? 20 : 0}},
-              // Dados do imovel
-              React.createElement("div", {style:{marginBottom:14}},
-                React.createElement("div", {style:{fontWeight:900, fontSize:".95rem", marginBottom:4}}, "Dados do imóvel"),
-                React.createElement("div", {style:{fontSize:".92rem"}}, "REF ", refStr, " - ", p.type || "Imóvel", " - ", priceStr),
-                React.createElement("div", {style:{fontSize:".92rem"}}, addr || "Endereço não cadastrado")
-              ),
-              // Declaracao
-              React.createElement("div", {className:"visit-prop-decl", style:{marginBottom:16}},
-                React.createElement("div", {style:{fontWeight:900, fontSize:".95rem", marginBottom:6}}, "Declaração"),
-                React.createElement("p", {style:{margin:"0 0 10px", fontSize:".9rem", textAlign:"justify"}},
-                  "Declaro, na qualidade de possível comprador/locatário, ter tomado conhecimento “In loco” do(s) imóvel(eis) listados acima, e obtive os esclarecimentos referente a preços e condições de pagamento destes com o corretor(a)."
-                ),
-                React.createElement("p", {style:{margin:0, fontSize:".9rem", textAlign:"justify"}},
-                  "O texto acima simplifica e resume o objetivo do termo de visita e assegura ao cliente que se trata apenas de um registro da visita, e informa que o imóvel em referência é apresentado em total conformidade com o contrato acordado com o proprietário e que, caso se venha a efetuar um contrato de compra/locação, independentemente deste se concluir com a nossa direta intervenção, será reconhecida nossa intermediação."
-                )
-              ),
-              // Perguntas
-              React.createElement("div", {style:{marginBottom:16, fontSize:".9rem"}},
-                React.createElement("div", {style:{marginBottom:14}}, "Qual seu nível de interesse neste imóvel? ", React.createElement("span", {style:{borderBottom:"1px solid #666", display:"inline-block", minWidth:340, marginLeft:6}})),
-                React.createElement("div", {style:{marginBottom:14}}, "Atende as suas necessidades? ", React.createElement("span", {style:{borderBottom:"1px solid #666", display:"inline-block", minWidth:380, marginLeft:6}})),
-                React.createElement("div", {style:{marginBottom:4}}, "Gostaria de fazer uma proposta? ", React.createElement("span", {style:{borderBottom:"1px solid #666", display:"inline-block", minWidth:370, marginLeft:6}}))
-              ),
-              // Observacoes
-              React.createElement("div", {style:{marginBottom:22}},
-                React.createElement("div", {style:{fontWeight:900, fontSize:".95rem", marginBottom:10}}, "Observações referente a experiência da visita"),
-                React.createElement("div", {style:{borderBottom:"1.5px solid #333", height:20, marginBottom:12}}),
-                React.createElement("div", {style:{borderBottom:"1.5px solid #333", height:20, marginBottom:12}}),
-                React.createElement("div", {style:{borderBottom:"1.5px solid #333", height:20}})
-              ),
-              // Assinaturas
-              React.createElement("div", {style:{display:"flex", justifyContent:"space-between", alignItems:"flex-end", gap:40, marginTop:24}},
-                React.createElement("div", {style:{flex:"0 0 40%", textAlign:"center"}},
-                  React.createElement("div", {style:{borderTop:"1.5px solid #333", paddingTop:6, fontSize:".88rem"}}, "Data da visita")
-                ),
-                React.createElement("div", {style:{flex:"1", textAlign:"center"}},
-                  React.createElement("div", {style:{borderTop:"1.5px solid #333", paddingTop:6, fontSize:".88rem"}}, "Assinatura do cliente")
-                )
-              )
-            );
-          })
+          // ===== IMOVEIS (lista numerada, ate 3 por folha) =====
+          React.createElement("div", {style:{marginBottom:14}},
+            React.createElement("div", {style:{fontWeight:900, fontSize:".95rem", marginBottom:6}}, pageProps.length > 1 ? "Imóveis visitados" : "Dados do imóvel"),
+            pageProps.map((p, subIdx) => {
+              const addrParts = [p.address, p.neighborhood, p.city && `${p.city}/PR`].filter(Boolean);
+              const addr = addrParts.join(", ");
+              const priceStr = p.price > 0 ? fmtCurrency(p.price) : "SOB CONSULTA";
+              const refStr = p.reference || "—";
+              const numPrefix = pageProps.length > 1 ? `${subIdx + 1}. ` : "";
+              return React.createElement("div", {key: p.id, className:"visit-prop", style:{marginBottom: subIdx < pageProps.length - 1 ? 10 : 0}},
+                React.createElement("div", {style:{fontSize:".92rem", fontWeight:700}}, numPrefix, "REF ", refStr, " - ", p.type || "Imóvel", " - ", priceStr),
+                React.createElement("div", {style:{fontSize:".9rem", marginLeft: pageProps.length > 1 ? 16 : 0}}, addr || "Endereço não cadastrado")
+              );
+            })
+          ),
+          // ===== DECLARACAO (unica, aplica a todos os imoveis da folha) =====
+          React.createElement("div", {className:"visit-prop-decl", style:{marginBottom:14}},
+            React.createElement("div", {style:{fontWeight:900, fontSize:".95rem", marginBottom:6}}, "Declaração"),
+            React.createElement("p", {style:{margin:"0 0 8px", fontSize:".88rem", textAlign:"justify"}},
+              "Declaro, na qualidade de possível comprador/locatário, ter tomado conhecimento “In loco” ",
+              pageProps.length > 1 ? "dos imóveis" : "do imóvel",
+              " listado", pageProps.length > 1 ? "s" : "", " acima, e obtive os esclarecimentos referente a preços e condições de pagamento destes com o corretor(a)."
+            ),
+            React.createElement("p", {style:{margin:0, fontSize:".88rem", textAlign:"justify"}},
+              "O texto acima simplifica e resume o objetivo do termo de visita e assegura ao cliente que se trata apenas de um registro da visita, e informa que ",
+              pageProps.length > 1 ? "os imóveis em referência são apresentados" : "o imóvel em referência é apresentado",
+              " em total conformidade com o contrato acordado com o proprietário e que, caso se venha a efetuar um contrato de compra/locação, independentemente deste se concluir com a nossa direta intervenção, será reconhecida nossa intermediação."
+            )
+          ),
+          // ===== PERGUNTAS =====
+          React.createElement("div", {style:{marginBottom:14, fontSize:".9rem"}},
+            React.createElement("div", {style:{marginBottom:10}}, "Qual seu nível de interesse ", pageProps.length > 1 ? "nestes imóveis" : "neste imóvel", "? ", React.createElement("span", {style:{borderBottom:"1px solid #666", display:"inline-block", minWidth:320, marginLeft:6}})),
+            React.createElement("div", {style:{marginBottom:10}}, "Atende as suas necessidades? ", React.createElement("span", {style:{borderBottom:"1px solid #666", display:"inline-block", minWidth:370, marginLeft:6}})),
+            React.createElement("div", {style:{marginBottom:4}}, "Gostaria de fazer uma proposta? ", React.createElement("span", {style:{borderBottom:"1px solid #666", display:"inline-block", minWidth:360, marginLeft:6}}))
+          ),
+          // ===== OBSERVACOES =====
+          React.createElement("div", {style:{marginBottom:20}},
+            React.createElement("div", {style:{fontWeight:900, fontSize:".95rem", marginBottom:8}}, "Observações referente a experiência da visita"),
+            React.createElement("div", {style:{borderBottom:"1.5px solid #333", height:18, marginBottom:10}}),
+            React.createElement("div", {style:{borderBottom:"1.5px solid #333", height:18, marginBottom:10}}),
+            React.createElement("div", {style:{borderBottom:"1.5px solid #333", height:18}})
+          ),
+          // ===== ASSINATURAS =====
+          React.createElement("div", {style:{display:"flex", justifyContent:"space-between", alignItems:"flex-end", gap:40, marginTop:20}},
+            React.createElement("div", {style:{flex:"0 0 40%", textAlign:"center"}},
+              React.createElement("div", {style:{borderTop:"1.5px solid #333", paddingTop:6, fontSize:".88rem"}}, "Data")
+            ),
+            React.createElement("div", {style:{flex:"1", textAlign:"center"}},
+              React.createElement("div", {style:{borderTop:"1.5px solid #333", paddingTop:6, fontSize:".88rem"}}, "Assinatura do cliente")
+            )
+          )
         );
       })
     )
