@@ -2967,12 +2967,9 @@ function VisitSheetPage({properties, settings, showToast}) {
         const pageProps = selectedProps.slice(pageIdx * propsPerPage, (pageIdx + 1) * propsPerPage);
         const totalPages = Math.ceil(selectedProps.length / propsPerPage);
         return React.createElement("div", {key: pageIdx, className:"visit-page", style:{marginBottom: pageIdx < totalPages - 1 ? 40 : 0, fontFamily:"'Helvetica Neue', Arial, sans-serif", color:"#111", lineHeight:1.5}},
-          // ===== CABECALHO (logo + FICHA DE VISITA + cliente + corretor) =====
+          // ===== CABECALHO (FICHA DE VISITA + cliente + corretor) =====
           React.createElement("div", {className:"visit-page-head"},
-            s.logoUrl && React.createElement("div", {style:{marginBottom:8}},
-              React.createElement("img", {src: s.logoUrl, style:{height:44}})
-            ),
-            React.createElement("h2", {style:{textAlign:"center", fontSize:"1.15rem", fontWeight:900, textDecoration:"underline", margin:"6px 0 18px"}}, "FICHA DE VISITA"),
+            React.createElement("h2", {style:{textAlign:"center", fontSize:"1.15rem", fontWeight:900, textDecoration:"underline", margin:"0 0 18px"}}, "FICHA DE VISITA"),
             React.createElement("div", {style:{marginBottom:12}},
               React.createElement("div", {style:{fontWeight:900, fontSize:".95rem", marginBottom:3}}, "Dados do cliente"),
               React.createElement("div", {style:{fontSize:".92rem"}},
