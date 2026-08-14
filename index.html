@@ -3015,10 +3015,8 @@ function VisitSheetPage({properties, settings, showToast}) {
         const mapQuery = hasCoords ? `${p.lat},${p.lng}` : encodeURIComponent(addr || `${p.city}, PR`);
         // URL do Google Maps para abrir no navegador
         const gmapsOpenUrl = `https://www.google.com/maps/search/?api=1&query=${mapQuery}`;
-        // Google Static Maps API (requer que a "Maps Static API" esteja ativa no Google Cloud Console)
-        const staticMapUrl = `https://maps.googleapis.com/maps/api/staticmap?center=${mapQuery}&zoom=16&size=600x300&maptype=roadmap&markers=color:red%7Clabel:${idx+1}%7C${mapQuery}&key=${GMAPS_KEY}`;
-        // QR code (fallback se o mapa nao carregar)
-        const qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?data=${encodeURIComponent(gmapsOpenUrl)}&size=180x180&margin=8`;
+        // QR code grande - escaneia com celular pra abrir GPS/navegacao
+        const qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?data=${encodeURIComponent(gmapsOpenUrl)}&size=300x300&margin=10&ecc=M`;
         return React.createElement("div", {key:p.id, className:"visit-prop", style:{marginBottom:40, border:"2px solid #333", borderRadius:0, overflow:"hidden", position:"relative"}},
           // Cabecalho do imovel (Referencia + tipo)
           React.createElement("div", {style:{background:"var(--red)", color:"white", padding:"12px 18px", display:"flex", justifyContent:"space-between", alignItems:"center", flexWrap:"wrap", gap:8}},
@@ -3046,14 +3044,22 @@ function VisitSheetPage({properties, settings, showToast}) {
                 React.createElement("div", {style:{fontFamily:"var(--font-num)", fontWeight:900, fontSize:"1.15rem"}}, p.price > 0 ? fmtCurrency(p.price) : "SOB CONSULTA")
               )
             ),
-            // Foto + Mapa do Google lado a lado (Static Maps API)
+            // Foto + Card do mapa (QR code pra GPS ao vivo) lado a lado
             React.createElement("div", {className:"visit-prop-imgs", style:{display:"grid", gridTemplateColumns:"1fr 1fr", gap:10, marginBottom:12}},
               p.images && p.images[0]
                 ? React.createElement("img", {src: p.images[0], crossOrigin:"anonymous", style:{width:"100%", height:180, objectFit:"cover", borderRadius:4, border:"1px solid #ccc"}})
                 : React.createElement("div", {style:{width:"100%", height:180, background:"#f5f5f5", borderRadius:4, display:"flex", alignItems:"center", justifyContent:"center", color:"var(--text-light)", border:"1px solid #ccc"}}, "Sem foto"),
-              React.createElement("div", {style:{position:"relative", width:"100%", height:180, borderRadius:4, border:"1px solid #ccc", overflow:"hidden", background:"#f5f5f5"}},
-                React.createElement("img", {src: staticMapUrl, crossOrigin:"anonymous", style:{width:"100%", height:"100%", objectFit:"cover"}, alt:"Mapa"}),
-                React.createElement("img", {src: qrCodeUrl, crossOrigin:"anonymous", style:{position:"absolute", bottom:6, right:6, width:56, height:56, background:"white", padding:3, borderRadius:4, boxShadow:"0 2px 6px rgba(0,0,0,.4)"}, alt:"QR", title:"Escaneie pra abrir no Google Maps"})
+              React.createElement("div", {style:{width:"100%", height:180, borderRadius:4, border:"2px solid var(--red)", overflow:"hidden", background:"linear-gradient(135deg, #fff 0%, #f8f8f8 100%)", display:"flex", flexDirection:"column"}},
+                React.createElement("div", {style:{background:"var(--red)", color:"white", padding:"4px 8px", fontSize:".65rem", fontWeight:900, letterSpacing:".08em", textTransform:"uppercase", textAlign:"center"}}, "📍 Localização · Escaneie pra abrir GPS"),
+                React.createElement("div", {style:{flex:1, display:"flex", alignItems:"center", justifyContent:"center", gap:10, padding:8}},
+                  React.createElement("img", {src: qrCodeUrl, crossOrigin:"anonymous", style:{width:130, height:130, background:"white", padding:2}, alt:"QR Google Maps"}),
+                  React.createElement("div", {style:{flex:1, fontSize:".7rem", lineHeight:1.4}},
+                    React.createElement("div", {style:{fontWeight:900, color:"var(--red)", fontSize:".72rem", marginBottom:4}}, "COMO USAR:"),
+                    React.createElement("div", {style:{marginBottom:4}}, "1. Abra a câmera do celular"),
+                    React.createElement("div", {style:{marginBottom:4}}, "2. Aponte para o QR ao lado"),
+                    React.createElement("div", null, "3. Toque no link → GPS abre")
+                  )
+                )
               )
             ),
             // Caracteristicas
