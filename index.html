@@ -602,7 +602,7 @@ a { text-decoration: none; color: inherit; }
 .cf-submit svg { width: 20px; height: 20px; }
 
 /* ===== PROPERTY DETAIL ===== */
-.detail-page { max-width: var(--max-w); margin: 0 auto; padding: var(--header-h) 28px 80px; }
+.detail-page { max-width: var(--max-w); margin: 0 auto; padding: calc(var(--header-h) + 24px) 28px 80px; }
 .detail-back {
   display: inline-flex; align-items: center; gap: 8px; color: var(--text-light);
   font-weight: 500; font-size: .9rem; margin-bottom: 28px;
@@ -764,7 +764,7 @@ body.lightbox-open .filters-bar { display: none !important; }
 }
 
 /* SIDEBAR */
-.dt-sidebar { position: sticky; top: var(--header-h); }
+.dt-sidebar { position: sticky; top: calc(var(--header-h) + 20px); }
 .sidebar-card {
   background: white; border-radius: var(--radius-lg); border: 1px solid var(--border);
   padding: 30px; box-shadow: var(--shadow-md);
@@ -1082,7 +1082,7 @@ button.footer-link { padding-left: 0; }
 }
 .admin-bar svg { width: 14px; height: 14px; }
 .header.has-admin-bar { top: 34px; }
-.dt-sidebar.has-admin-bar { top: calc(var(--header-h) + var(--admin-bar-h)); }
+.dt-sidebar.has-admin-bar { top: calc(var(--header-h) + var(--admin-bar-h) + 20px); }
 
 @media(max-width:768px) {
   .header.has-admin-bar { top: 30px; }
@@ -1133,8 +1133,8 @@ button.footer-link { padding-left: 0; }
 .filters-bar + .section { padding-top: 36px; }
 @media(max-width:768px) { .filters-bar { padding: 20px 0 16px; } .filters-bar + .section { padding-top: 24px; } }
 .filters-inner { max-width: var(--max-w); margin: 0 auto; padding: 0 28px; }
-.page-offset { padding-top: var(--header-h); }
-.page-offset.has-admin-bar { padding-top: calc(var(--header-h) + var(--admin-bar-h)); }
+.page-offset { padding-top: calc(var(--header-h) + 24px); }
+.page-offset.has-admin-bar { padding-top: calc(var(--header-h) + var(--admin-bar-h) + 24px); }
 .filters-row { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
 .f-select {
   padding: 10px 14px; border: 1px solid var(--border); border-radius: var(--radius-sm);
@@ -6630,7 +6630,7 @@ function ClientPage({selection, properties, settings, setSelectedProp, setPage, 
     );
   }
 
-  return React.createElement("div", {style:{padding:"var(--header-h) 0 80px"}},
+  return React.createElement("div", {style:{padding:"calc(var(--header-h) + 24px) 0 80px"}},
     React.createElement("div", {style:{maxWidth:"var(--max-w)", margin:"0 auto", padding:"0 28px"}},
       React.createElement("div", {style:{background:"linear-gradient(135deg, var(--red), var(--red-dark))", color:"white", padding:"36px 32px", borderRadius:"var(--radius-lg)", marginBottom:32, boxShadow:"0 12px 36px rgba(196,30,30,.25)"}},
         React.createElement("div", {style:{fontSize:".82rem", fontWeight:700, letterSpacing:".15em", textTransform:"uppercase", opacity:.85, marginBottom:8}}, "✨ Seleção personalizada"),
