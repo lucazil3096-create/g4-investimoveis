@@ -1564,6 +1564,8 @@ let ALL_FEATURES = ["Piscina","Churrasqueira","Garagem","Quintal","Área de Serv
 const DEFAULT_SETTINGS = {
   logoUrl: "",
   logoSize: 96,
+  logoOffsetY: 0,
+  headerHeight: 110,
   watermarkEnabled: true,
   watermarkUrl: "",
   watermarkOpacity: 35,
@@ -1744,10 +1746,13 @@ function Header({page, setPage, scrolled, isAdmin, setIsAdmin, settings}) {
     window.addEventListener("keydown", handleKey);
     return () => window.removeEventListener("keydown", handleKey);
   }, []);
+  const hdrHeight = (settings && settings.headerHeight) || 110;
+  const logoH = (settings && settings.logoSize) || 96;
+  const logoOffY = (settings && typeof settings.logoOffsetY === "number") ? settings.logoOffsetY : 0;
   return React.createElement("header", {className: `header ${scrolled ? 'scrolled' : ''} ${showAdminBar ? 'has-admin-bar' : ''}`},
-    React.createElement("div", {className: "header-inner"},
-      React.createElement("a", {className: "logo-link", onClick: (e) => { e.preventDefault(); nav("home"); }, href: "#"},
-        React.createElement("img", {src: logoSrc, alt: "G4 Investimóveis", className: "logo-img", style: (settings && settings.logoSize) ? {height: `${settings.logoSize}px`} : {}})
+    React.createElement("div", {className: "header-inner", style: {height: `${hdrHeight}px`}},
+      React.createElement("a", {className: "logo-link", onClick: (e) => { e.preventDefault(); nav("home"); }, href: "#", style:{transform: `translateY(${logoOffY}px)`}},
+        React.createElement("img", {src: logoSrc, alt: "G4 Investimóveis", className: "logo-img", style: {height: `${logoH}px`, maxHeight: "none"}})
       ),
       React.createElement("button", {className: "mobile-toggle", onClick: () => setMenuOpen(!menuOpen)}, menuOpen ? I.close : I.menu),
       React.createElement("nav", {className: `nav ${menuOpen ? 'open' : ''}`},
@@ -4356,17 +4361,44 @@ function SettingsPanel({settings, showToast}) {
     React.createElement("div", {className: "admin-form-card"},
       Sec({title: "🏢 Dados da empresa", children: [
         ImgField({key:"logo", label:"Logo (aparece no topo, rodapé, login)", k:"logoUrl", fileRef: logoFileRef, preview: true, help:"PNG transparente funciona melhor. Recomendado 400x120px."}),
-        // Slider de tamanho da logo no header
-        React.createElement("div", {key:"logoSize", className:"af-group full", style:{background:"rgba(59,130,246,.05)", border:"1px solid rgba(59,130,246,.2)", borderRadius:8, padding:"14px 18px", marginBottom:14}},
-          React.createElement("label", {style:{fontSize:".85rem", fontWeight:800, display:"flex", justifyContent:"space-between", marginBottom:8}},
-            React.createElement("span", null, "📏 Tamanho da logo no topo"),
+        // Controles do header - Altura da tarja, tamanho da logo, posição vertical
+        React.createElement("div", {key:"headerCtrl", className:"af-group full", style:{background:"rgba(59,130,246,.05)", border:"1px solid rgba(59,130,246,.2)", borderRadius:8, padding:"14px 18px", marginBottom:14}},
+          React.createElement("div", {style:{fontSize:".82rem", fontWeight:900, color:"#3b82f6", marginBottom:12, letterSpacing:".05em", textTransform:"uppercase"}}, "🎛️ Header do site (tarja + logo)"),
+          // Altura da tarja preta
+          React.createElement("label", {style:{fontSize:".85rem", fontWeight:800, display:"flex", justifyContent:"space-between", marginBottom:6}},
+            React.createElement("span", null, "📐 Altura da tarja preta"),
+            React.createElement("span", {style:{color:"#3b82f6"}}, (s.headerHeight || 110), "px")
+          ),
+          React.createElement("input", {type:"range", min:60, max:260, step:2, value: s.headerHeight || 110, onChange: e => upd("headerHeight", +e.target.value), style:{width:"100%", accentColor:"#3b82f6"}}),
+          React.createElement("div", {style:{display:"flex", justifyContent:"space-between", fontSize:".7rem", color:"var(--text-light)", marginTop:2, marginBottom:14}},
+            React.createElement("span", null, "Fina (60px)"),
+            React.createElement("span", null, "Padrão (110px)"),
+            React.createElement("span", null, "Alta (260px)")
+          ),
+          // Tamanho da logo
+          React.createElement("label", {style:{fontSize:".85rem", fontWeight:800, display:"flex", justifyContent:"space-between", marginBottom:6}},
+            React.createElement("span", null, "📏 Tamanho da logo"),
             React.createElement("span", {style:{color:"#3b82f6"}}, (s.logoSize || 96), "px")
           ),
-          React.createElement("input", {type:"range", min:48, max:180, step:4, value: s.logoSize || 96, onChange: e => upd("logoSize", +e.target.value), style:{width:"100%", accentColor:"#3b82f6"}}),
-          React.createElement("div", {style:{display:"flex", justifyContent:"space-between", fontSize:".72rem", color:"var(--text-light)", marginTop:2}},
-            React.createElement("span", null, "Pequena (48px)"),
+          React.createElement("input", {type:"range", min:30, max:280, step:2, value: s.logoSize || 96, onChange: e => upd("logoSize", +e.target.value), style:{width:"100%", accentColor:"#3b82f6"}}),
+          React.createElement("div", {style:{display:"flex", justifyContent:"space-between", fontSize:".7rem", color:"var(--text-light)", marginTop:2, marginBottom:14}},
+            React.createElement("span", null, "Mini (30px)"),
             React.createElement("span", null, "Padrão (96px)"),
-            React.createElement("span", null, "Gigante (180px)")
+            React.createElement("span", null, "Gigante (280px)")
+          ),
+          // Posição vertical da logo
+          React.createElement("label", {style:{fontSize:".85rem", fontWeight:800, display:"flex", justifyContent:"space-between", marginBottom:6}},
+            React.createElement("span", null, "↕️ Posição vertical da logo"),
+            React.createElement("span", {style:{color:"#3b82f6"}}, ((typeof s.logoOffsetY === "number") ? s.logoOffsetY : 0) > 0 ? "+" : "", (typeof s.logoOffsetY === "number") ? s.logoOffsetY : 0, "px")
+          ),
+          React.createElement("input", {type:"range", min:-60, max:60, step:1, value: (typeof s.logoOffsetY === "number") ? s.logoOffsetY : 0, onChange: e => upd("logoOffsetY", +e.target.value), style:{width:"100%", accentColor:"#3b82f6"}}),
+          React.createElement("div", {style:{display:"flex", justifyContent:"space-between", fontSize:".7rem", color:"var(--text-light)", marginTop:2}},
+            React.createElement("span", null, "⬆ Subir (-60px)"),
+            React.createElement("span", null, "Centro (0)"),
+            React.createElement("span", null, "⬇ Descer (+60px)")
+          ),
+          React.createElement("div", {style:{marginTop:10, padding:"6px 10px", background:"rgba(59,130,246,.08)", borderRadius:4, fontSize:".72rem", color:"#1e40af", lineHeight:1.4}},
+            "💡 Se sua logo tá saindo pra fora da tarja, aumenta a ", React.createElement("strong",null,"altura da tarja preta"), " ou usa o ", React.createElement("strong",null,"deslocamento vertical"), " pra centralizar."
           )
         ),
         Field({key:"cname", label:"Nome da empresa", k:"companyName", placeholder:"G4 Investimóveis"}),
