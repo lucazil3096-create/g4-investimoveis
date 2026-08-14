@@ -2887,13 +2887,42 @@ function VisitSheetPage({properties, settings, showToast}) {
         /* 1 imovel por pagina */
         body.print-visit-active.per-page-1 .visit-prop { page-break-after: always; break-after: page; }
         body.print-visit-active.per-page-1 .visit-prop:last-of-type { page-break-after: auto; break-after: auto; }
-        /* 2 imoveis por pagina - quebra depois de cada par */
+        /* 2 imoveis por pagina - quebra depois de cada par, layout COMPACTO */
         body.print-visit-active.per-page-2 .visit-prop:nth-of-type(2n) { page-break-after: always; break-after: page; }
         body.print-visit-active.per-page-2 .visit-prop:last-of-type { page-break-after: auto; break-after: auto; }
-        body.print-visit-active.per-page-2 .visit-prop-imgs { height: 130px !important; }
-        body.print-visit-active.per-page-2 .visit-prop-imgs img,
-        body.print-visit-active.per-page-2 .visit-prop-imgs > div { height: 130px !important; }
-        body.print-visit-active.per-page-2 .visit-prop-decl { font-size: 8pt !important; padding: 6px 10px !important; }
+        body.print-visit-active.per-page-2 .visit-prop { margin: 0 0 4mm !important; max-height: 138mm; }
+        /* Header do imovel - menor */
+        body.print-visit-active.per-page-2 .visit-prop > div:first-child { padding: 6px 12px !important; font-size: .82rem !important; }
+        body.print-visit-active.per-page-2 .visit-prop > div:first-child strong { font-size: .88rem !important; }
+        /* Padding interno menor */
+        body.print-visit-active.per-page-2 .visit-prop > div:nth-child(2) { padding: 8px 12px !important; }
+        /* Card cliente destacado */
+        body.print-visit-active.per-page-2 .visit-prop > div:nth-child(2) > div:first-child { padding: 4px 8px !important; margin-bottom: 6px !important; font-size: .72rem !important; }
+        /* Titulo + preco */
+        body.print-visit-active.per-page-2 .visit-prop h3 { font-size: .88rem !important; margin: 0 0 3px !important; }
+        body.print-visit-active.per-page-2 .visit-prop p { font-size: .78rem !important; }
+        /* Fotos e mapa - bem menores */
+        body.print-visit-active.per-page-2 .visit-prop-imgs { margin-bottom: 6px !important; }
+        body.print-visit-active.per-page-2 .visit-prop-imgs > img,
+        body.print-visit-active.per-page-2 .visit-prop-imgs > div { height: 95px !important; }
+        body.print-visit-active.per-page-2 .visit-prop-imgs img { height: 95px !important; }
+        /* QR code menor */
+        body.print-visit-active.per-page-2 .visit-prop-imgs > div img[alt="QR Google Maps"] { width: 70px !important; height: 70px !important; }
+        body.print-visit-active.per-page-2 .visit-prop-imgs > div > div:first-child { padding: 2px 6px !important; font-size: .55rem !important; }
+        body.print-visit-active.per-page-2 .visit-prop-imgs > div > div:last-child { padding: 4px !important; gap: 6px !important; }
+        body.print-visit-active.per-page-2 .visit-prop-imgs > div > div:last-child > div { font-size: .58rem !important; line-height: 1.25 !important; }
+        /* Caracteristicas */
+        body.print-visit-active.per-page-2 .visit-prop > div:nth-child(2) > div:nth-of-type(3) { padding: 4px 8px !important; font-size: .72rem !important; gap: 8px !important; margin-bottom: 6px !important; }
+        /* Observacoes - menor */
+        body.print-visit-active.per-page-2 .visit-prop > div:nth-child(2) > div:nth-of-type(4) { margin-bottom: 6px !important; }
+        body.print-visit-active.per-page-2 .visit-prop > div:nth-child(2) > div:nth-of-type(4) > div { min-height: 20px !important; }
+        /* Declaracao juridica - super compacta */
+        body.print-visit-active.per-page-2 .visit-prop-decl { font-size: 7.5pt !important; padding: 5px 8px !important; margin-bottom: 6px !important; line-height: 1.3 !important; }
+        body.print-visit-active.per-page-2 .visit-prop-decl p { font-size: 7.5pt !important; margin: 0 0 4px !important; }
+        body.print-visit-active.per-page-2 .visit-prop-decl > div:first-child { padding-bottom: 3px !important; margin-bottom: 5px !important; font-size: .68rem !important; }
+        /* Assinaturas - menor */
+        body.print-visit-active.per-page-2 .visit-prop > div:nth-child(2) > div:last-child { margin-top: 10px !important; gap: 20px !important; }
+        body.print-visit-active.per-page-2 .visit-prop > div:nth-child(2) > div:last-child > div > div { font-size: .68rem !important; padding-top: 4px !important; }
         body.print-visit-active img { max-width: 100% !important; height: auto !important; }
       }
     `),
