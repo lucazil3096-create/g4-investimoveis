@@ -2814,53 +2814,23 @@ function VisitSheetPage({properties, settings, showToast}) {
   };
 
   const [generatingPdf, setGeneratingPdf] = useState(false);
-  const doSavePdf = async () => {
+  // Salvar PDF usa a impressao nativa do navegador (que suporta "Salvar como PDF" no destino).
+  // Isso garante renderizacao perfeita do texto - html2canvas quebrava letras/espacos com certas fontes.
+  const doSavePdf = () => {
     if (!clientName.trim()) { showToast && showToast("Digite o nome do cliente antes de gerar o PDF", "error"); return; }
     if (selectedProps.length === 0) { showToast && showToast("Adicione pelo menos 1 imóvel", "error"); return; }
-    if (!window.jspdf || !window.html2canvas) { showToast && showToast("Bibliotecas de PDF não carregaram. Recarregue a página.", "error"); return; }
-    setGeneratingPdf(true);
-    try {
-      const { jsPDF } = window.jspdf;
-      const pdf = new jsPDF({orientation:"portrait", unit:"mm", format:"a4"});
-      const A4_W = 210;
-      const A4_H = 297;
-      const margin = 10;
-      const contentW = A4_W - margin * 2;
-      // Pega cada .visit-prop e transforma em imagem no PDF
-      const propEls = document.querySelectorAll(".visit-prop");
-      let itemsInCurrentPage = 0;
-      let currentY = margin;
-      for (let i = 0; i < propEls.length; i++) {
-        const el = propEls[i];
-        const canvas = await window.html2canvas(el, {scale: 2, useCORS: true, allowTaint: true, backgroundColor:"#ffffff", logging: false});
-        const imgData = canvas.toDataURL("image/jpeg", 0.9);
-        const imgW = contentW;
-        const imgH = (canvas.height * imgW) / canvas.width;
-        // Verifica se cabe na pagina atual
-        if (propsPerPage === 1) {
-          if (i > 0) pdf.addPage();
-          currentY = margin;
-        } else {
-          // 2 por pagina: quebra a cada 2
-          if (i > 0 && i % 2 === 0) {
-            pdf.addPage();
-            currentY = margin;
-            itemsInCurrentPage = 0;
-          }
-        }
-        pdf.addImage(imgData, "JPEG", margin, currentY, imgW, imgH);
-        currentY += imgH + 5;
-        itemsInCurrentPage++;
-      }
-      const safeName = (clientName || "cliente").replace(/[^a-zA-Z0-9]/g, "_");
-      const dtStr = new Date().toISOString().slice(0, 10);
-      pdf.save(`ficha-visita-${safeName}-${dtStr}.pdf`);
-      showToast && showToast("PDF salvo!", "success");
-    } catch(e) {
-      console.error("Erro ao gerar PDF:", e);
-      showToast && showToast("Erro ao gerar PDF: " + (e.message || e), "error");
-    }
-    setGeneratingPdf(false);
+    showToast && showToast("Na tela de impressão, escolha 'Salvar como PDF' no campo Destino", "info");
+    // Da tempo de ler o toast antes de abrir a janela de impressao
+    setTimeout(() => {
+      document.body.classList.add("print-visit-active");
+      document.body.classList.add(`per-page-${propsPerPage}`);
+      window.print();
+      setTimeout(() => {
+        document.body.classList.remove("print-visit-active");
+        document.body.classList.remove("per-page-1");
+        document.body.classList.remove("per-page-2");
+      }, 1000);
+    }, 800);
   };
 
   const s = settings || {};
