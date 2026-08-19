@@ -1766,7 +1766,9 @@ function Header({page, setPage, scrolled, isAdmin, setIsAdmin, settings}) {
     React.createElement("div", {className: "header-inner", style: {height: `${hdrHeight}px`}},
       React.createElement("a", {className: "logo-link", onClick: (e) => { e.preventDefault(); nav("home"); }, href: "#", style:{transform: `translateY(${logoOffY}px)`, display:"flex", alignItems:"center", gap:16}},
         React.createElement("img", {src: logoSrc, alt: "G4 Investimóveis", className: "logo-img", style: {height: `${logoH}px`, maxHeight: "none"}}),
-        certifUrl && React.createElement("img", {src: certifUrl, alt: "Certificações CRECI/CNAI", className: "certif-badge-img", style: {height: `${certifH}px`, width:"auto", maxHeight:"none", transform: `translateY(${certifOffY}px)`, filter:"drop-shadow(0 1px 2px rgba(0,0,0,.4))"}})
+        certifUrl
+          ? React.createElement("img", {src: certifUrl, alt: "Certificações CRECI/CNAI", className: "certif-badge-img", style: {height: `${certifH}px`, width:"auto", maxHeight:"none", transform: `translateY(${certifOffY}px)`, filter:"drop-shadow(0 1px 2px rgba(0,0,0,.4))"}})
+          : (isAdmin && React.createElement("div", {className:"certif-badge-placeholder", onClick: (e) => { e.preventDefault(); e.stopPropagation(); nav("admin"); }, style:{border:"2px dashed rgba(212,160,18,.6)", padding:"6px 12px", borderRadius:6, color:"#d4a012", fontSize:".62rem", fontWeight:700, letterSpacing:".05em", lineHeight:1.3, cursor:"pointer", textAlign:"center", maxWidth:140, transform: `translateY(${certifOffY}px)`}}, "🎖️ SELO NÃO CONFIGURADO", React.createElement("br"), React.createElement("span", {style:{fontSize:".55rem", opacity:.8, fontWeight:600}}, "clique pra ir no admin")))
       ),
       React.createElement("button", {className: "mobile-toggle", onClick: () => setMenuOpen(!menuOpen)}, menuOpen ? I.close : I.menu),
       React.createElement("nav", {className: `nav ${menuOpen ? 'open' : ''}`},
