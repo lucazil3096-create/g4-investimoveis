@@ -5922,37 +5922,46 @@ function InstagramPostMaker({property, settings, onClose, showToast}) {
             ),
             React.createElement("p", {style:{fontSize:".72rem", color:"var(--text-light)", marginLeft:28, marginTop:4, marginBottom:0}}, showPriceIG ? "O valor do imóvel aparecerá" : "Mostrará 'VALOR SOB CONSULTA'")
           ),
-          // Caracteristicas do imovel (piscina, churrasqueira, etc)
-          p.features && p.features.length > 0 && React.createElement("div", {style:{padding:"12px 14px", background:"rgba(59,130,246,.06)", borderRadius:8, border:"1px solid rgba(59,130,246,.2)", marginBottom:14}},
+          // Caracteristicas do imovel (piscina, churrasqueira, etc) - sempre mostra a caixa
+          React.createElement("div", {style:{padding:"12px 14px", background:"rgba(59,130,246,.06)", borderRadius:8, border:"1px solid rgba(59,130,246,.2)", marginBottom:14}},
             React.createElement("div", {style:{display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:8, flexWrap:"wrap", gap:6}},
               React.createElement("span", {style:{fontSize:".88rem", fontWeight:800, color:"#1e40af"}}, "✨ Características do imóvel"),
-              React.createElement("div", {style:{display:"flex", gap:6}},
+              p.features && p.features.length > 0 && React.createElement("div", {style:{display:"flex", gap:6}},
                 React.createElement("button", {onClick: () => setSelectedFeats(p.features), style:{fontSize:".7rem", padding:"3px 8px", background:"#3b82f6", color:"white", border:"none", borderRadius:4, cursor:"pointer", fontWeight:700}}, "Todas"),
                 React.createElement("button", {onClick: () => setSelectedFeats([]), style:{fontSize:".7rem", padding:"3px 8px", background:"white", color:"#3b82f6", border:"1px solid #3b82f6", borderRadius:4, cursor:"pointer", fontWeight:700}}, "Nenhuma")
               )
             ),
-            React.createElement("p", {style:{fontSize:".7rem", color:"var(--text-light)", margin:"0 0 8px"}}, "Marque quais aparecem na montagem (", selectedFeats.length, "/", p.features.length, ")"),
-            React.createElement("div", {style:{display:"flex", flexWrap:"wrap", gap:6}},
-              p.features.map(feat => {
-                const isSel = selectedFeats.includes(feat);
-                return React.createElement("button", {
-                  key: feat,
-                  onClick: () => setSelectedFeats(prev => prev.includes(feat) ? prev.filter(x => x !== feat) : [...prev, feat]),
-                  style:{
-                    padding:"5px 11px",
-                    fontSize:".75rem",
-                    fontWeight:700,
-                    background: isSel ? "#3b82f6" : "white",
-                    color: isSel ? "white" : "#3b82f6",
-                    border: `1.5px solid ${isSel ? "#3b82f6" : "#93c5fd"}`,
-                    borderRadius: 14,
-                    cursor:"pointer",
-                    transition:"all .15s"
-                  }
-                }, isSel ? "✓ " : "", feat);
-              })
-            ),
-            selectedFeats.length > 5 && React.createElement("p", {style:{fontSize:".68rem", color:"#c2410c", background:"#fff7ed", padding:"4px 8px", borderRadius:4, marginTop:8, marginBottom:0, fontWeight:700}}, "⚠ Muitas características selecionadas podem deixar o post visualmente carregado.")
+            p.features && p.features.length > 0 ? React.createElement(React.Fragment, null,
+              React.createElement("p", {style:{fontSize:".7rem", color:"var(--text-light)", margin:"0 0 8px"}}, "Marque quais aparecem na montagem (", selectedFeats.length, "/", p.features.length, ")"),
+              React.createElement("div", {style:{display:"flex", flexWrap:"wrap", gap:6}},
+                p.features.map(feat => {
+                  const isSel = selectedFeats.includes(feat);
+                  return React.createElement("button", {
+                    key: feat,
+                    onClick: () => setSelectedFeats(prev => prev.includes(feat) ? prev.filter(x => x !== feat) : [...prev, feat]),
+                    style:{
+                      padding:"5px 11px",
+                      fontSize:".75rem",
+                      fontWeight:700,
+                      background: isSel ? "#3b82f6" : "white",
+                      color: isSel ? "white" : "#3b82f6",
+                      border: `1.5px solid ${isSel ? "#3b82f6" : "#93c5fd"}`,
+                      borderRadius: 14,
+                      cursor:"pointer",
+                      transition:"all .15s"
+                    }
+                  }, isSel ? "✓ " : "", feat);
+                })
+              ),
+              selectedFeats.length > 5 && React.createElement("p", {style:{fontSize:".68rem", color:"#c2410c", background:"#fff7ed", padding:"4px 8px", borderRadius:4, marginTop:8, marginBottom:0, fontWeight:700}}, "⚠ Muitas características selecionadas podem deixar o post visualmente carregado.")
+            ) : React.createElement("div", {style:{padding:"10px 12px", background:"#fff7ed", border:"1px dashed #fb923c", borderRadius:6, fontSize:".78rem", color:"#9a3412", lineHeight:1.5}},
+              React.createElement("div", {style:{fontWeight:800, marginBottom:4}}, "📭 Nenhuma característica cadastrada"),
+              "Feche esta janela, vá em ",
+              React.createElement("strong", null, "Editar imóvel"),
+              " → seção ",
+              React.createElement("strong", null, "Características"),
+              " → marque as opções (Piscina, Churrasqueira, Portão Eletrônico, Ar Condicionado, etc). Salve e volte aqui pra escolher quais aparecem na montagem."
+            )
           ),
           // Tarja destaque
           React.createElement("h4", {style:{fontSize:".82rem", fontWeight:800, textTransform:"uppercase", letterSpacing:".08em", color:"var(--text-light)", marginBottom:10}}, "Tarja de destaque"),
