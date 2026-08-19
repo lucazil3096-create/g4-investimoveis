@@ -5157,6 +5157,13 @@ function InstagramPostMaker({property, settings, onClose, showToast}) {
   const [oldPriceInput, setOldPriceInput] = useState(""); // Preco antigo digitado no campo (para "DE R$ X por R$ Y")
   // Caracteristicas extras (piscina, churrasqueira, etc) selecionadas pra aparecer na montagem
   const [selectedFeats, setSelectedFeats] = useState(() => (property && property.features) || []);
+  // ===== CUSTOMIZACAO CANVA-LIKE (cores + tamanhos de textos individuais) =====
+  const [custom, setCustom] = useState({});
+  const [showCustomPanel, setShowCustomPanel] = useState(false);
+  // Helper - retorna valor customizado ou fallback padrao
+  const cs = (key, def) => (custom[key] !== undefined && custom[key] !== "") ? custom[key] : def;
+  const setCs = (key, val) => setCustom(prev => ({...prev, [key]: val}));
+  const resetCustom = () => setCustom({});
   const s = settings || DEFAULT_SETTINGS;
   const p = property || {};
   const wpp = s.whatsappNumber || WHATSAPP;
@@ -5232,8 +5239,9 @@ function InstagramPostMaker({property, settings, onClose, showToast}) {
     const propImg = await loadImg(imgUrl);
     const logoImg = await loadImg(logo);
 
-    // Fundo
-    ctx.fillStyle = t.bg;
+    // Fundo - CUSTOMIZAVEL
+    const bgColor = cs("bgColor", t.bg);
+    ctx.fillStyle = bgColor;
     ctx.fillRect(0, 0, W, H);
 
     // Foto cobrindo a parte de cima (68% da altura)
@@ -5246,12 +5254,12 @@ function InstagramPostMaker({property, settings, onClose, showToast}) {
       ctx.drawImage(propImg, sx, sy, sw, sh);
     }
 
-    // Gradient overlay (foto -> fundo)
+    // Gradient overlay (foto -> fundo) - usa cor de fundo customizada
     const gy = Math.round(H * 0.40);
     const gh = Math.round(H * 0.40);
     const grad = ctx.createLinearGradient(0, gy, 0, gy + gh);
     grad.addColorStop(0, "rgba(0,0,0,0)");
-    grad.addColorStop(1, t.bg);
+    grad.addColorStop(1, bgColor);
     ctx.fillStyle = grad;
     ctx.fillRect(0, gy, W, gh);
 
@@ -5306,47 +5314,52 @@ function InstagramPostMaker({property, settings, onClose, showToast}) {
     const hasOldPrice = highlightBadge === "price_drop" && oldPriceStr;
     let y = H - 480 - (hasOldPrice ? 60 : 0); // sobe conteudo quando tem preco antigo (caixa fica maior)
 
-    // CASA (tipo)
-    ctx.fillStyle = t.accent;
-    ctx.font = "700 32px Arial, Helvetica, sans-serif";
+    // CASA (tipo) - CUSTOMIZAVEL: cor + tamanho
+    const typeSize = cs("typeSize", 32);
+    ctx.fillStyle = cs("typeColor", t.accent);
+    ctx.font = `700 ${typeSize}px Arial, Helvetica, sans-serif`;
     ctx.textAlign = "left";
     ctx.textBaseline = "top";
     ctx.fillText((p.type || "IMÓVEL").toUpperCase(), padX, y);
-    y += 48;
+    y += typeSize + 16;
 
-    // Título
-    ctx.fillStyle = "#fff";
-    ctx.font = "800 64px Arial, Helvetica, sans-serif";
+    // Título - CUSTOMIZAVEL: cor + tamanho
+    const titleSize = cs("titleSize", 64);
+    ctx.fillStyle = cs("titleColor", "#fff");
+    ctx.font = `800 ${titleSize}px Arial, Helvetica, sans-serif`;
     ctx.fillText((p.title || "Imóvel").toUpperCase(), padX, y);
-    y += 84;
+    y += titleSize + 20;
 
-    // Localização
-    ctx.font = "400 30px Arial, Helvetica, sans-serif";
+    // Localização - CUSTOMIZAVEL: cor + tamanho
+    const locSize = cs("locSize", 30);
+    ctx.fillStyle = cs("locColor", "#fff");
+    ctx.font = `400 ${locSize}px Arial, Helvetica, sans-serif`;
     const locText = "📍 " + [p.neighborhood, p.city].filter(Boolean).join(" — ") + (p.city ? "/PR" : "");
     ctx.fillText(locText, padX, y);
-    y += 56;
+    y += locSize + 26;
 
-    // Features (chips)
-    ctx.font = "700 22px Arial, Helvetica, sans-serif";
+    // Features (chips) - CUSTOMIZAVEL: cor fundo + cor texto + tamanho
+    const chipSize = cs("chipSize", 22);
+    ctx.font = `700 ${chipSize}px Arial, Helvetica, sans-serif`;
     let fx = padX;
     let fy = y;
-    const chipH = 46;
+    const chipH = chipSize + 24;
     const chipPad = 22;
     for (const feat of features) {
       const fw = ctx.measureText(feat).width + chipPad * 2;
       if (fx + fw > W - padX) { fx = padX; fy += chipH + 12; }
-      roundRect(ctx, fx, fy, fw, chipH, 23);
-      ctx.fillStyle = "rgba(40,40,40,0.85)";
+      roundRect(ctx, fx, fy, fw, chipH, chipH/2);
+      ctx.fillStyle = cs("chipBg", "rgba(40,40,40,0.85)");
       ctx.fill();
-      ctx.fillStyle = "#fff";
+      ctx.fillStyle = cs("chipText", "#fff");
       ctx.textBaseline = "middle";
       ctx.fillText(feat, fx + chipPad, fy + chipH/2);
       fx += fw + 12;
     }
     y = fy + chipH + 24;
 
-    // === Caixa do preço ===
-    const priceFontSize = showPriceIG ? 60 : 44;
+    // === Caixa do preço - CUSTOMIZAVEL: cor caixa + cor texto + tamanho ===
+    const priceFontSize = showPriceIG ? cs("priceSize", 60) : 44;
     ctx.font = "700 22px Arial, Helvetica, sans-serif";
     const lblW = ctx.measureText("VALOR").width;
     ctx.font = `800 ${priceFontSize}px Arial, Helvetica, sans-serif`;
@@ -5357,10 +5370,10 @@ function InstagramPostMaker({property, settings, onClose, showToast}) {
     const pbW = innerW + 80;
     const pbH = hasOldPrice ? 148 : 120;
     roundRect(ctx, padX, y, pbW, pbH, 14);
-    ctx.fillStyle = t.primary;
+    ctx.fillStyle = cs("priceBoxColor", t.primary);
     ctx.fill();
     // Label "VALOR"
-    ctx.fillStyle = "#fff";
+    ctx.fillStyle = cs("priceTextColor", "#fff");
     ctx.textAlign = "left";
     ctx.textBaseline = "top";
     ctx.globalAlpha = 0.9;
@@ -5374,7 +5387,7 @@ function InstagramPostMaker({property, settings, onClose, showToast}) {
       ctx.globalAlpha = 0.75;
       ctx.fillText("DE " + oldPriceStr, padX + 40, pTextY);
       const oldW2 = ctx.measureText("DE " + oldPriceStr).width;
-      ctx.strokeStyle = "#fff";
+      ctx.strokeStyle = cs("priceTextColor", "#fff");
       ctx.lineWidth = 2;
       ctx.beginPath();
       ctx.moveTo(padX + 40, pTextY + 14);
@@ -5385,20 +5398,19 @@ function InstagramPostMaker({property, settings, onClose, showToast}) {
     }
     // Preço grande
     ctx.font = `800 ${priceFontSize}px Arial, Helvetica, sans-serif`;
-    ctx.fillStyle = "#fff";
+    ctx.fillStyle = cs("priceTextColor", "#fff");
     ctx.fillText(priceStr, padX + 40, pTextY);
     y += pbH + 30;
 
-    // CTA: Telefone + Ref (fica embaixo da caixa de preço, com fallback pra parte inferior)
-    ctx.fillStyle = "#fff";
-    ctx.font = "800 28px Arial, Helvetica, sans-serif";
+    // CTA: Telefone + Ref - CUSTOMIZAVEL: cor + tamanho
+    const phoneSize = cs("phoneSize", 28);
+    ctx.font = `800 ${phoneSize}px Arial, Helvetica, sans-serif`;
     ctx.textBaseline = "middle";
     ctx.textAlign = "left";
-    // y aqui esta apos a caixa de preco (ja teve pbH+30 somado). Pega o maior entre esse y ou H-80.
     const phoneY = Math.max(H - 80, y + 10);
-    ctx.fillStyle = t.accent;
+    ctx.fillStyle = cs("phoneIconColor", t.accent);
     ctx.fillText("📞", padX, phoneY);
-    ctx.fillStyle = "#fff";
+    ctx.fillStyle = cs("phoneColor", "#fff");
     ctx.fillText(" " + phoneDisplay, padX + 50, phoneY);
 
     if (p.reference) {
@@ -5736,6 +5748,195 @@ function InstagramPostMaker({property, settings, onClose, showToast}) {
     }
   };
 
+  // ===== TEMPLATE 4: ELEGANTE (Dark + Gold + moldura fina) =====
+  const drawElegant = async (ctx) => {
+    const propImg = await loadImg(imgUrl);
+    const logoImg = await loadImg(logo);
+    const bgColor = cs("bgColor", "#0a0a0a");
+    // Fundo escuro
+    ctx.fillStyle = bgColor;
+    ctx.fillRect(0, 0, W, H);
+    // Foto centralizada com moldura dourada
+    const photoY = 200, photoH = Math.round(H * 0.48), photoX = 80, photoW = W - 160;
+    if (propImg) {
+      const scale = Math.max(photoW / propImg.width, photoH / propImg.height);
+      const sw = propImg.width * scale, sh = propImg.height * scale;
+      const sx = photoX + (photoW - sw) / 2, sy = photoY + (photoH - sh) / 2;
+      ctx.save();
+      ctx.beginPath();
+      ctx.rect(photoX, photoY, photoW, photoH);
+      ctx.clip();
+      ctx.drawImage(propImg, sx, sy, sw, sh);
+      ctx.restore();
+    }
+    // Moldura dourada
+    ctx.strokeStyle = cs("typeColor", "#d4a012");
+    ctx.lineWidth = 4;
+    ctx.strokeRect(photoX, photoY, photoW, photoH);
+    // Logo topo esquerda
+    if (logoImg) {
+      const logoH = 90;
+      const logoW = logoImg.width * (logoH / logoImg.height);
+      ctx.drawImage(logoImg, 60, 60, logoW, logoH);
+    }
+    // Linha decorativa dourada no topo
+    ctx.strokeStyle = cs("typeColor", "#d4a012");
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(W/2 - 100, 170);
+    ctx.lineTo(W/2 + 100, 170);
+    ctx.stroke();
+    // Ornamento
+    ctx.fillStyle = cs("typeColor", "#d4a012");
+    ctx.font = "700 20px Georgia, serif";
+    ctx.textAlign = "center";
+    ctx.fillText("◆ EXCLUSIVO ◆", W/2, 195);
+    // Info abaixo da foto
+    let y = photoY + photoH + 50;
+    const padX = 80;
+    // Tipo
+    ctx.fillStyle = cs("typeColor", "#d4a012");
+    ctx.font = `600 ${cs("typeSize", 28)}px Georgia, 'Times New Roman', serif`;
+    ctx.textAlign = "center";
+    ctx.textBaseline = "top";
+    ctx.fillText((p.type || "IMÓVEL").toUpperCase(), W/2, y);
+    y += cs("typeSize", 28) + 14;
+    // Título
+    ctx.fillStyle = cs("titleColor", "#fff");
+    ctx.font = `400 ${cs("titleSize", 54)}px Georgia, serif`;
+    ctx.fillText((p.title || "Imóvel").toUpperCase(), W/2, y);
+    y += cs("titleSize", 54) + 18;
+    // Localização
+    ctx.fillStyle = cs("locColor", "#d4d4d4");
+    ctx.font = `300 ${cs("locSize", 26)}px Georgia, serif`;
+    ctx.fillText([p.neighborhood, p.city].filter(Boolean).join(" · ") + (p.city ? " · PR" : ""), W/2, y);
+    y += cs("locSize", 26) + 30;
+    // Preço centralizado
+    ctx.fillStyle = cs("priceBoxColor", "#d4a012");
+    ctx.font = "700 20px Georgia, serif";
+    ctx.fillText("VALOR", W/2, y);
+    y += 32;
+    ctx.fillStyle = cs("priceTextColor", "#fff");
+    ctx.font = `700 ${cs("priceSize", 62)}px Georgia, serif`;
+    ctx.fillText(priceStr, W/2, y);
+    y += cs("priceSize", 62) + 30;
+    // Linha divisória
+    ctx.strokeStyle = cs("typeColor", "#d4a012");
+    ctx.lineWidth = 1;
+    ctx.globalAlpha = 0.5;
+    ctx.beginPath();
+    ctx.moveTo(padX, y);
+    ctx.lineTo(W - padX, y);
+    ctx.stroke();
+    ctx.globalAlpha = 1;
+    y += 26;
+    // Telefone centralizado
+    ctx.fillStyle = cs("phoneColor", "#fff");
+    ctx.font = `600 ${cs("phoneSize", 30)}px Georgia, serif`;
+    ctx.fillText("📞 " + phoneDisplay, W/2, y);
+  };
+
+  // ===== TEMPLATE 5: PRIME (Light + foto grande + minimalista) =====
+  const drawPrime = async (ctx) => {
+    const propImg = await loadImg(imgUrl);
+    const logoImg = await loadImg(logo);
+    const bgColor = cs("bgColor", "#f8f8f8");
+    // Fundo claro
+    ctx.fillStyle = bgColor;
+    ctx.fillRect(0, 0, W, H);
+    // Foto ocupa 55% do topo
+    const photoH = Math.round(H * 0.55);
+    if (propImg) {
+      const scale = Math.max(W / propImg.width, photoH / propImg.height);
+      const sw = propImg.width * scale, sh = propImg.height * scale;
+      const sx = (W - sw) / 2, sy = (photoH - sh) / 2;
+      ctx.drawImage(propImg, sx, sy, sw, sh);
+    }
+    // Badge redonda VENDA no meio do encontro
+    const transText = (p.transaction || "VENDA").toUpperCase();
+    ctx.fillStyle = cs("priceBoxColor", "#c41e1e");
+    ctx.beginPath();
+    ctx.arc(W - 130, photoH - 60, 90, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.strokeStyle = "#fff";
+    ctx.lineWidth = 4;
+    ctx.stroke();
+    ctx.fillStyle = "#fff";
+    ctx.font = "800 26px Arial, sans-serif";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.fillText(transText, W - 130, photoH - 60);
+    // Logo topo direito com sombra
+    if (logoImg) {
+      const logoH = 70;
+      const logoW = logoImg.width * (logoH / logoImg.height);
+      ctx.save();
+      ctx.shadowColor = "rgba(0,0,0,.5)";
+      ctx.shadowBlur = 12;
+      ctx.drawImage(logoImg, 40, 40, logoW, logoH);
+      ctx.restore();
+    }
+    // Info na parte de baixo (fundo claro)
+    let y = photoH + 60;
+    const padX = 60;
+    // Tipo
+    ctx.fillStyle = cs("typeColor", "#c41e1e");
+    ctx.font = `800 ${cs("typeSize", 30)}px Arial, sans-serif`;
+    ctx.textAlign = "left";
+    ctx.textBaseline = "top";
+    ctx.fillText((p.type || "IMÓVEL").toUpperCase(), padX, y);
+    y += cs("typeSize", 30) + 12;
+    // Título
+    ctx.fillStyle = cs("titleColor", "#1a1a1a");
+    ctx.font = `900 ${cs("titleSize", 60)}px Arial, sans-serif`;
+    ctx.fillText((p.title || "Imóvel").toUpperCase(), padX, y);
+    y += cs("titleSize", 60) + 16;
+    // Localização
+    ctx.fillStyle = cs("locColor", "#555");
+    ctx.font = `500 ${cs("locSize", 28)}px Arial, sans-serif`;
+    ctx.fillText("📍 " + [p.neighborhood, p.city].filter(Boolean).join(" · "), padX, y);
+    y += cs("locSize", 28) + 24;
+    // Features chips
+    ctx.font = `700 ${cs("chipSize", 22)}px Arial, sans-serif`;
+    let fx = padX;
+    let fy = y;
+    const chipH = cs("chipSize", 22) + 20;
+    const chipPad = 18;
+    for (const feat of features) {
+      const fw = ctx.measureText(feat).width + chipPad * 2;
+      if (fx + fw > W - padX) { fx = padX; fy += chipH + 10; }
+      roundRect(ctx, fx, fy, fw, chipH, 6);
+      ctx.fillStyle = cs("chipBg", "#eaeaea");
+      ctx.fill();
+      ctx.fillStyle = cs("chipText", "#333");
+      ctx.textBaseline = "middle";
+      ctx.fillText(feat, fx + chipPad, fy + chipH/2);
+      fx += fw + 10;
+    }
+    y = fy + chipH + 26;
+    // Preço grande em barra colorida
+    ctx.fillStyle = cs("priceBoxColor", "#c41e1e");
+    ctx.fillRect(0, y, W, cs("priceSize", 70) + 40);
+    ctx.fillStyle = cs("priceTextColor", "#fff");
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.font = `900 ${cs("priceSize", 70)}px Arial, sans-serif`;
+    ctx.fillText(priceStr, W/2, y + (cs("priceSize", 70) + 40) / 2);
+    y += cs("priceSize", 70) + 60;
+    // Telefone
+    ctx.fillStyle = cs("phoneColor", "#1a1a1a");
+    ctx.textAlign = "left";
+    ctx.textBaseline = "top";
+    ctx.font = `800 ${cs("phoneSize", 30)}px Arial, sans-serif`;
+    ctx.fillText("📞 " + phoneDisplay, padX, y);
+    if (p.reference) {
+      ctx.textAlign = "right";
+      ctx.fillStyle = "#666";
+      ctx.font = "700 22px Arial, sans-serif";
+      ctx.fillText("Ref.: " + p.reference, W - padX, y + 8);
+    }
+  };
+
   const download = async () => {
     setDownloading(true);
     try {
@@ -5746,6 +5947,8 @@ function InstagramPostMaker({property, settings, onClose, showToast}) {
       ctx.textRendering = "geometricPrecision";
       if (tpl === "modern") await drawModern(ctx);
       else if (tpl === "minimal") await drawMinimal(ctx);
+      else if (tpl === "elegant") await drawElegant(ctx);
+      else if (tpl === "prime") await drawPrime(ctx);
       else await drawClassic(ctx);
       const dataUrl = canvas.toDataURL("image/jpeg", 0.95);
       const a = document.createElement("a");
@@ -5761,45 +5964,61 @@ function InstagramPostMaker({property, settings, onClose, showToast}) {
   };
 
   // === TEMPLATES ===
-  const renderClassic = (refP) => React.createElement("div", {ref: refP, style:{width: W, height: H, position:"relative", background: t.bg, overflow:"hidden", fontFamily:"Arial, Helvetica, sans-serif"}},
-    // Foto de fundo
-    imgUrl && React.createElement("img", {src: imgUrl, crossOrigin:"anonymous", style:{position:"absolute", inset:0, width:"100%", height:"68%", objectFit:"cover"}}),
-    // Gradient
-    React.createElement("div", {style:{position:"absolute", top:"40%", left:0, right:0, height:"40%", background: `linear-gradient(180deg, transparent, ${t.bg} 80%)`}}),
-    // Logo no topo
-    React.createElement("div", {style:{position:"absolute", top: 40, left: 40, display:"flex", alignItems:"center", gap: 16}},
-      React.createElement("img", {src: logo, crossOrigin:"anonymous", style:{height: 80, filter:"drop-shadow(0 4px 12px rgba(0,0,0,.6))"}})
-    ),
-    // Badge transação
-    React.createElement("div", {style:{position:"absolute", top: 40, right: 40, background: t.primary, color: t.text, padding:"14px 28px", fontSize: 28, fontWeight: 800, letterSpacing: ".15em", borderRadius: 8, boxShadow:"0 4px 16px rgba(0,0,0,.4)"}}, (p.transaction || "VENDA").toUpperCase()),
-    // Tarja destaque (Oportunidade, Baixou preço, etc) — grande e destacada
-    activeBadge && React.createElement("div", {style:{position:"absolute", top: 170, right: 30, background: activeBadge.color, color: "#fff", padding:"20px 40px", fontSize: 46 * bScale, fontWeight: 800, letterSpacing: ".08em", borderRadius: 14, boxShadow:"0 10px 30px rgba(0,0,0,.5)", border: `${Math.max(3, Math.round(5*bScale))}px solid #fff`, lineHeight: 1.1, whiteSpace:"nowrap", transformOrigin:"top right"}}, activeBadge.text),
-    // Informações
-    React.createElement("div", {style:{position:"absolute", bottom: 0, left:0, right:0, padding: "60px 60px 50px", color: t.text}},
-      React.createElement("div", {style:{fontSize: 32, fontWeight:700, letterSpacing:".1em", color: t.accent, marginBottom: 16, textTransform:"uppercase"}}, p.type || "IMÓVEL"),
-      React.createElement("h1", {style:{fontSize: 64, fontWeight:900, lineHeight:1.05, margin: 0, textTransform:"uppercase", letterSpacing:".02em", marginBottom: 20, textShadow:"0 2px 12px rgba(0,0,0,.5)"}}, p.title || "Imóvel"),
-      React.createElement("p", {style:{fontSize: 30, opacity: .9, margin:0, marginBottom: 28}}, "📍 ", [p.neighborhood, p.city].filter(Boolean).join(" — "), p.city ? "/PR" : ""),
-      // Features
-      features.length > 0 && React.createElement("div", {style:{display:"flex", flexWrap:"wrap", gap: 14, marginBottom: 28}},
-        features.map((f, i) => React.createElement("div", {key:i, style:{background:"rgba(40,40,40,0.85)", color:"#fff", padding:"10px 22px", borderRadius: 50, fontSize: 22, fontWeight: 700, letterSpacing:".05em"}}, f))
+  const renderClassic = (refP) => {
+    // Cores/tamanhos customizaveis (todos com fallback pro tema)
+    const cBg = cs("bgColor", t.bg);
+    const cType = cs("typeColor", t.accent);
+    const cTypeSize = cs("typeSize", 32);
+    const cTitle = cs("titleColor", "#fff");
+    const cTitleSize = cs("titleSize", 64);
+    const cLoc = cs("locColor", "#fff");
+    const cLocSize = cs("locSize", 30);
+    const cChipBg = cs("chipBg", "rgba(40,40,40,0.85)");
+    const cChipText = cs("chipText", "#fff");
+    const cChipSize = cs("chipSize", 22);
+    const cPriceBox = cs("priceBoxColor", t.primary);
+    const cPriceText = cs("priceTextColor", "#fff");
+    const cPriceSize = showPriceIG ? cs("priceSize", 60) : 44;
+    const cPhone = cs("phoneColor", "#fff");
+    const cPhoneIcon = cs("phoneIconColor", t.accent);
+    const cPhoneSize = cs("phoneSize", 28);
+    return React.createElement("div", {ref: refP, style:{width: W, height: H, position:"relative", background: cBg, overflow:"hidden", fontFamily:"Arial, Helvetica, sans-serif"}},
+      // Foto de fundo
+      imgUrl && React.createElement("img", {src: imgUrl, crossOrigin:"anonymous", style:{position:"absolute", inset:0, width:"100%", height:"68%", objectFit:"cover"}}),
+      // Gradient
+      React.createElement("div", {style:{position:"absolute", top:"40%", left:0, right:0, height:"40%", background: `linear-gradient(180deg, transparent, ${cBg} 80%)`}}),
+      // Logo no topo
+      React.createElement("div", {style:{position:"absolute", top: 40, left: 40, display:"flex", alignItems:"center", gap: 16}},
+        React.createElement("img", {src: logo, crossOrigin:"anonymous", style:{height: 80, filter:"drop-shadow(0 4px 12px rgba(0,0,0,.6))"}})
       ),
-      // Preço
-      React.createElement("div", {style:{background: t.primary, color: "#fff", padding: "22px 40px", borderRadius: 14, display: "inline-block", marginBottom: 24, boxShadow:"0 6px 20px rgba(0,0,0,.35)"}},
-        React.createElement("div", {style:{fontSize: 22, fontWeight:700, color:"#fff", letterSpacing:".15em", marginBottom: 6, opacity: 0.9}}, "VALOR"),
-        highlightBadge === "price_drop" && oldPriceStr && React.createElement("div", {style:{fontSize: 28, fontWeight: 700, textDecoration:"line-through", color:"#fff", marginBottom: 4, opacity: 0.75}}, "DE ", oldPriceStr),
-        React.createElement("div", {style:{fontSize: showPriceIG ? 60 : 44, fontWeight: 800, lineHeight: 1.1, color:"#fff", whiteSpace:"nowrap"}}, priceStr)
-      ),
-      // CTA
-      React.createElement("div", {style:{display:"flex", justifyContent:"space-between", alignItems:"center", marginTop: 12}},
-        React.createElement("div", {style:{fontSize: 28, fontWeight: 800}},
-          React.createElement("span", {style:{color: t.accent, marginRight: 12}}, "📞"),
-          phoneDisplay
+      // Badge transação
+      React.createElement("div", {style:{position:"absolute", top: 40, right: 40, background: t.primary, color: t.text, padding:"14px 28px", fontSize: 28, fontWeight: 800, letterSpacing: ".15em", borderRadius: 8, boxShadow:"0 4px 16px rgba(0,0,0,.4)"}}, (p.transaction || "VENDA").toUpperCase()),
+      // Tarja destaque
+      activeBadge && React.createElement("div", {style:{position:"absolute", top: 170, right: 30, background: activeBadge.color, color: "#fff", padding:"20px 40px", fontSize: 46 * bScale, fontWeight: 800, letterSpacing: ".08em", borderRadius: 14, boxShadow:"0 10px 30px rgba(0,0,0,.5)", border: `${Math.max(3, Math.round(5*bScale))}px solid #fff`, lineHeight: 1.1, whiteSpace:"nowrap", transformOrigin:"top right"}}, activeBadge.text),
+      // Informações
+      React.createElement("div", {style:{position:"absolute", bottom: 0, left:0, right:0, padding: "60px 60px 50px"}},
+        React.createElement("div", {style:{fontSize: cTypeSize, fontWeight:700, letterSpacing:".1em", color: cType, marginBottom: 16, textTransform:"uppercase"}}, p.type || "IMÓVEL"),
+        React.createElement("h1", {style:{fontSize: cTitleSize, fontWeight:900, lineHeight:1.05, margin: 0, textTransform:"uppercase", letterSpacing:".02em", marginBottom: 20, textShadow:"0 2px 12px rgba(0,0,0,.5)", color: cTitle}}, p.title || "Imóvel"),
+        React.createElement("p", {style:{fontSize: cLocSize, opacity: .95, margin:0, marginBottom: 28, color: cLoc}}, "📍 ", [p.neighborhood, p.city].filter(Boolean).join(" — "), p.city ? "/PR" : ""),
+        features.length > 0 && React.createElement("div", {style:{display:"flex", flexWrap:"wrap", gap: 14, marginBottom: 28}},
+          features.map((f, i) => React.createElement("div", {key:i, style:{background: cChipBg, color: cChipText, padding:"10px 22px", borderRadius: 50, fontSize: cChipSize, fontWeight: 700, letterSpacing:".05em"}}, f))
         ),
-        p.reference && React.createElement("div", {style:{fontSize: 22, opacity:.7, fontWeight: 700}}, "Ref.: ", p.reference)
-      ),
-      customCta && React.createElement("p", {style:{fontSize: 26, marginTop: 18, fontWeight: 600, opacity: .9}}, customCta)
-    )
-  );
+        React.createElement("div", {style:{background: cPriceBox, color: cPriceText, padding: "22px 40px", borderRadius: 14, display: "inline-block", marginBottom: 24, boxShadow:"0 6px 20px rgba(0,0,0,.35)"}},
+          React.createElement("div", {style:{fontSize: 22, fontWeight:700, color: cPriceText, letterSpacing:".15em", marginBottom: 6, opacity: 0.9}}, "VALOR"),
+          highlightBadge === "price_drop" && oldPriceStr && React.createElement("div", {style:{fontSize: 28, fontWeight: 700, textDecoration:"line-through", color: cPriceText, marginBottom: 4, opacity: 0.75}}, "DE ", oldPriceStr),
+          React.createElement("div", {style:{fontSize: cPriceSize, fontWeight: 800, lineHeight: 1.1, color: cPriceText, whiteSpace:"nowrap"}}, priceStr)
+        ),
+        React.createElement("div", {style:{display:"flex", justifyContent:"space-between", alignItems:"center", marginTop: 12}},
+          React.createElement("div", {style:{fontSize: cPhoneSize, fontWeight: 800, color: cPhone}},
+            React.createElement("span", {style:{color: cPhoneIcon, marginRight: 12}}, "📞"),
+            phoneDisplay
+          ),
+          p.reference && React.createElement("div", {style:{fontSize: 22, opacity:.7, fontWeight: 700, color: cPhone}}, "Ref.: ", p.reference)
+        ),
+        customCta && React.createElement("p", {style:{fontSize: 26, marginTop: 18, fontWeight: 600, opacity: .9, color: cTitle}}, customCta)
+      )
+    );
+  };
 
   const renderModern = (refP) => React.createElement("div", {ref: refP, style:{width: W, height: H, position:"relative", background: t.bg, overflow:"hidden", fontFamily:"Arial, Helvetica, sans-serif"}},
     // Foto à esquerda em formato grande (altura reduzida pra conteúdo caber)
@@ -5866,9 +6085,67 @@ function InstagramPostMaker({property, settings, onClose, showToast}) {
     )
   );
 
+  // ===== PREVIEW: ELEGANTE =====
+  const renderElegant = (refP) => {
+    const cBg = cs("bgColor", "#0a0a0a");
+    const cAccent = cs("typeColor", "#d4a012");
+    const cTitle = cs("titleColor", "#fff");
+    const cLoc = cs("locColor", "#d4d4d4");
+    return React.createElement("div", {ref: refP, style:{width: W, height: H, position:"relative", background: cBg, overflow:"hidden", fontFamily:"Georgia, 'Times New Roman', serif", color:"#fff"}},
+      React.createElement("img", {src: logo, crossOrigin:"anonymous", style:{position:"absolute", top:60, left:60, height:90, filter:"drop-shadow(0 0 12px rgba(255,255,255,.15))"}}),
+      React.createElement("div", {style:{position:"absolute", top:170, left:0, right:0, textAlign:"center", color: cAccent, fontSize:20, fontWeight:700, letterSpacing:".3em"}}, "◆ EXCLUSIVO ◆"),
+      React.createElement("div", {style:{position:"absolute", top:200, left:80, right:80, height:`${Math.round(H*0.48)}px`, border:`4px solid ${cAccent}`, overflow:"hidden"}},
+        imgUrl && React.createElement("img", {src: imgUrl, crossOrigin:"anonymous", style:{width:"100%", height:"100%", objectFit:"cover"}})
+      ),
+      React.createElement("div", {style:{position:"absolute", top:`${200 + Math.round(H*0.48) + 50}px`, left:0, right:0, textAlign:"center", padding:"0 60px"}},
+        React.createElement("div", {style:{color: cAccent, fontSize: cs("typeSize", 28), fontWeight:600, letterSpacing:".2em", marginBottom:14}}, (p.type || "IMÓVEL").toUpperCase()),
+        React.createElement("h1", {style:{fontSize: cs("titleSize", 54), fontWeight:400, letterSpacing:".05em", color: cTitle, margin:"0 0 18px"}}, (p.title || "Imóvel").toUpperCase()),
+        React.createElement("p", {style:{fontSize: cs("locSize", 26), color: cLoc, fontWeight:300, margin:"0 0 30px"}}, [p.neighborhood, p.city].filter(Boolean).join(" · "), p.city ? " · PR" : ""),
+        React.createElement("div", {style:{color: cs("priceBoxColor", cAccent), fontSize: 20, fontWeight:700, letterSpacing:".2em", marginBottom:8}}, "VALOR"),
+        React.createElement("div", {style:{color: cs("priceTextColor", "#fff"), fontSize: cs("priceSize", 62), fontWeight:700, marginBottom:30}}, priceStr),
+        React.createElement("div", {style:{height:1, background: cAccent, opacity:.5, margin:"0 auto 26px", width:"70%"}}),
+        React.createElement("div", {style:{color: cs("phoneColor", "#fff"), fontSize: cs("phoneSize", 30), fontWeight:600}}, "📞 " + phoneDisplay)
+      )
+    );
+  };
+
+  // ===== PREVIEW: PRIME =====
+  const renderPrime = (refP) => {
+    const cBg = cs("bgColor", "#f8f8f8");
+    const cType = cs("typeColor", "#c41e1e");
+    const cTitle = cs("titleColor", "#1a1a1a");
+    const cLoc = cs("locColor", "#555");
+    const cPriceBg = cs("priceBoxColor", "#c41e1e");
+    return React.createElement("div", {ref: refP, style:{width: W, height: H, position:"relative", background: cBg, overflow:"hidden", fontFamily:"Arial, sans-serif"}},
+      imgUrl && React.createElement("img", {src: imgUrl, crossOrigin:"anonymous", style:{position:"absolute", top:0, left:0, width:"100%", height:"55%", objectFit:"cover"}}),
+      // Logo topo
+      React.createElement("img", {src: logo, crossOrigin:"anonymous", style:{position:"absolute", top:40, left:40, height:70, filter:"drop-shadow(0 2px 12px rgba(0,0,0,.5))"}}),
+      // Badge redonda VENDA
+      React.createElement("div", {style:{position:"absolute", top:`${Math.round(H*0.55) - 90}px`, right:60, width:180, height:180, borderRadius:"50%", background: cPriceBg, color:"#fff", border:"4px solid #fff", boxShadow:"0 6px 20px rgba(0,0,0,.35)", display:"flex", alignItems:"center", justifyContent:"center", fontSize:26, fontWeight:800, letterSpacing:".1em"}}, (p.transaction || "VENDA").toUpperCase()),
+      // Info parte inferior
+      React.createElement("div", {style:{position:"absolute", top:`${Math.round(H*0.55) + 60}px`, left:60, right:60, color: cTitle}},
+        React.createElement("div", {style:{color: cType, fontSize: cs("typeSize", 30), fontWeight:800, letterSpacing:".08em", marginBottom:12}}, (p.type || "IMÓVEL").toUpperCase()),
+        React.createElement("h1", {style:{fontSize: cs("titleSize", 60), fontWeight:900, letterSpacing:".02em", margin:"0 0 16px", lineHeight:1.05, color: cTitle}}, (p.title || "Imóvel").toUpperCase()),
+        React.createElement("p", {style:{fontSize: cs("locSize", 28), fontWeight:500, color: cLoc, margin:"0 0 24px"}}, "📍 " + [p.neighborhood, p.city].filter(Boolean).join(" · ")),
+        features.length > 0 && React.createElement("div", {style:{display:"flex", flexWrap:"wrap", gap:10, marginBottom:26}},
+          features.map((f, i) => React.createElement("div", {key:i, style:{background: cs("chipBg", "#eaeaea"), color: cs("chipText", "#333"), padding:"8px 18px", borderRadius:6, fontSize: cs("chipSize", 22), fontWeight:700}}, f))
+        )
+      ),
+      // Barra do preco
+      React.createElement("div", {style:{position:"absolute", left:0, right:0, bottom:120, background: cPriceBg, color: cs("priceTextColor","#fff"), padding:"20px 0", textAlign:"center", fontSize: cs("priceSize",70), fontWeight:900}}, priceStr),
+      // Telefone rodape
+      React.createElement("div", {style:{position:"absolute", left:60, right:60, bottom:40, display:"flex", justifyContent:"space-between", alignItems:"center", color: cs("phoneColor","#1a1a1a")}},
+        React.createElement("div", {style:{fontSize: cs("phoneSize",30), fontWeight:800}}, "📞 " + phoneDisplay),
+        p.reference && React.createElement("div", {style:{fontSize:22, color:"#666", fontWeight:700}}, "Ref.: " + p.reference)
+      )
+    );
+  };
+
   const renderTpl = (refP) => {
     if (tpl === "classic") return renderClassic(refP);
     if (tpl === "modern") return renderModern(refP);
+    if (tpl === "elegant") return renderElegant(refP);
+    if (tpl === "prime") return renderPrime(refP);
     return renderMinimal(refP);
   };
 
@@ -5891,7 +6168,7 @@ function InstagramPostMaker({property, settings, onClose, showToast}) {
           ),
           React.createElement("h4", {style:{fontSize:".82rem", fontWeight:800, textTransform:"uppercase", letterSpacing:".08em", color:"var(--text-light)", marginBottom:10}}, "Modelo"),
           React.createElement("div", {style:{display:"flex", flexDirection:"column", gap:6, marginBottom:18}},
-            [{v:"classic",l:"🎨 Clássico", d:"Foto + info abaixo"},{v:"modern",l:"✨ Moderno", d:"Foto com moldura"},{v:"minimal",l:"🌟 Minimalista", d:"Foto inteira + overlay"}].map(o =>
+            [{v:"classic",l:"🎨 Clássico", d:"Foto + info abaixo"},{v:"modern",l:"✨ Moderno", d:"Foto com moldura"},{v:"minimal",l:"🌟 Minimalista", d:"Foto inteira + overlay"},{v:"elegant",l:"💎 Elegante", d:"Dark + dourado (imóveis de luxo)"},{v:"prime",l:"⚡ Prime", d:"Fundo claro + barra de preço"}].map(o =>
               React.createElement("button", {key:o.v, onClick: () => setTpl(o.v), style:{padding:"10px 12px", border: tpl === o.v ? "2px solid var(--red)" : "1px solid var(--border)", background: tpl === o.v ? "rgba(196,30,30,.06)" : "white", borderRadius: 8, cursor:"pointer", textAlign:"left"}},
                 React.createElement("div", {style:{fontWeight:700, fontSize:".88rem"}}, o.l),
                 React.createElement("div", {style:{fontSize:".72rem", color:"var(--text-light)", marginTop:2}}, o.d)
@@ -6000,6 +6277,74 @@ function InstagramPostMaker({property, settings, onClose, showToast}) {
               oldPriceInput && React.createElement("button", {type:"button", onClick:()=>setOldPriceInput(""), style:{background:"none", border:"none", color:"var(--text-light)", cursor:"pointer", fontSize:"1.1rem", padding:"4px 8px"}, title:"Limpar"}, "✕")
             ),
             React.createElement("p", {style:{fontSize:".72rem", color:"var(--text-light)", marginTop:8, marginBottom:0, lineHeight:1.4}}, "Aparece como ", React.createElement("strong",null,"De R$ 200.000 por R$ ", (p.price ? Number(p.price).toLocaleString("pt-BR") : "170.000"))," na imagem. Deixe vazio pra mostrar só o preço atual.")
+          ),
+          // ===== PAINEL DE PERSONALIZACAO (Canva-like) =====
+          React.createElement("div", {style:{marginBottom:14, border:"2px solid #9333ea", borderRadius:8, overflow:"hidden"}},
+            React.createElement("button", {
+              onClick: () => setShowCustomPanel(!showCustomPanel),
+              style:{width:"100%", padding:"12px 14px", background:"linear-gradient(135deg, #9333ea, #7e22ce)", color:"white", border:"none", cursor:"pointer", display:"flex", justifyContent:"space-between", alignItems:"center", fontSize:".88rem", fontWeight:800}
+            },
+              React.createElement("span", null, "🎨 Personalizar cores e tamanhos"),
+              React.createElement("span", {style:{fontSize:"1.1rem"}}, showCustomPanel ? "▼" : "▶")
+            ),
+            showCustomPanel && React.createElement("div", {style:{padding:"14px", background:"rgba(147,51,234,.04)"}},
+              // Header do painel
+              React.createElement("div", {style:{display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:12}},
+                React.createElement("span", {style:{fontSize:".72rem", color:"var(--text-light)", fontStyle:"italic"}}, Object.keys(custom).length, " personalizações ativas"),
+                React.createElement("button", {onClick: resetCustom, style:{fontSize:".7rem", padding:"4px 10px", background:"white", color:"#9333ea", border:"1px solid #9333ea", borderRadius:4, cursor:"pointer", fontWeight:700}}, "↺ Restaurar padrão")
+              ),
+              // === CORES ===
+              React.createElement("div", {style:{marginBottom:14}},
+                React.createElement("div", {style:{fontSize:".72rem", fontWeight:900, color:"#7e22ce", letterSpacing:".08em", textTransform:"uppercase", marginBottom:8}}, "🎨 Cores"),
+                [
+                  {k:"bgColor", l:"Fundo do post", def: t.bg},
+                  {k:"typeColor", l:"Cor do tipo (CASA)", def: t.accent},
+                  {k:"titleColor", l:"Cor do título", def:"#ffffff"},
+                  {k:"locColor", l:"Cor da localização", def:"#ffffff"},
+                  {k:"chipBg", l:"Fundo dos chips", def:"#282828"},
+                  {k:"chipText", l:"Texto dos chips", def:"#ffffff"},
+                  {k:"priceBoxColor", l:"Fundo caixa preço", def: t.primary},
+                  {k:"priceTextColor", l:"Texto do preço", def:"#ffffff"},
+                  {k:"phoneColor", l:"Cor do telefone", def:"#ffffff"},
+                  {k:"phoneIconColor", l:"Cor ícone 📞", def: t.accent}
+                ].map(cf => React.createElement("div", {key:cf.k, style:{display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:6, gap:8}},
+                  React.createElement("label", {style:{fontSize:".78rem", fontWeight:600, flex:1}}, cf.l),
+                  React.createElement("input", {
+                    type:"color",
+                    value: cs(cf.k, cf.def).startsWith("rgba") ? "#282828" : cs(cf.k, cf.def),
+                    onChange: e => setCs(cf.k, e.target.value),
+                    style:{width:40, height:28, border:"1px solid var(--border)", borderRadius:4, cursor:"pointer", padding:0}
+                  }),
+                  custom[cf.k] !== undefined && React.createElement("button", {onClick: () => setCs(cf.k, undefined), title:"Voltar padrão", style:{fontSize:".7rem", padding:"2px 6px", background:"white", color:"#9333ea", border:"1px solid #ccc", borderRadius:3, cursor:"pointer"}}, "×")
+                ))
+              ),
+              // === TAMANHOS ===
+              React.createElement("div", null,
+                React.createElement("div", {style:{fontSize:".72rem", fontWeight:900, color:"#7e22ce", letterSpacing:".08em", textTransform:"uppercase", marginBottom:8}}, "📏 Tamanhos"),
+                [
+                  {k:"typeSize", l:"Tamanho do tipo", def:32, min:16, max:56},
+                  {k:"titleSize", l:"Tamanho do título", def:64, min:32, max:120},
+                  {k:"locSize", l:"Tamanho da localização", def:30, min:16, max:56},
+                  {k:"chipSize", l:"Tamanho dos chips", def:22, min:12, max:44},
+                  {k:"priceSize", l:"Tamanho do preço", def:60, min:28, max:110},
+                  {k:"phoneSize", l:"Tamanho do telefone", def:28, min:16, max:56}
+                ].map(sz => React.createElement("div", {key:sz.k, style:{marginBottom:10}},
+                  React.createElement("div", {style:{display:"flex", justifyContent:"space-between", fontSize:".76rem", fontWeight:600, marginBottom:3}},
+                    React.createElement("span", null, sz.l),
+                    React.createElement("span", {style:{color:"#9333ea", fontWeight:800}}, cs(sz.k, sz.def), "px", custom[sz.k] !== undefined && " *")
+                  ),
+                  React.createElement("input", {
+                    type:"range",
+                    min: sz.min,
+                    max: sz.max,
+                    step: 2,
+                    value: cs(sz.k, sz.def),
+                    onChange: e => setCs(sz.k, +e.target.value),
+                    style:{width:"100%", accentColor:"#9333ea"}
+                  })
+                ))
+              )
+            )
           ),
           React.createElement("h4", {style:{fontSize:".82rem", fontWeight:800, textTransform:"uppercase", letterSpacing:".08em", color:"var(--text-light)", marginBottom:10}}, "Texto extra (opcional)"),
           React.createElement("textarea", {className:"af-input af-textarea", value: customCta, onChange: e => setCustomCta(e.target.value), placeholder:"Ex: AGENDE SUA VISITA HOJE!", style:{minHeight: 60, fontSize:".85rem", marginBottom:18}}),
