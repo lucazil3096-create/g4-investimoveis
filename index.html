@@ -268,7 +268,7 @@ a { text-decoration: none; color: inherit; }
 .certif-badge-img { transition: transform .3s var(--ease); }
 @media(max-width:640px) {
   .logo-link { gap: 8px; }
-  .certif-badge-img { max-height: 44px !important; }
+  /* No mobile, o setting de tamanho ainda vale; se ficar muito grande, ajuste no painel */
 }
 .logo-link:hover .logo-img { transform: scale(1.04); }
 .nav { display: flex; align-items: center; gap: 4px; }
@@ -1576,6 +1576,7 @@ const DEFAULT_SETTINGS = {
   certifBadgeUrl: "",
   certifBadgeSize: 70,
   certifBadgeOffsetY: 0,
+  certifBadgeOffsetX: 0,
   watermarkEnabled: true,
   watermarkUrl: "",
   watermarkOpacity: 35,
@@ -1762,13 +1763,14 @@ function Header({page, setPage, scrolled, isAdmin, setIsAdmin, settings}) {
   const certifUrl = (settings && settings.certifBadgeUrl) || "";
   const certifH = (settings && settings.certifBadgeSize) || 70;
   const certifOffY = (settings && typeof settings.certifBadgeOffsetY === "number") ? settings.certifBadgeOffsetY : 0;
+  const certifOffX = (settings && typeof settings.certifBadgeOffsetX === "number") ? settings.certifBadgeOffsetX : 0;
   return React.createElement("header", {className: `header ${scrolled ? 'scrolled' : ''} ${showAdminBar ? 'has-admin-bar' : ''}`},
     React.createElement("div", {className: "header-inner", style: {height: `${hdrHeight}px`}},
       React.createElement("a", {className: "logo-link", onClick: (e) => { e.preventDefault(); nav("home"); }, href: "#", style:{transform: `translateY(${logoOffY}px)`, display:"flex", alignItems:"center", gap:16}},
         React.createElement("img", {src: logoSrc, alt: "G4 Investimóveis", className: "logo-img", style: {height: `${logoH}px`, maxHeight: "none"}}),
         certifUrl
-          ? React.createElement("img", {src: certifUrl, alt: "Certificações CRECI/CNAI", className: "certif-badge-img", style: {height: `${certifH}px`, width:"auto", maxHeight:"none", transform: `translateY(${certifOffY}px)`, filter:"drop-shadow(0 1px 2px rgba(0,0,0,.4))"}})
-          : (isAdmin && React.createElement("div", {className:"certif-badge-placeholder", onClick: (e) => { e.preventDefault(); e.stopPropagation(); nav("admin"); }, style:{border:"2px dashed rgba(212,160,18,.6)", padding:"6px 12px", borderRadius:6, color:"#d4a012", fontSize:".62rem", fontWeight:700, letterSpacing:".05em", lineHeight:1.3, cursor:"pointer", textAlign:"center", maxWidth:140, transform: `translateY(${certifOffY}px)`}}, "🎖️ SELO NÃO CONFIGURADO", React.createElement("br"), React.createElement("span", {style:{fontSize:".55rem", opacity:.8, fontWeight:600}}, "clique pra ir no admin")))
+          ? React.createElement("img", {src: certifUrl, alt: "Certificações CRECI/CNAI", className: "certif-badge-img", style: {height: `${certifH}px`, width:"auto", maxHeight:"none", transform: `translate(${certifOffX}px, ${certifOffY}px)`, filter:"drop-shadow(0 1px 2px rgba(0,0,0,.4))"}})
+          : (isAdmin && React.createElement("div", {className:"certif-badge-placeholder", onClick: (e) => { e.preventDefault(); e.stopPropagation(); nav("admin"); }, style:{border:"2px dashed rgba(212,160,18,.6)", padding:"6px 12px", borderRadius:6, color:"#d4a012", fontSize:".62rem", fontWeight:700, letterSpacing:".05em", lineHeight:1.3, cursor:"pointer", textAlign:"center", maxWidth:140, transform: `translate(${certifOffX}px, ${certifOffY}px)`}}, "🎖️ SELO NÃO CONFIGURADO", React.createElement("br"), React.createElement("span", {style:{fontSize:".55rem", opacity:.8, fontWeight:600}}, "clique pra ir no admin")))
       ),
       React.createElement("button", {className: "mobile-toggle", onClick: () => setMenuOpen(!menuOpen)}, menuOpen ? I.close : I.menu),
       React.createElement("nav", {className: `nav ${menuOpen ? 'open' : ''}`},
@@ -4422,25 +4424,38 @@ function SettingsPanel({settings, showToast}) {
         ImgField({key:"certif", label:"Selo de certificação (CRECI/CNAI) — aparece ao lado da logo", k:"certifBadgeUrl", fileRef: certifFileRef, preview: true, help:"PNG transparente recomendado. Deixe vazio pra não mostrar."}),
         s.certifBadgeUrl && React.createElement("div", {key:"certifCtrl", className:"af-group full", style:{background:"rgba(212,160,18,.06)", border:"1px solid rgba(212,160,18,.25)", borderRadius:8, padding:"14px 18px", marginBottom:14}},
           React.createElement("div", {style:{fontSize:".82rem", fontWeight:900, color:"#a87f0e", marginBottom:12, letterSpacing:".05em", textTransform:"uppercase"}}, "🎖️ Ajustes do selo"),
+          // TAMANHO - agora até 500px
           React.createElement("label", {style:{fontSize:".85rem", fontWeight:800, display:"flex", justifyContent:"space-between", marginBottom:6}},
             React.createElement("span", null, "📏 Tamanho do selo"),
             React.createElement("span", {style:{color:"#a87f0e"}}, (s.certifBadgeSize || 70), "px")
           ),
-          React.createElement("input", {type:"range", min:20, max:220, step:2, value: s.certifBadgeSize || 70, onChange: e => upd("certifBadgeSize", +e.target.value), style:{width:"100%", accentColor:"#d4a012"}}),
+          React.createElement("input", {type:"range", min:10, max:500, step:2, value: s.certifBadgeSize || 70, onChange: e => upd("certifBadgeSize", +e.target.value), style:{width:"100%", accentColor:"#d4a012"}}),
           React.createElement("div", {style:{display:"flex", justifyContent:"space-between", fontSize:".7rem", color:"var(--text-light)", marginTop:2, marginBottom:14}},
-            React.createElement("span", null, "Mini (20px)"),
+            React.createElement("span", null, "Mini (10px)"),
             React.createElement("span", null, "Padrão (70px)"),
-            React.createElement("span", null, "Gigante (220px)")
+            React.createElement("span", null, "Gigante (500px)")
           ),
+          // POSIÇÃO HORIZONTAL - NOVO
+          React.createElement("label", {style:{fontSize:".85rem", fontWeight:800, display:"flex", justifyContent:"space-between", marginBottom:6}},
+            React.createElement("span", null, "↔️ Posição horizontal (esquerda ↔ direita)"),
+            React.createElement("span", {style:{color:"#a87f0e"}}, ((typeof s.certifBadgeOffsetX === "number") ? s.certifBadgeOffsetX : 0) > 0 ? "+" : "", (typeof s.certifBadgeOffsetX === "number") ? s.certifBadgeOffsetX : 0, "px")
+          ),
+          React.createElement("input", {type:"range", min:-400, max:400, step:2, value: (typeof s.certifBadgeOffsetX === "number") ? s.certifBadgeOffsetX : 0, onChange: e => upd("certifBadgeOffsetX", +e.target.value), style:{width:"100%", accentColor:"#d4a012"}}),
+          React.createElement("div", {style:{display:"flex", justifyContent:"space-between", fontSize:".7rem", color:"var(--text-light)", marginTop:2, marginBottom:14}},
+            React.createElement("span", null, "⬅ Grudar na logo (-400px)"),
+            React.createElement("span", null, "Padrão (0)"),
+            React.createElement("span", null, "Longe da logo (+400px) ➡")
+          ),
+          // POSIÇÃO VERTICAL
           React.createElement("label", {style:{fontSize:".85rem", fontWeight:800, display:"flex", justifyContent:"space-between", marginBottom:6}},
             React.createElement("span", null, "↕️ Posição vertical do selo"),
             React.createElement("span", {style:{color:"#a87f0e"}}, ((typeof s.certifBadgeOffsetY === "number") ? s.certifBadgeOffsetY : 0) > 0 ? "+" : "", (typeof s.certifBadgeOffsetY === "number") ? s.certifBadgeOffsetY : 0, "px")
           ),
-          React.createElement("input", {type:"range", min:-60, max:60, step:1, value: (typeof s.certifBadgeOffsetY === "number") ? s.certifBadgeOffsetY : 0, onChange: e => upd("certifBadgeOffsetY", +e.target.value), style:{width:"100%", accentColor:"#d4a012"}}),
+          React.createElement("input", {type:"range", min:-100, max:100, step:1, value: (typeof s.certifBadgeOffsetY === "number") ? s.certifBadgeOffsetY : 0, onChange: e => upd("certifBadgeOffsetY", +e.target.value), style:{width:"100%", accentColor:"#d4a012"}}),
           React.createElement("div", {style:{display:"flex", justifyContent:"space-between", fontSize:".7rem", color:"var(--text-light)", marginTop:2}},
-            React.createElement("span", null, "⬆ Subir (-60px)"),
+            React.createElement("span", null, "⬆ Subir (-100px)"),
             React.createElement("span", null, "Centro (0)"),
-            React.createElement("span", null, "⬇ Descer (+60px)")
+            React.createElement("span", null, "⬇ Descer (+100px)")
           )
         ),
         Field({key:"cname", label:"Nome da empresa", k:"companyName", placeholder:"G4 Investimóveis"}),
