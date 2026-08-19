@@ -6660,7 +6660,34 @@ function PropForm({property, onSave, onCancel, showToast, existingNeighborhoods,
     if (fileRef.current) fileRef.current.value = "";
   };
 
-  const ROOM_PRESETS = ["Sala","Sala de Estar","Sala de Jantar","Cozinha","Cozinha Americana","Cozinha Gourmet","Suíte","Suíte Master","Quarto","Banheiro","Banheiro Social","Lavabo","Área de Serviço","Lavanderia","Varanda","Sacada","Área Gourmet","Garagem","Escritório","Home Office","Despensa","Closet","Copa","Churrasqueira","Piscina","Jardim","Quintal","Terraço","Barracão","Galpão","Depósito","Loja","Porão","Sótão","Mezanino","Hall"];
+  const ROOM_PRESETS = [
+    // Salas
+    "Sala","Sala de Estar","Sala de Jantar","Sala de TV","Sala Íntima","Sala de Almoço","Sala de Reunião","Sala de Espera","Recepção",
+    // Cozinhas
+    "Cozinha","Cozinha Americana","Cozinha Gourmet","Cozinha Compacta","Cozinha Planejada","Copa","Copa/Cozinha",
+    // Quartos e Suítes
+    "Quarto","Quarto de Solteiro","Quarto de Casal","Quarto Infantil","Suíte","Suíte Master","Suíte de Hóspedes",
+    // Banheiros
+    "Banheiro","Banheiro Social","Banheiro de Serviço","Lavabo","WC",
+    // Áreas de Serviço
+    "Área de Serviço","Lavanderia","Despensa","Depósito","Adega","Cozinha de Serviço",
+    // Áreas Externas
+    "Varanda","Sacada","Sacada Gourmet","Terraço","Solarium","Rooftop","Quintal","Jardim","Jardim de Inverno","Pátio",
+    // Lazer
+    "Área Gourmet","Área de Lazer","Churrasqueira","Espaço Gourmet","Piscina","Piscina Aquecida","Sauna","Ofurô","Academia","Playground","Espaço Kids","Brinquedoteca",
+    // Trabalho / Estudo
+    "Escritório","Home Office","Estúdio","Ateliê","Biblioteca","Sala de Leitura",
+    // Entretenimento
+    "Home Theater","Home Cinema","Sala de Jogos","Sala de Música","Sala Multiuso","Salão de Festas",
+    // Estruturas / Circulação
+    "Hall","Hall de Entrada","Corredor","Circulação","Escada","Elevador","Rampa","Mezanino","Sótão","Porão","Closet","Rouparia","Vestiário",
+    // Garagens / Externo
+    "Garagem","Garagem Coberta","Vaga Coberta","Vaga Descoberta","Estacionamento","Bicicletário","Portão Eletrônico","Portaria","Portaria 24h",
+    // Espaços Pet e Verde
+    "Espaço Pet","Pet Place","Canil","Horta","Pomar","Área Verde",
+    // Comerciais / Rurais
+    "Loja","Escritório Comercial","Recepção Comercial","Show Room","Barracão","Galpão","Almoxarifado","Curral","Estábulo","Silo","Casa de Caseiro","Casa de Hóspedes","Edícula"
+  ];
 
   const ST = ({icon, title, sub}) => React.createElement("div", {style:{gridColumn:"1/-1",marginTop:16,marginBottom:4,paddingBottom:10,borderBottom:"2px solid var(--border-light)"}},
     React.createElement("div", {style:{display:"flex",alignItems:"center",gap:10}},
