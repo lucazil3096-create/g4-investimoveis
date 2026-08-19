@@ -2311,7 +2311,7 @@ function DetailPage({property: p, setPage, properties, setSelectedProp, favs, to
           )
         ),
         p.rooms && p.rooms.length > 0 && React.createElement(React.Fragment, null,
-          React.createElement("h3", {className: "dt-section-title"}, "Cômodos"),
+          React.createElement("h3", {className: "dt-section-title"}, "Demais Cômodos"),
           React.createElement("div", {style:{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(200px,1fr))",gap:10,marginBottom:36}},
             p.rooms.map((r, i) => React.createElement("div", {key:i, style:{display:"flex",alignItems:"center",gap:10,padding:"12px 16px",background:"var(--bg-accent)",borderRadius:"var(--radius-sm)"}},
               React.createElement("div", {style:{width:32,height:32,borderRadius:8,background:"white",display:"flex",alignItems:"center",justifyContent:"center",color:"var(--red)",fontWeight:800,fontSize:".82rem",boxShadow:"var(--shadow-xs)"}}, r.qty),
