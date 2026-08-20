@@ -2326,15 +2326,59 @@ function DetailPage({property: p, setPage, properties, setSelectedProp, favs, to
             React.createElement("div", {className: "dt-spec-val"}, React.createElement("strong", null, p.builtArea.toLocaleString("pt-BR")), " m² (Construída)")
           )
         ),
-        p.rooms && p.rooms.length > 0 && React.createElement(React.Fragment, null,
-          React.createElement("h3", {className: "dt-section-title"}, "Demais Cômodos"),
-          React.createElement("div", {style:{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(200px,1fr))",gap:10,marginBottom:36}},
-            p.rooms.map((r, i) => React.createElement("div", {key:i, style:{display:"flex",alignItems:"center",gap:10,padding:"12px 16px",background:"var(--bg-accent)",borderRadius:"var(--radius-sm)"}},
-              React.createElement("div", {style:{width:32,height:32,borderRadius:8,background:"white",display:"flex",alignItems:"center",justifyContent:"center",color:"var(--red)",fontWeight:800,fontSize:".82rem",boxShadow:"var(--shadow-xs)"}}, r.qty),
-              React.createElement("span", {style:{fontSize:".9rem",fontWeight:500}}, r.name)
-            ))
-          )
-        ),
+        p.rooms && p.rooms.length > 0 && (() => {
+          // Se algum comodo tem andar, agrupa por andar. Senao, mostra lista simples (comportamento antigo)
+          const hasAnyFloor = p.rooms.some(r => r.floor && r.floor.trim());
+          const renderRoomCard = (r, i) => React.createElement("div", {key:i, style:{display:"flex",alignItems:"center",gap:10,padding:"12px 16px",background:"var(--bg-accent)",borderRadius:"var(--radius-sm)"}},
+            React.createElement("div", {style:{width:32,height:32,borderRadius:8,background:"white",display:"flex",alignItems:"center",justifyContent:"center",color:"var(--red)",fontWeight:800,fontSize:".82rem",boxShadow:"var(--shadow-xs)"}}, r.qty),
+            React.createElement("span", {style:{fontSize:".9rem",fontWeight:500}}, r.name)
+          );
+          if (!hasAnyFloor) {
+            // COMPORTAMENTO ANTIGO - lista simples pra casas terreas
+            return React.createElement(React.Fragment, null,
+              React.createElement("h3", {className: "dt-section-title"}, "Demais Cômodos"),
+              React.createElement("div", {style:{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(200px,1fr))",gap:10,marginBottom:36}},
+                p.rooms.map(renderRoomCard)
+              )
+            );
+          }
+          // COMPORTAMENTO NOVO - agrupa por andar (sobrados/predios)
+          const FLOOR_ORDER = ["Sub-solo 2","Sub-solo","Térreo","1º Andar","2º Andar","3º Andar","4º Andar","5º Andar","Mezanino","Sótão","Cobertura"];
+          const groups = {};
+          const semAndar = [];
+          p.rooms.forEach(r => {
+            const fl = (r.floor || "").trim();
+            if (!fl) { semAndar.push(r); return; }
+            if (!groups[fl]) groups[fl] = [];
+            groups[fl].push(r);
+          });
+          const orderedFloors = Object.keys(groups).sort((a, b) => {
+            const ia = FLOOR_ORDER.indexOf(a);
+            const ib = FLOOR_ORDER.indexOf(b);
+            if (ia === -1 && ib === -1) return a.localeCompare(b);
+            if (ia === -1) return 1;
+            if (ib === -1) return -1;
+            return ia - ib;
+          });
+          return React.createElement(React.Fragment, null,
+            React.createElement("h3", {className: "dt-section-title"}, "Demais Cômodos"),
+            React.createElement("div", {style:{marginBottom:36}},
+              // Comodos sem andar aparecem primeiro (se houver mistura)
+              semAndar.length > 0 && React.createElement("div", {style:{marginBottom:20}},
+                React.createElement("div", {style:{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(200px,1fr))",gap:10}},
+                  semAndar.map(renderRoomCard)
+                )
+              ),
+              // Grupos por andar
+              orderedFloors.map(floor => React.createElement("div", {key:floor, style:{marginBottom:20}},
+                React.createElement("h4", {style:{fontSize:".95rem",fontWeight:800,color:"var(--red)",letterSpacing:".05em",textTransform:"uppercase",marginBottom:10,paddingBottom:6,borderBottom:"2px solid var(--red)",display:"inline-block"}}, "🏢 ", floor),
+                React.createElement("div", {style:{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(200px,1fr))",gap:10}},
+                  groups[floor].map(renderRoomCard)
+                )
+              ))
+            )
+          );
+        })(),
         p.features && p.features.length > 0 && React.createElement(React.Fragment, null,
           React.createElement("h3", {className: "dt-section-title"}, "Benfeitorias / Características"),
           React.createElement("div", {className: "dt-features"}, p.features.map(f => React.createElement("div", {key: f, className: "dt-feat"}, React.createElement("div", {className: "dt-feat-check"}, I.check), f)))
@@ -6503,6 +6547,7 @@ function PropForm({property, onSave, onCancel, showToast, existingNeighborhoods,
   const [newFeat, setNewFeat] = useState("");
   const [newRoomName, setNewRoomName] = useState("");
   const [newRoomQty, setNewRoomQty] = useState(1);
+  const [newRoomFloor, setNewRoomFloor] = useState(""); // Andar (opcional): "", "Térreo", "1º Andar" etc
   const [uploading, setUploading] = useState(false);
   const [uploadProg, setUploadProg] = useState({done: 0, total: 0});
   const [addingBairro, setAddingBairro] = useState(() => {
@@ -6538,8 +6583,9 @@ function PropForm({property, onSave, onCancel, showToast, existingNeighborhoods,
 
   const addRoom = () => {
     if (newRoomName.trim()) {
-      setF(prev => ({...prev, rooms: [...prev.rooms, {name: newRoomName.trim(), qty: newRoomQty}]}));
+      setF(prev => ({...prev, rooms: [...prev.rooms, {name: newRoomName.trim(), qty: newRoomQty, floor: newRoomFloor || ""}]}));
       setNewRoomName(""); setNewRoomQty(1);
+      // Mantem o andar selecionado pra facilitar adicionar varios comodos do mesmo andar
     }
   };
   const removeRoom = i => setF(prev => ({...prev, rooms: prev.rooms.filter((_,idx) => idx !== i)}));
@@ -6813,33 +6859,48 @@ function PropForm({property, onSave, onCancel, showToast, existingNeighborhoods,
       React.createElement("div", {className: "af-group"}, React.createElement("label", {className: "af-label"}, "Localização (Lote/Quadra)"), React.createElement("input", {className: "af-input", type:"text", value:f.localizacaoLote||"", onChange:e=>upd("localizacaoLote",e.target.value), placeholder:"Ex: L. 01 - Q. 04"})),
       React.createElement("div", {className: "af-group full"}, React.createElement("label", {className: "af-label"}, "Descrição (texto livre)"), React.createElement("textarea", {className: "af-input af-textarea", value:f.description, onChange:e=>upd("description",e.target.value), placeholder:"Texto livre — diferenciais, vizinhança, mensagem extra...\n\nEx: Faça hoje mesmo uma visita, vale a pena conferir!", style:{minHeight:150}})),
 
-      ST({icon: I.grid, title: "Cômodos", sub: "Adicione os cômodos. Clique nos botões rápidos ou digite manualmente. Edite os nomes a qualquer momento."}),
+      ST({icon: I.grid, title: "Cômodos", sub: "Adicione os cômodos. Para sobrado/prédio, escolha o andar (opcional). Se deixar 'Sem andar' em tudo, aparece em lista simples como uma casa térrea."}),
       React.createElement("div", {className: "af-group full"},
+        // Presets rapidos (usam o andar atualmente selecionado)
         React.createElement("p", {style:{fontSize:".82rem",fontWeight:700,marginBottom:8}}, "Adicionar rápido (clique para add):"),
         React.createElement("div", {style:{display:"flex",flexWrap:"wrap",gap:5,marginBottom:16}},
-          ROOM_PRESETS.map(rp => React.createElement("button", {key:rp, onClick:()=>setF(prev=>({...prev, rooms:[...prev.rooms,{name:rp,qty:1}]})), style:{padding:"5px 12px",borderRadius:6,fontSize:".74rem",fontWeight:600,border:"1px solid var(--border)",color:"var(--text-light)",background:"white",cursor:"pointer",transition:"all .15s"}}, "+ ", rp))
+          ROOM_PRESETS.map(rp => React.createElement("button", {key:rp, onClick:()=>setF(prev=>({...prev, rooms:[...prev.rooms,{name:rp,qty:1,floor:newRoomFloor||""}]})), style:{padding:"5px 12px",borderRadius:6,fontSize:".74rem",fontWeight:600,border:"1px solid var(--border)",color:"var(--text-light)",background:"white",cursor:"pointer",transition:"all .15s"}}, "+ ", rp))
         ),
-        React.createElement("div", {style:{display:"flex",gap:8,marginBottom:16,alignItems:"flex-end"}},
-          React.createElement("div", {style:{flex:1}}, React.createElement("label", {style:{fontSize:".78rem",fontWeight:600,display:"block",marginBottom:4}}, "Nome personalizado"), React.createElement("input", {className:"af-input", value:newRoomName, onChange:e=>setNewRoomName(e.target.value), placeholder:"Ex: Sala de TV, Despensa...", style:{marginBottom:0}, onKeyDown:e=>e.key==='Enter'&&addRoom()})),
+        // Form manual: Andar + Nome + Qtd
+        React.createElement("div", {style:{display:"flex",gap:8,marginBottom:16,alignItems:"flex-end",flexWrap:"wrap"}},
+          React.createElement("div", {style:{minWidth:140,flex:"0 0 140px"}},
+            React.createElement("label", {style:{fontSize:".78rem",fontWeight:600,display:"block",marginBottom:4}}, "🏢 Andar (opcional)"),
+            React.createElement("select", {className:"af-input", value:newRoomFloor, onChange:e=>setNewRoomFloor(e.target.value), style:{marginBottom:0,padding:"10px 8px"}},
+              React.createElement("option",{value:""}, "Sem andar"),
+              ["Térreo","1º Andar","2º Andar","3º Andar","4º Andar","5º Andar","Cobertura","Sótão","Mezanino","Sub-solo","Sub-solo 2"].map(fl => React.createElement("option",{key:fl,value:fl}, fl))
+            )
+          ),
+          React.createElement("div", {style:{flex:1,minWidth:180}}, React.createElement("label", {style:{fontSize:".78rem",fontWeight:600,display:"block",marginBottom:4}}, "Nome personalizado"), React.createElement("input", {className:"af-input", value:newRoomName, onChange:e=>setNewRoomName(e.target.value), placeholder:"Ex: Sala de TV, Despensa...", style:{marginBottom:0}, onKeyDown:e=>e.key==='Enter'&&addRoom()})),
           React.createElement("div", {style:{width:70}}, React.createElement("label", {style:{fontSize:".78rem",fontWeight:600,display:"block",marginBottom:4}}, "Qtd"), React.createElement("input", {className:"af-input", type:"number", min:1, value:newRoomQty, onChange:e=>setNewRoomQty(+e.target.value), style:{marginBottom:0,textAlign:"center"}})),
           React.createElement("button", {className:"btn-red", onClick:addRoom, style:{height:44,whiteSpace:"nowrap"}}, I.plus, " Add")
         ),
+        newRoomFloor && React.createElement("p", {style:{fontSize:".74rem",color:"#a87f0e",marginBottom:12,padding:"6px 10px",background:"rgba(212,160,18,.08)",borderRadius:4,fontWeight:600}}, "💡 Andar '", newRoomFloor, "' será aplicado nos próximos cômodos adicionados (inclusive presets). Volta pra 'Sem andar' pra parar."),
         f.rooms.length > 0 ?
           React.createElement("div", {style:{display:"flex",flexDirection:"column",gap:6}},
             React.createElement("div", {style:{display:"flex",gap:8,padding:"8px 14px",background:"var(--bg-dark)",borderRadius:8,color:"rgba(255,255,255,.6)",fontSize:".72rem",fontWeight:700,textTransform:"uppercase",letterSpacing:".08em"}},
               React.createElement("span", {style:{width:28}}, "#"),
-              React.createElement("span", {style:{flex:1}}, "Nome do Cômodo (editável)"),
+              React.createElement("span", {style:{width:120}}, "Andar"),
+              React.createElement("span", {style:{flex:1}}, "Nome do Cômodo"),
               React.createElement("span", {style:{width:60,textAlign:"center"}}, "Qtd"),
               React.createElement("span", {style:{width:32}})
             ),
             f.rooms.map((r, i) => React.createElement("div", {key:i, style:{display:"flex",alignItems:"center",gap:8,padding:"8px 14px",background: i%2===0 ? "var(--bg-accent)" : "white",borderRadius:8,border:"1px solid var(--border-light)"}},
               React.createElement("span", {style:{color:"var(--red)",fontWeight:800,fontSize:".82rem",width:28,textAlign:"center"}}, i+1),
+              React.createElement("select", {value:r.floor||"", onChange:e=>updateRoom(i,"floor",e.target.value), style:{width:120,border:"1px solid var(--border)",borderRadius:6,padding:"8px",fontSize:".8rem",outline:"none",background:"white",fontFamily:"var(--font-body)"}},
+                React.createElement("option",{value:""}, "Sem andar"),
+                ["Térreo","1º Andar","2º Andar","3º Andar","4º Andar","5º Andar","Cobertura","Sótão","Mezanino","Sub-solo","Sub-solo 2"].map(fl => React.createElement("option",{key:fl,value:fl}, fl))
+              ),
               React.createElement("input", {value:r.name, onChange:e=>updateRoom(i,"name",e.target.value), style:{flex:1,border:"1px solid var(--border)",borderRadius:6,padding:"8px 12px",fontSize:".88rem",outline:"none",background:"white",fontFamily:"var(--font-body)"}}),
               React.createElement("input", {type:"number", min:1, value:r.qty, onChange:e=>updateRoom(i,"qty",e.target.value), style:{width:60,border:"1px solid var(--border)",borderRadius:6,padding:"8px",textAlign:"center",fontSize:".88rem",outline:"none",background:"white",fontFamily:"var(--font-body)"}}),
               React.createElement("button", {onClick:()=>removeRoom(i), style:{width:32,height:32,borderRadius:6,background:"rgba(220,38,38,.08)",color:"var(--danger)",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,fontSize:".8rem",fontWeight:700,cursor:"pointer",border:"none"}}, "✕")
             )),
             React.createElement("div", {style:{display:"flex",justifyContent:"space-between",alignItems:"center",marginTop:6,padding:"0 4px"}},
-              React.createElement("p", {style:{fontSize:".8rem",color:"var(--text-light)"}}, "Total: ", f.rooms.length, " cômodo(s), ", f.rooms.reduce((s,r)=>s+r.qty,0), " unidade(s)"),
+              React.createElement("p", {style:{fontSize:".8rem",color:"var(--text-light)"}}, "Total: ", f.rooms.length, " cômodo(s), ", f.rooms.reduce((s,r)=>s+r.qty,0), " unidade(s)", (() => { const withFloor = f.rooms.filter(r => r.floor).length; return withFloor > 0 ? ` · ${withFloor} com andar definido` : ""; })()),
               React.createElement("button", {onClick:()=>setF(prev=>({...prev,rooms:[]})), style:{fontSize:".76rem",color:"var(--danger)",cursor:"pointer",border:"none",background:"none",fontWeight:600,fontFamily:"var(--font-body)"}}, "Limpar todos")
             )
           ) :
