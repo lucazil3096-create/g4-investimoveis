@@ -2543,15 +2543,16 @@ function AboutPage() {
 // ===== CONTACT PAGE =====
 // ===== FINANCIAMENTO (bancos parceiros para simulacao) =====
 function FinancingPage() {
+  // Cada banco tem: nome, url do simulador, cor de fundo, cor do texto, iniciais/texto grande, fonte estilizada
   const banks = [
-    { name: "Caixa Econômica Federal", logo: "https://logodownload.org/wp-content/uploads/2014/05/caixa-logo-1.png", url: "https://www8.caixa.gov.br/siopiinternet-web/simulaOperacaoInternet.do?method=inicializarCasoUso", bg: "#ffffff" },
-    { name: "Banco do Brasil", logo: "https://logodownload.org/wp-content/uploads/2014/05/banco-do-brasil-logo-1.png", url: "https://www.bb.com.br/pbb/pagina-inicial/voce/produtos-e-servicos/financiamentos/financiamento-imobiliario#/", bg: "#ffef38" },
-    { name: "Bradesco", logo: "https://logodownload.org/wp-content/uploads/2014/05/bradesco-logo-1.png", url: "https://banco.bradesco/html/classic/produtos-servicos/emprestimo-e-financiamento/encontre-seu-credito/simuladores-imoveis.shtm", bg: "#ffffff" },
-    { name: "Itaú", logo: "https://logodownload.org/wp-content/uploads/2014/05/itau-logo-1.png", url: "https://credito-imobiliario.itau.com.br/", bg: "#ffffff" },
-    { name: "Santander", logo: "https://logodownload.org/wp-content/uploads/2014/07/santander-logo-1.png", url: "https://www.santander.com.br/creditos-e-financiamentos/credito-imobiliario/simulador", bg: "#ffffff" },
-    { name: "Banrisul", logo: "https://logodownload.org/wp-content/uploads/2019/07/banrisul-logo-2.png", url: "https://www.banrisul.com.br/bob/link/bobnw27x_defaultbnr.aspx", bg: "#ffffff" },
-    { name: "Sicredi", logo: "https://logodownload.org/wp-content/uploads/2014/07/sicredi-logo-1.png", url: "https://www.sicredi.com.br/site/credito/financiamento-imobiliario/", bg: "#ffffff" },
-    { name: "Sicoob", logo: "https://logodownload.org/wp-content/uploads/2015/03/sicoob-logo-2-1.png", url: "https://www.sicoob.com.br/web/sicoob/financiamento-imobiliario", bg: "#ffffff" }
+    { name: "Caixa Econômica Federal", short: "CAIXA", tagline: "Federal", url: "https://www8.caixa.gov.br/siopiinternet-web/simulaOperacaoInternet.do?method=inicializarCasoUso", bg: "linear-gradient(135deg, #0070c0, #005a9e)", color: "#fff", accentBg: "#f7941d", accentColor: "#fff" },
+    { name: "Banco do Brasil", short: "BB", tagline: "Banco do Brasil", url: "https://www.bb.com.br/pbb/pagina-inicial/voce/produtos-e-servicos/financiamentos/financiamento-imobiliario#/", bg: "linear-gradient(135deg, #fff100, #ffd100)", color: "#0033a0", accentBg: "#0033a0", accentColor: "#fff100" },
+    { name: "Bradesco", short: "Bradesco", tagline: "", url: "https://banco.bradesco/html/classic/produtos-servicos/emprestimo-e-financiamento/encontre-seu-credito/simuladores-imoveis.shtm", bg: "linear-gradient(135deg, #cc092f, #a30726)", color: "#fff", accentBg: "#fff", accentColor: "#cc092f" },
+    { name: "Itaú", short: "itaú", tagline: "", url: "https://credito-imobiliario.itau.com.br/", bg: "linear-gradient(135deg, #ec7000, #d16500)", color: "#003399", accentBg: "#003399", accentColor: "#ec7000" },
+    { name: "Santander", short: "Santander", tagline: "", url: "https://www.santander.com.br/creditos-e-financiamentos/credito-imobiliario/simulador", bg: "linear-gradient(135deg, #ec0000, #c30000)", color: "#fff", accentBg: "#fff", accentColor: "#ec0000" },
+    { name: "Banrisul", short: "Banrisul", tagline: "RS", url: "https://www.banrisul.com.br/bob/link/bobnw27x_defaultbnr.aspx", bg: "linear-gradient(135deg, #005baa, #003f7f)", color: "#fff", accentBg: "#00a8e8", accentColor: "#fff" },
+    { name: "Sicredi", short: "sicredi", tagline: "", url: "https://www.sicredi.com.br/site/credito/financiamento-imobiliario/", bg: "linear-gradient(135deg, #3fa435, #2e7d29)", color: "#fff", accentBg: "#fff", accentColor: "#3fa435" },
+    { name: "Sicoob", short: "sicoob", tagline: "", url: "https://www.sicoob.com.br/web/sicoob/financiamento-imobiliario", bg: "linear-gradient(135deg, #003641, #002128)", color: "#7dbc3f", accentBg: "#7dbc3f", accentColor: "#003641" }
   ];
   return React.createElement("main", {className:"page-fade", style:{maxWidth:"1200px", margin:"0 auto", padding:"0 28px 100px"}},
     // Hero da pagina
@@ -2585,23 +2586,58 @@ function FinancingPage() {
         rel: "noopener noreferrer",
         title: `Simular financiamento no ${b.name}`,
         style:{
-          display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
-          background: b.bg,
+          display: "flex", flexDirection: "column",
+          background: "#fff",
           border: "2px solid var(--border)",
           borderRadius: 14,
-          padding: "36px 24px",
-          minHeight: 170,
+          overflow: "hidden",
+          minHeight: 200,
           textDecoration: "none",
           transition: "all .25s var(--ease)",
           boxShadow: "0 4px 12px rgba(0,0,0,.05)",
-          cursor: "pointer",
-          position: "relative"
+          cursor: "pointer"
         },
-        onMouseEnter: (e) => { e.currentTarget.style.transform = "translateY(-6px)"; e.currentTarget.style.boxShadow = "0 12px 30px rgba(0,0,0,.15)"; e.currentTarget.style.borderColor = "var(--red)"; },
+        onMouseEnter: (e) => { e.currentTarget.style.transform = "translateY(-6px)"; e.currentTarget.style.boxShadow = "0 12px 30px rgba(0,0,0,.2)"; e.currentTarget.style.borderColor = "var(--red)"; },
         onMouseLeave: (e) => { e.currentTarget.style.transform = "translateY(0)"; e.currentTarget.style.boxShadow = "0 4px 12px rgba(0,0,0,.05)"; e.currentTarget.style.borderColor = "var(--border)"; }
       },
-        React.createElement("img", {src: b.logo, alt: b.name, style:{maxWidth:"100%", maxHeight:70, objectFit:"contain"}, loading:"lazy"}),
-        React.createElement("div", {style:{marginTop:16, fontSize:".78rem", fontWeight:700, color:"var(--text-light)", textTransform:"uppercase", letterSpacing:".08em"}}, "Simular →")
+        // Logo em texto estilizado
+        React.createElement("div", {style:{
+          background: b.bg,
+          color: b.color,
+          flex: 1,
+          display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
+          padding: "28px 20px",
+          textAlign: "center",
+          position: "relative"
+        }},
+          React.createElement("div", {style:{
+            fontSize: b.short.length > 6 ? "1.8rem" : "2.4rem",
+            fontWeight: 900,
+            letterSpacing: b.short.length > 6 ? "-.01em" : ".02em",
+            fontFamily: "'Helvetica Neue', Arial, sans-serif",
+            lineHeight: 1,
+            textShadow: "0 2px 8px rgba(0,0,0,.15)"
+          }}, b.short),
+          b.tagline && React.createElement("div", {style:{
+            marginTop: 6,
+            fontSize: ".72rem",
+            fontWeight: 700,
+            letterSpacing: ".18em",
+            textTransform: "uppercase",
+            opacity: .9
+          }}, b.tagline)
+        ),
+        // Barra inferior "SIMULAR"
+        React.createElement("div", {style:{
+          background: b.accentBg,
+          color: b.accentColor,
+          padding: "12px 16px",
+          fontSize: ".82rem",
+          fontWeight: 900,
+          textAlign: "center",
+          letterSpacing: ".1em",
+          textTransform: "uppercase"
+        }}, "🔗 Simular no ", b.name, " →")
       ))
     ),
     // Call-to-action
