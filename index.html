@@ -1792,6 +1792,7 @@ function Header({page, setPage, scrolled, isAdmin, setIsAdmin, settings}) {
         React.createElement("button", {className: `nav-link ${page === 'home' ? 'active' : ''}`, onClick: () => nav("home")}, "Início"),
         React.createElement("button", {className: `nav-link ${page === 'properties' ? 'active' : ''}`, onClick: () => nav("properties")}, "Imóveis"),
         React.createElement("button", {className: `nav-link ${page === 'about' ? 'active' : ''}`, onClick: () => nav("about")}, "Sobre"),
+        React.createElement("button", {className: `nav-link ${page === 'financing' ? 'active' : ''}`, onClick: () => nav("financing")}, "Financiamento"),
         React.createElement("button", {className: `nav-link ${page === 'contact' ? 'active' : ''}`, onClick: () => nav("contact")}, "Contato"),
         isAdmin &&
           React.createElement(React.Fragment, null,
@@ -2540,6 +2541,89 @@ function AboutPage() {
 }
 
 // ===== CONTACT PAGE =====
+// ===== FINANCIAMENTO (bancos parceiros para simulacao) =====
+function FinancingPage() {
+  const banks = [
+    { name: "Caixa Econômica Federal", logo: "https://logodownload.org/wp-content/uploads/2014/05/caixa-logo-1.png", url: "https://www8.caixa.gov.br/siopiinternet-web/simulaOperacaoInternet.do?method=inicializarCasoUso", bg: "#ffffff" },
+    { name: "Banco do Brasil", logo: "https://logodownload.org/wp-content/uploads/2014/05/banco-do-brasil-logo-1.png", url: "https://www.bb.com.br/pbb/pagina-inicial/voce/produtos-e-servicos/financiamentos/financiamento-imobiliario#/", bg: "#ffef38" },
+    { name: "Bradesco", logo: "https://logodownload.org/wp-content/uploads/2014/05/bradesco-logo-1.png", url: "https://banco.bradesco/html/classic/produtos-servicos/emprestimo-e-financiamento/encontre-seu-credito/simuladores-imoveis.shtm", bg: "#ffffff" },
+    { name: "Itaú", logo: "https://logodownload.org/wp-content/uploads/2014/05/itau-logo-1.png", url: "https://credito-imobiliario.itau.com.br/", bg: "#ffffff" },
+    { name: "Santander", logo: "https://logodownload.org/wp-content/uploads/2014/07/santander-logo-1.png", url: "https://www.santander.com.br/creditos-e-financiamentos/credito-imobiliario/simulador", bg: "#ffffff" },
+    { name: "Banrisul", logo: "https://logodownload.org/wp-content/uploads/2019/07/banrisul-logo-2.png", url: "https://www.banrisul.com.br/bob/link/bobnw27x_defaultbnr.aspx", bg: "#ffffff" },
+    { name: "Sicredi", logo: "https://logodownload.org/wp-content/uploads/2014/07/sicredi-logo-1.png", url: "https://www.sicredi.com.br/site/credito/financiamento-imobiliario/", bg: "#ffffff" },
+    { name: "Sicoob", logo: "https://logodownload.org/wp-content/uploads/2015/03/sicoob-logo-2-1.png", url: "https://www.sicoob.com.br/web/sicoob/financiamento-imobiliario", bg: "#ffffff" }
+  ];
+  return React.createElement("main", {className:"page-fade", style:{maxWidth:"1200px", margin:"0 auto", padding:"0 28px 100px"}},
+    // Hero da pagina
+    React.createElement("div", {style:{background:"linear-gradient(135deg, var(--red), var(--red-dark))", color:"white", padding:"56px 40px", borderRadius:16, marginBottom:40, boxShadow:"0 10px 40px rgba(196,30,30,.25)", position:"relative", overflow:"hidden"}},
+      React.createElement("div", {style:{position:"absolute", top:-40, right:-40, width:200, height:200, borderRadius:"50%", background:"rgba(255,255,255,.08)"}}),
+      React.createElement("div", {style:{position:"absolute", bottom:-60, left:-60, width:240, height:240, borderRadius:"50%", background:"rgba(255,255,255,.05)"}}),
+      React.createElement("div", {style:{position:"relative", zIndex:1}},
+        React.createElement("div", {style:{fontSize:".82rem", fontWeight:700, letterSpacing:".15em", textTransform:"uppercase", opacity:.85, marginBottom:12}}, "💰 SIMULAÇÃO ONLINE"),
+        React.createElement("h1", {style:{fontFamily:"var(--font-display)", fontSize:"clamp(2rem, 5vw, 3.2rem)", fontWeight:400, letterSpacing:".02em", textTransform:"uppercase", margin:"0 0 16px", lineHeight:1.1}}, "Financiamento Imobiliário"),
+        React.createElement("p", {style:{fontSize:"1.05rem", lineHeight:1.6, maxWidth:720, opacity:.95, marginBottom:0}}, "Pensando em você, disponibilizamos abaixo os sites dos principais bancos parceiros para você fazer uma ",
+          React.createElement("strong", null, "simulação gratuita"),
+          " do seu financiamento. Clique no logo do banco desejado pra ser direcionado ao simulador oficial."
+        )
+      )
+    ),
+    // Aviso
+    React.createElement("div", {style:{background:"#fff8dc", border:"1.5px solid #d4a012", padding:"16px 22px", borderRadius:10, marginBottom:32, display:"flex", gap:12, alignItems:"flex-start"}},
+      React.createElement("span", {style:{fontSize:"1.5rem", flexShrink:0}}, "💡"),
+      React.createElement("div", {style:{fontSize:".9rem", lineHeight:1.55, color:"#5a4200"}},
+        React.createElement("strong", null, "Dica:"), " Simule em vários bancos pra comparar taxas de juros, prazos e condições. Depois, ",
+        React.createElement("strong", null, "entre em contato conosco"),
+        " que ajudamos você em todas as etapas — desde escolher o imóvel até assinatura do contrato."
+      )
+    ),
+    // Grid de bancos
+    React.createElement("div", {style:{display:"grid", gridTemplateColumns:"repeat(auto-fill, minmax(230px, 1fr))", gap:20, marginBottom:40}},
+      banks.map(b => React.createElement("a", {
+        key: b.name,
+        href: b.url,
+        target: "_blank",
+        rel: "noopener noreferrer",
+        title: `Simular financiamento no ${b.name}`,
+        style:{
+          display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
+          background: b.bg,
+          border: "2px solid var(--border)",
+          borderRadius: 14,
+          padding: "36px 24px",
+          minHeight: 170,
+          textDecoration: "none",
+          transition: "all .25s var(--ease)",
+          boxShadow: "0 4px 12px rgba(0,0,0,.05)",
+          cursor: "pointer",
+          position: "relative"
+        },
+        onMouseEnter: (e) => { e.currentTarget.style.transform = "translateY(-6px)"; e.currentTarget.style.boxShadow = "0 12px 30px rgba(0,0,0,.15)"; e.currentTarget.style.borderColor = "var(--red)"; },
+        onMouseLeave: (e) => { e.currentTarget.style.transform = "translateY(0)"; e.currentTarget.style.boxShadow = "0 4px 12px rgba(0,0,0,.05)"; e.currentTarget.style.borderColor = "var(--border)"; }
+      },
+        React.createElement("img", {src: b.logo, alt: b.name, style:{maxWidth:"100%", maxHeight:70, objectFit:"contain"}, loading:"lazy"}),
+        React.createElement("div", {style:{marginTop:16, fontSize:".78rem", fontWeight:700, color:"var(--text-light)", textTransform:"uppercase", letterSpacing:".08em"}}, "Simular →")
+      ))
+    ),
+    // Call-to-action
+    React.createElement("div", {style:{background:"var(--bg-accent)", border:"1px solid var(--border)", borderRadius:12, padding:"28px 32px", textAlign:"center"}},
+      React.createElement("h3", {style:{fontFamily:"var(--font-display)", fontSize:"1.4rem", letterSpacing:".03em", textTransform:"uppercase", fontWeight:400, marginTop:0, marginBottom:10}}, "Precisa de Ajuda?"),
+      React.createElement("p", {style:{fontSize:".95rem", color:"var(--text-light)", marginBottom:20, lineHeight:1.55}}, "Nossa equipe está pronta pra te orientar sobre documentação, escolha do banco e todas as etapas do financiamento."),
+      React.createElement("button", {
+        onClick: () => { const url = `https://wa.me/${WHATSAPP}?text=${encodeURIComponent("Olá! Gostaria de ajuda com o financiamento de um imóvel.")}`; window.open(url, "_blank"); },
+        style:{
+          background: "#25D366", color: "white", border: "none",
+          padding: "14px 28px", borderRadius: 10, fontSize: ".95rem",
+          fontWeight: 800, cursor: "pointer", display: "inline-flex",
+          alignItems: "center", gap: 10, boxShadow: "0 4px 14px rgba(37,211,102,.35)",
+          transition: "all .2s var(--ease)"
+        },
+        onMouseEnter: (e) => e.currentTarget.style.transform = "translateY(-2px)",
+        onMouseLeave: (e) => e.currentTarget.style.transform = "translateY(0)"
+      }, "💬 Falar no WhatsApp")
+    )
+  );
+}
+
 function ContactPage({settings}) {
   const s = settings || DEFAULT_SETTINGS;
   const agents = (settings && Array.isArray(settings.agents)) ? settings.agents : [];
@@ -7117,6 +7201,7 @@ function FooterComp({setPage, settings}) {
         React.createElement("button", {className: "footer-link", onClick: () => setPage("home")}, "Início"),
         React.createElement("button", {className: "footer-link", onClick: () => setPage("properties")}, "Imóveis"),
         React.createElement("button", {className: "footer-link", onClick: () => setPage("about")}, "Sobre"),
+        React.createElement("button", {className: "footer-link", onClick: () => setPage("financing")}, "Financiamento"),
         React.createElement("button", {className: "footer-link", onClick: () => setPage("contact")}, "Contato")
       ),
       React.createElement("div", null,
@@ -7335,6 +7420,7 @@ function App() {
     if (pg === "properties") return "/imoveis";
     if (pg === "about") return "/sobre";
     if (pg === "contact") return "/contato";
+    if (pg === "financing") return "/financiamento";
     if (pg === "privacy") return "/privacidade";
     if (pg === "login" || pg === "admin") return "/admin";
     if (pg === "presentTV") return "/apresentar";
@@ -7395,6 +7481,7 @@ function App() {
     if (path === "/apresentar") { setPage("presentTV"); return; }
     if (path === "/sobre") { setPage("about"); return; }
     if (path === "/contato") { setPage("contact"); return; }
+    if (path === "/financiamento") { setPage("financing"); return; }
     if (path === "/privacidade") { setPage("privacy"); return; }
     // Admin
     const wantsAdmin = path.includes("/admin") || hash.includes("admin") || params.get("admin") === "1" || params.has("admin");
@@ -7433,6 +7520,7 @@ function App() {
       if (path === "/imoveis") setPage("properties");
       else if (path === "/sobre") setPage("about");
       else if (path === "/contato") setPage("contact");
+      else if (path === "/financiamento") setPage("financing");
       else if (path === "/privacidade") setPage("privacy");
       else if (path === "/admin") setPage(isAdmin ? "admin" : "login");
       else setPage("home");
@@ -7557,6 +7645,7 @@ function App() {
     page === "about" && React.createElement(React.Fragment, null, React.createElement("div", {className: `page-offset ${isAdmin ? 'has-admin-bar' : ''}`}), React.createElement(AboutPage)),
     page === "privacy" && React.createElement(React.Fragment, null, React.createElement("div", {className: `page-offset ${isAdmin ? 'has-admin-bar' : ''}`}), React.createElement(PrivacyPage)),
     page === "contact" && React.createElement(React.Fragment, null, React.createElement("div", {className: `page-offset ${isAdmin ? 'has-admin-bar' : ''}`}), React.createElement(ContactPage, {settings})),
+    page === "financing" && React.createElement(React.Fragment, null, React.createElement("div", {className: `page-offset ${isAdmin ? 'has-admin-bar' : ''}`}), React.createElement(FinancingPage)),
     page === "login" && React.createElement(AdminLogin, {setIsAdmin: setAdmin, setPage, showToast}),
     page === "admin" && isAdmin && React.createElement(AdminPanel, {properties: props, setProperties: setProps, showToast, settings, viewsMap}),
     page !== "admin" && React.createElement(FooterComp, {setPage, settings}),
