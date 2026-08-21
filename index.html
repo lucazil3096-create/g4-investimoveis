@@ -2546,13 +2546,12 @@ function FinancingPage() {
   // Cada banco tem: nome, url do simulador, cor de fundo, cor do texto, iniciais/texto grande, fonte estilizada
   const banks = [
     { name: "Caixa Econômica Federal", short: "CAIXA", tagline: "Federal", url: "https://habitacao.caixa.gov.br/", bg: "linear-gradient(135deg, #0070c0, #005a9e)", color: "#fff", accentBg: "#f7941d", accentColor: "#fff" },
-    { name: "Banco do Brasil", short: "BB", tagline: "Banco do Brasil", url: "https://www.bb.com.br/pbb/pagina-inicial/voce/produtos-e-servicos/financiamentos/financiamento-imobiliario#/", bg: "linear-gradient(135deg, #fff100, #ffd100)", color: "#0033a0", accentBg: "#0033a0", accentColor: "#fff100" },
+    { name: "Banco do Brasil", short: "BB", tagline: "Banco do Brasil", url: "https://cim-simulador-imovelproprio.apps.bb.com.br/simulacao-imobiliario/sobre-imovel", bg: "linear-gradient(135deg, #fff100, #ffd100)", color: "#0033a0", accentBg: "#0033a0", accentColor: "#fff100" },
     { name: "Bradesco", short: "Bradesco", tagline: "", url: "https://banco.bradesco/html/classic/produtos-servicos/emprestimo-e-financiamento/encontre-seu-credito/simuladores-imoveis.shtm", bg: "linear-gradient(135deg, #cc092f, #a30726)", color: "#fff", accentBg: "#fff", accentColor: "#cc092f" },
     { name: "Itaú", short: "itaú", tagline: "", url: "https://credito-imobiliario.itau.com.br/", bg: "linear-gradient(135deg, #ec7000, #d16500)", color: "#003399", accentBg: "#003399", accentColor: "#ec7000" },
-    { name: "Santander", short: "Santander", tagline: "", url: "https://www.santander.com.br/creditos-e-financiamentos/credito-imobiliario/simulador", bg: "linear-gradient(135deg, #ec0000, #c30000)", color: "#fff", accentBg: "#fff", accentColor: "#ec0000" },
-    { name: "Banrisul", short: "Banrisul", tagline: "RS", url: "https://www.banrisul.com.br/bob/link/bobnw27x_defaultbnr.aspx", bg: "linear-gradient(135deg, #005baa, #003f7f)", color: "#fff", accentBg: "#00a8e8", accentColor: "#fff" },
-    { name: "Sicredi", short: "sicredi", tagline: "", url: "https://www.sicredi.com.br/site/credito/", bg: "linear-gradient(135deg, #3fa435, #2e7d29)", color: "#fff", accentBg: "#fff", accentColor: "#3fa435" },
-    { name: "Sicoob", short: "sicoob", tagline: "", url: "https://www.sicoob.com.br/web/sicoob/credito-imobiliario", bg: "linear-gradient(135deg, #003641, #002128)", color: "#7dbc3f", accentBg: "#7dbc3f", accentColor: "#003641" }
+    { name: "Santander", short: "Santander", tagline: "", url: "https://www.negociosimobiliarios.santander.com.br/negociosimobiliarios/#/dados-pessoais?goal=3&ic=lpcreditoimob", bg: "linear-gradient(135deg, #ec0000, #c30000)", color: "#fff", accentBg: "#fff", accentColor: "#ec0000" },
+    { name: "Banrisul", short: "Banrisul", tagline: "RS", url: "https://www.banrisul.com.br/brz/link/brzwswhn.html", bg: "linear-gradient(135deg, #005baa, #003f7f)", color: "#fff", accentBg: "#00a8e8", accentColor: "#fff" },
+    { name: "Sicoob", short: "sicoob", tagline: "", url: "https://www.sicoob.com.br/web/sicoob/credito-voce/financiamentoimobiliario#simulacao-secao", bg: "linear-gradient(135deg, #003641, #002128)", color: "#7dbc3f", accentBg: "#7dbc3f", accentColor: "#003641" }
   ];
   return React.createElement("main", {className:"page-fade", style:{maxWidth:"1200px", margin:"0 auto", padding:"0 28px 100px"}},
     // Hero da pagina
