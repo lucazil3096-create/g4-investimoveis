@@ -263,9 +263,9 @@ a { text-decoration: none; color: inherit; }
   max-width: var(--max-w); margin: 0 auto; padding: 0 28px;
   display: flex; align-items: center; justify-content: space-between; height: var(--header-h);
 }
-.logo-link { display: flex; align-items: center; gap: 16px; min-width: 0; flex-shrink: 1; }
-.logo-img { height: 96px; width: auto; transition: transform .3s var(--ease); filter: drop-shadow(0 0 1px rgba(255,255,255,.3)); flex-shrink: 0; }
-.certif-badge-img { transition: transform .3s var(--ease); flex-shrink: 1; min-width: 0; }
+.logo-link { display: flex; align-items: center; gap: 16px; min-width: 0; }
+.logo-img { height: 96px; width: auto; transition: transform .3s var(--ease); filter: drop-shadow(0 0 1px rgba(255,255,255,.3)); flex-shrink: 0; object-fit: contain; }
+.certif-badge-img { transition: transform .3s var(--ease); flex-shrink: 0; object-fit: contain; }
 /* ===== MOBILE - garantir que caiba (sem overflow horizontal) ===== */
 @media(max-width:768px) {
   .header-inner { padding: 8px 14px !important; }
