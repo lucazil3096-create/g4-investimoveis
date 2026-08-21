@@ -961,15 +961,30 @@ body.lightbox-open .filters-bar { display: none !important; }
 .footer-link { display: block; font-size: .88rem; padding: 5px 0; transition: all .2s var(--ease); background: none; border: none; color: rgba(255,255,255,.65); text-align: left; font-family: inherit; cursor: pointer; width: auto; }
 .footer-link:hover { color: var(--red-light); padding-left: 6px; }
 button.footer-link { padding-left: 0; }
-.footer-social { display: flex; gap: 10px; margin-top: 16px; }
+.footer-social { display: flex; gap: 14px; margin-top: 22px; flex-wrap: wrap; }
 .footer-social a {
-  width: 40px; height: 40px; border-radius: 10px;
-  background: rgba(255,255,255,.06); display: flex; align-items: center;
-  justify-content: center; color: rgba(255,255,255,.5);
-  transition: all .25s var(--ease);
+  width: 58px; height: 58px; border-radius: 14px;
+  background: linear-gradient(135deg, rgba(255,255,255,.14), rgba(255,255,255,.06));
+  border: 1.5px solid rgba(255,255,255,.15);
+  display: flex; align-items: center; justify-content: center;
+  color: #fff;
+  transition: all .3s var(--ease);
+  box-shadow: 0 4px 14px rgba(0,0,0,.25);
+  position: relative; overflow: hidden;
 }
-.footer-social a:hover { background: var(--red); color: white; transform: translateY(-2px); }
-.footer-social a svg { width: 18px; height: 18px; }
+.footer-social a::before {
+  content: ""; position: absolute; inset: 0;
+  background: linear-gradient(135deg, transparent, transparent);
+  transition: background .3s var(--ease);
+  z-index: 0;
+}
+.footer-social a svg { width: 26px; height: 26px; position: relative; z-index: 1; filter: drop-shadow(0 1px 2px rgba(0,0,0,.4)); }
+.footer-social a:hover { transform: translateY(-3px) scale(1.06); box-shadow: 0 8px 24px rgba(0,0,0,.5); border-color: rgba(255,255,255,.35); }
+/* Cores especificas de cada rede no hover */
+.footer-social a[title="Instagram"]:hover::before { background: linear-gradient(135deg, #f09433 0%, #e6683c 25%, #dc2743 50%, #cc2366 75%, #bc1888 100%); }
+.footer-social a[title="Facebook"]:hover::before { background: #1877f2; }
+.footer-social a[title="YouTube"]:hover::before { background: #ff0000; }
+.footer-social a[title="TikTok"]:hover::before { background: linear-gradient(135deg, #25f4ee, #000, #fe2c55); }
 .footer-bottom {
   border-top: 1px solid rgba(255,255,255,.06); max-width: var(--max-w);
   margin: 0 auto; padding: 24px 28px;
@@ -7087,6 +7102,7 @@ function FooterComp({setPage, settings}) {
       React.createElement("div", null,
         React.createElement("img", {src: logoSrc, alt: s.companyName || "G4 Investimóveis", className: "footer-brand-img"}),
         React.createElement("p", {className: "footer-desc"}, s.footerDesc || "Referência em negócios imobiliários na região de Mamborê, Campo Mourão e todo centro-oeste do Paraná. Compra e venda com segurança."),
+        React.createElement("p", {style:{fontSize:".78rem",fontWeight:800,letterSpacing:".15em",textTransform:"uppercase",color:"var(--gold)",marginTop:24,marginBottom:6}}, "📱 Siga a gente"),
         React.createElement("div", {className: "footer-social"},
           // Instagram: usa setting salvo, ou fallback pro DEFAULT_SETTINGS (URL padrao da G4)
           ((settings && settings.instagramUrl) || DEFAULT_SETTINGS.instagramUrl) && React.createElement("a", {href: (settings && settings.instagramUrl) || DEFAULT_SETTINGS.instagramUrl, target:"_blank", rel:"noopener", title: "Instagram"}, React.createElement("svg", {width:18,height:18,fill:"currentColor",viewBox:"0 0 24 24"}, React.createElement("path", {d:"M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zM12 0C8.741 0 8.333.014 7.053.072 2.695.272.273 2.69.073 7.052.014 8.333 0 8.741 0 12c0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98C8.333 23.986 8.741 24 12 24c3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98C15.668.014 15.259 0 12 0zm0 5.838a6.162 6.162 0 100 12.324 6.162 6.162 0 000-12.324zM12 16a4 4 0 110-8 4 4 0 010 8zm6.406-11.845a1.44 1.44 0 100 2.881 1.44 1.44 0 000-2.881z"}))),
