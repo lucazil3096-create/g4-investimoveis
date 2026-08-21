@@ -2643,27 +2643,13 @@ function FinancingPage({settings}) {
     { key: "sicoob", name: "Sicoob", short: "sicoob", tagline: "", url: "https://www.sicoob.com.br/web/sicoob/credito-voce/financiamentoimobiliario#simulacao-secao", bg: "linear-gradient(135deg, #003641, #002128)", color: "#7dbc3f", accentBg: "#7dbc3f", accentColor: "#003641" }
   ];
   return React.createElement("main", {className:"page-fade", style:{maxWidth:"1200px", margin:"0 auto", padding:"0 28px 100px"}},
-    // Hero da pagina
-    React.createElement("div", {style:{background:"linear-gradient(135deg, var(--red), var(--red-dark))", color:"white", padding:"56px 40px", borderRadius:16, marginBottom:40, boxShadow:"0 10px 40px rgba(196,30,30,.25)", position:"relative", overflow:"hidden"}},
-      React.createElement("div", {style:{position:"absolute", top:-40, right:-40, width:200, height:200, borderRadius:"50%", background:"rgba(255,255,255,.08)"}}),
-      React.createElement("div", {style:{position:"absolute", bottom:-60, left:-60, width:240, height:240, borderRadius:"50%", background:"rgba(255,255,255,.05)"}}),
-      React.createElement("div", {style:{position:"relative", zIndex:1}},
-        React.createElement("div", {style:{fontSize:".82rem", fontWeight:700, letterSpacing:".15em", textTransform:"uppercase", opacity:.85, marginBottom:12}}, "💰 SIMULAÇÃO ONLINE"),
-        React.createElement("h1", {style:{fontFamily:"var(--font-display)", fontSize:"clamp(2rem, 5vw, 3.2rem)", fontWeight:400, letterSpacing:".02em", textTransform:"uppercase", margin:"0 0 16px", lineHeight:1.1}}, "Financiamento Imobiliário"),
-        React.createElement("p", {style:{fontSize:"1.05rem", lineHeight:1.6, maxWidth:720, opacity:.95, marginBottom:0}}, "Pensando em você, disponibilizamos abaixo os sites dos principais bancos parceiros para você fazer uma ",
-          React.createElement("strong", null, "simulação gratuita"),
-          " do seu financiamento. Clique no logo do banco desejado pra ser direcionado ao simulador oficial."
-        )
-      )
+    // Cabecalho MINIMALISTA estilo Partecki (preto, simples)
+    React.createElement("div", {style:{background:"#0f0f0f", color:"white", padding:"38px 40px", borderRadius:12, marginBottom:32, position:"relative", overflow:"hidden"}},
+      React.createElement("h1", {style:{fontFamily:"var(--font-display)", fontSize:"clamp(1.8rem, 4vw, 2.4rem)", fontWeight:400, letterSpacing:".03em", margin:0, position:"relative", zIndex:1}}, "Financiamento")
     ),
-    // Aviso
-    React.createElement("div", {style:{background:"#fff8dc", border:"1.5px solid #d4a012", padding:"16px 22px", borderRadius:10, marginBottom:32, display:"flex", gap:12, alignItems:"flex-start"}},
-      React.createElement("span", {style:{fontSize:"1.5rem", flexShrink:0}}, "💡"),
-      React.createElement("div", {style:{fontSize:".9rem", lineHeight:1.55, color:"#5a4200"}},
-        React.createElement("strong", null, "Dica:"), " Simule em vários bancos pra comparar taxas de juros, prazos e condições. Depois, ",
-        React.createElement("strong", null, "entre em contato conosco"),
-        " que ajudamos você em todas as etapas — desde escolher o imóvel até assinatura do contrato."
-      )
+    // Texto introdutorio simples
+    React.createElement("p", {style:{fontSize:"1rem", lineHeight:1.6, color:"var(--text)", marginBottom:36, maxWidth:900}},
+      "Pensando em você, disponibilizamos abaixo os sites de alguns bancos parceiros para que você faça uma simulação de financiamento."
     ),
     // Grid de bancos
     React.createElement("div", {style:{display:"grid", gridTemplateColumns:"repeat(auto-fill, minmax(230px, 1fr))", gap:20, marginBottom:40}},
