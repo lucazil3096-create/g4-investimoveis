@@ -2552,9 +2552,69 @@ function AboutPage() {
 
 // ===== CONTACT PAGE =====
 // ===== FINANCIAMENTO (bancos parceiros para simulacao) =====
+// SVG logos INLINE — funciona 100% online sem dependencia externa
+const BankLogoCaixa = () => React.createElement("svg", {viewBox:"0 0 220 100", xmlns:"http://www.w3.org/2000/svg", style:{width:"100%", height:"100%"}},
+  React.createElement("text", {x:"110", y:"48", textAnchor:"middle", fontFamily:"Arial Black, Arial, sans-serif", fontSize:"46", fontWeight:"900", fill:"#005CA9", letterSpacing:"-1"}, "CA"),
+  React.createElement("text", {x:"110", y:"48", textAnchor:"middle", fontFamily:"Arial Black, Arial, sans-serif", fontSize:"46", fontWeight:"900", fill:"#F39207", letterSpacing:"-1"}, "  I"),
+  React.createElement("text", {x:"110", y:"48", textAnchor:"middle", fontFamily:"Arial Black, Arial, sans-serif", fontSize:"46", fontWeight:"900", fill:"#005CA9", letterSpacing:"-1"}, "     XA"),
+  React.createElement("text", {x:"110", y:"75", textAnchor:"middle", fontFamily:"Arial, sans-serif", fontSize:"14", fontWeight:"600", fill:"#005CA9", letterSpacing:"1"}, "CAIXA ECONÔMICA FEDERAL")
+);
+const BankLogoBB = () => React.createElement("svg", {viewBox:"0 0 220 100", xmlns:"http://www.w3.org/2000/svg", style:{width:"100%", height:"100%"}},
+  // Losango amarelo com listras
+  React.createElement("g", {transform:"translate(45, 15)"},
+    React.createElement("polygon", {points:"35,0 70,35 35,70 0,35", fill:"#FFEF00", stroke:"#003399", strokeWidth:"3"}),
+    React.createElement("polygon", {points:"35,10 60,35 35,60 10,35", fill:"none", stroke:"#003399", strokeWidth:"3"}),
+    React.createElement("text", {x:"35", y:"44", textAnchor:"middle", fontFamily:"Arial Black, Arial, sans-serif", fontSize:"24", fontWeight:"900", fill:"#003399"}, "BB")
+  ),
+  React.createElement("text", {x:"140", y:"38", textAnchor:"middle", fontFamily:"Arial, sans-serif", fontSize:"14", fontWeight:"700", fill:"#003399"}, "BANCO DO"),
+  React.createElement("text", {x:"140", y:"58", textAnchor:"middle", fontFamily:"Arial Black, Arial, sans-serif", fontSize:"18", fontWeight:"900", fill:"#003399"}, "BRASIL")
+);
+const BankLogoBradesco = () => React.createElement("svg", {viewBox:"0 0 220 100", xmlns:"http://www.w3.org/2000/svg", style:{width:"100%", height:"100%"}},
+  // Quadrado vermelho com arvore branca estilizada
+  React.createElement("g", {transform:"translate(20, 8)"},
+    React.createElement("rect", {x:"0", y:"0", width:"60", height:"60", rx:"14", fill:"#CC092F"}),
+    // Icone arvore/haste simplificada (curva + haste vertical)
+    React.createElement("path", {d:"M 15 45 Q 30 15, 45 45", stroke:"#fff", strokeWidth:"4", fill:"none", strokeLinecap:"round"}),
+    React.createElement("rect", {x:"27", y:"30", width:"6", height:"20", fill:"#fff"}),
+    React.createElement("circle", {cx:"30", cy:"25", r:"3", fill:"#fff"})
+  ),
+  React.createElement("text", {x:"150", y:"48", textAnchor:"middle", fontFamily:"Arial Black, Arial, sans-serif", fontSize:"26", fontWeight:"900", fill:"#333"}, "Bradesco")
+);
+const BankLogoItau = () => React.createElement("svg", {viewBox:"0 0 220 100", xmlns:"http://www.w3.org/2000/svg", style:{width:"100%", height:"100%"}},
+  React.createElement("rect", {x:"55", y:"10", width:"110", height:"80", rx:"18", fill:"#EC7000"}),
+  React.createElement("text", {x:"110", y:"65", textAnchor:"middle", fontFamily:"Arial Black, Arial, sans-serif", fontSize:"42", fontWeight:"900", fill:"#fff"}, "itaú")
+);
+const BankLogoSantander = () => React.createElement("svg", {viewBox:"0 0 220 100", xmlns:"http://www.w3.org/2000/svg", style:{width:"100%", height:"100%"}},
+  React.createElement("rect", {x:"0", y:"0", width:"220", height:"100", fill:"#EC0000"}),
+  // Chama simplificada
+  React.createElement("g", {transform:"translate(20, 30)"},
+    React.createElement("ellipse", {cx:"20", cy:"20", rx:"18", ry:"12", fill:"none", stroke:"#fff", strokeWidth:"4"}),
+    React.createElement("path", {d:"M 20 8 Q 30 15, 25 25 Q 15 20, 20 8", fill:"#fff"})
+  ),
+  React.createElement("text", {x:"130", y:"58", textAnchor:"middle", fontFamily:"Arial, sans-serif", fontSize:"28", fontWeight:"600", fill:"#fff"}, "Santander")
+);
+const BankLogoBanrisul = () => React.createElement("svg", {viewBox:"0 0 220 100", xmlns:"http://www.w3.org/2000/svg", style:{width:"100%", height:"100%"}},
+  React.createElement("rect", {x:"0", y:"0", width:"220", height:"100", fill:"#001E62"}),
+  // 3 hexagonos coloridos
+  React.createElement("g", {transform:"translate(15, 30)"},
+    React.createElement("polygon", {points:"15,0 30,8 30,25 15,33 0,25 0,8", fill:"none", stroke:"#8659A5", strokeWidth:"3"}),
+    React.createElement("polygon", {points:"38,0 53,8 53,25 38,33 23,25 23,8", fill:"none", stroke:"#4C6BE5", strokeWidth:"3"}),
+    React.createElement("polygon", {points:"27,20 42,28 42,45 27,53 12,45 12,28", fill:"none", stroke:"#26D3B4", strokeWidth:"3"})
+  ),
+  React.createElement("text", {x:"130", y:"62", textAnchor:"middle", fontFamily:"Arial, sans-serif", fontSize:"32", fontWeight:"400", fill:"#fff", letterSpacing:"-1"}, "banrisul")
+);
+const BankLogoSicoob = () => React.createElement("svg", {viewBox:"0 0 220 100", xmlns:"http://www.w3.org/2000/svg", style:{width:"100%", height:"100%"}},
+  // V triangular verde
+  React.createElement("g", {transform:"translate(25, 30)"},
+    React.createElement("polygon", {points:"0,0 40,0 20,35", fill:"#7ABC3F"}),
+    React.createElement("polygon", {points:"5,3 35,3 20,28", fill:"#00A651"})
+  ),
+  React.createElement("text", {x:"135", y:"62", textAnchor:"middle", fontFamily:"Arial Black, Arial, sans-serif", fontSize:"32", fontWeight:"900", fill:"#003641"}, "SICOOB")
+);
+
 function FinancingPage({settings}) {
   const bankLogos = (settings && settings.bankLogos) || {};
-  // Cada banco tem: nome, url do simulador, cor de fundo, cor do texto, iniciais/texto grande, fonte estilizada, key (pra logo customizada)
+  const inlineLogos = { caixa: BankLogoCaixa, bb: BankLogoBB, bradesco: BankLogoBradesco, itau: BankLogoItau, santander: BankLogoSantander, banrisul: BankLogoBanrisul, sicoob: BankLogoSicoob };
   const banks = [
     { key: "caixa", name: "Caixa Econômica Federal", short: "CAIXA", tagline: "Federal", url: "https://simuladorhabitacao.caixa.gov.br/home", bg: "linear-gradient(135deg, #0070c0, #005a9e)", color: "#fff", accentBg: "#f7941d", accentColor: "#fff" },
     { key: "bb", name: "Banco do Brasil", short: "BB", tagline: "Banco do Brasil", url: "https://cim-simulador-imovelproprio.apps.bb.com.br/simulacao-imobiliario/sobre-imovel", bg: "linear-gradient(135deg, #fff100, #ffd100)", color: "#0033a0", accentBg: "#0033a0", accentColor: "#fff100" },
@@ -2610,39 +2670,32 @@ function FinancingPage({settings}) {
         onMouseEnter: (e) => { e.currentTarget.style.transform = "translateY(-6px)"; e.currentTarget.style.boxShadow = "0 12px 30px rgba(0,0,0,.2)"; e.currentTarget.style.borderColor = "var(--red)"; },
         onMouseLeave: (e) => { e.currentTarget.style.transform = "translateY(0)"; e.currentTarget.style.boxShadow = "0 4px 12px rgba(0,0,0,.05)"; e.currentTarget.style.borderColor = "var(--border)"; }
       },
-        // Logo (imagem customizada se configurada; senao texto estilizado)
+        // Logo: prioridade -> logo customizada (Cloudinary) > SVG inline (padrao) > fallback texto
         bankLogos[b.key] ? React.createElement("div", {style:{
           background: "#fff",
           flex: 1,
           display: "flex", alignItems: "center", justifyContent: "center",
-          padding: "28px 24px"
+          padding: "24px 24px"
         }},
           React.createElement("img", {src: bankLogos[b.key], alt: b.name, style:{maxWidth:"100%", maxHeight:110, objectFit:"contain"}, loading:"lazy"})
+        ) : inlineLogos[b.key] ? React.createElement("div", {style:{
+          background: "#fff",
+          flex: 1,
+          display: "flex", alignItems: "center", justifyContent: "center",
+          padding: "18px 24px",
+          minHeight: 130
+        }},
+          React.createElement(inlineLogos[b.key])
         ) : React.createElement("div", {style:{
           background: b.bg,
           color: b.color,
           flex: 1,
           display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
           padding: "28px 20px",
-          textAlign: "center",
-          position: "relative"
+          textAlign: "center"
         }},
-          React.createElement("div", {style:{
-            fontSize: b.short.length > 6 ? "1.8rem" : "2.4rem",
-            fontWeight: 900,
-            letterSpacing: b.short.length > 6 ? "-.01em" : ".02em",
-            fontFamily: "'Helvetica Neue', Arial, sans-serif",
-            lineHeight: 1,
-            textShadow: "0 2px 8px rgba(0,0,0,.15)"
-          }}, b.short),
-          b.tagline && React.createElement("div", {style:{
-            marginTop: 6,
-            fontSize: ".72rem",
-            fontWeight: 700,
-            letterSpacing: ".18em",
-            textTransform: "uppercase",
-            opacity: .9
-          }}, b.tagline)
+          React.createElement("div", {style:{fontSize:"2.4rem", fontWeight:900}}, b.short),
+          b.tagline && React.createElement("div", {style:{marginTop:6, fontSize:".72rem", fontWeight:700, letterSpacing:".18em", textTransform:"uppercase", opacity:.9}}, b.tagline)
         ),
         // Barra inferior "SIMULAR"
         React.createElement("div", {style:{
