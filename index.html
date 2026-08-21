@@ -2552,64 +2552,82 @@ function AboutPage() {
 
 // ===== CONTACT PAGE =====
 // ===== FINANCIAMENTO (bancos parceiros para simulacao) =====
-// SVG logos INLINE — funciona 100% online sem dependencia externa
-const BankLogoCaixa = () => React.createElement("svg", {viewBox:"0 0 220 100", xmlns:"http://www.w3.org/2000/svg", style:{width:"100%", height:"100%"}},
-  React.createElement("text", {x:"110", y:"48", textAnchor:"middle", fontFamily:"Arial Black, Arial, sans-serif", fontSize:"46", fontWeight:"900", fill:"#005CA9", letterSpacing:"-1"}, "CA"),
-  React.createElement("text", {x:"110", y:"48", textAnchor:"middle", fontFamily:"Arial Black, Arial, sans-serif", fontSize:"46", fontWeight:"900", fill:"#F39207", letterSpacing:"-1"}, "  I"),
-  React.createElement("text", {x:"110", y:"48", textAnchor:"middle", fontFamily:"Arial Black, Arial, sans-serif", fontSize:"46", fontWeight:"900", fill:"#005CA9", letterSpacing:"-1"}, "     XA"),
-  React.createElement("text", {x:"110", y:"75", textAnchor:"middle", fontFamily:"Arial, sans-serif", fontSize:"14", fontWeight:"600", fill:"#005CA9", letterSpacing:"1"}, "CAIXA ECONÔMICA FEDERAL")
+// SVG logos INLINE — funciona 100% online sem dependencia externa.
+// viewBox 300x100, preserveAspectRatio="xMidYMid meet" pra evitar distorcao.
+const svgProps = {viewBox:"0 0 300 100", xmlns:"http://www.w3.org/2000/svg", preserveAspectRatio:"xMidYMid meet", style:{width:"100%", height:"100%"}};
+
+const BankLogoCaixa = () => React.createElement("svg", svgProps,
+  // Texto CAIXA com I laranja usando tspan (funciona sem overlap)
+  React.createElement("text", {x:"150", y:"52", textAnchor:"middle", fontFamily:"Arial Black, Arial, sans-serif", fontSize:"52", fontWeight:"900", letterSpacing:"-2"},
+    React.createElement("tspan", {fill:"#005CA9"}, "CA"),
+    React.createElement("tspan", {fill:"#F39207"}, "I"),
+    React.createElement("tspan", {fill:"#005CA9"}, "XA")
+  ),
+  React.createElement("text", {x:"150", y:"82", textAnchor:"middle", fontFamily:"Arial, sans-serif", fontSize:"12", fontWeight:"600", fill:"#005CA9", letterSpacing:"1"}, "CAIXA ECONÔMICA FEDERAL")
 );
-const BankLogoBB = () => React.createElement("svg", {viewBox:"0 0 220 100", xmlns:"http://www.w3.org/2000/svg", style:{width:"100%", height:"100%"}},
-  // Losango amarelo com listras
-  React.createElement("g", {transform:"translate(45, 15)"},
+
+const BankLogoBB = () => React.createElement("svg", svgProps,
+  // Losango amarelo com BB centralizado
+  React.createElement("g", {transform:"translate(75, 15)"},
     React.createElement("polygon", {points:"35,0 70,35 35,70 0,35", fill:"#FFEF00", stroke:"#003399", strokeWidth:"3"}),
-    React.createElement("polygon", {points:"35,10 60,35 35,60 10,35", fill:"none", stroke:"#003399", strokeWidth:"3"}),
-    React.createElement("text", {x:"35", y:"44", textAnchor:"middle", fontFamily:"Arial Black, Arial, sans-serif", fontSize:"24", fontWeight:"900", fill:"#003399"}, "BB")
+    React.createElement("polygon", {points:"35,8 62,35 35,62 8,35", fill:"none", stroke:"#003399", strokeWidth:"2"}),
+    React.createElement("text", {x:"35", y:"46", textAnchor:"middle", fontFamily:"Arial Black, sans-serif", fontSize:"22", fontWeight:"900", fill:"#003399"}, "BB")
   ),
-  React.createElement("text", {x:"140", y:"38", textAnchor:"middle", fontFamily:"Arial, sans-serif", fontSize:"14", fontWeight:"700", fill:"#003399"}, "BANCO DO"),
-  React.createElement("text", {x:"140", y:"58", textAnchor:"middle", fontFamily:"Arial Black, Arial, sans-serif", fontSize:"18", fontWeight:"900", fill:"#003399"}, "BRASIL")
+  // Texto BANCO DO BRASIL a direita
+  React.createElement("text", {x:"175", y:"46", fontFamily:"Arial, sans-serif", fontSize:"14", fontWeight:"700", fill:"#003399"}, "BANCO DO"),
+  React.createElement("text", {x:"175", y:"64", fontFamily:"Arial Black, sans-serif", fontSize:"18", fontWeight:"900", fill:"#003399"}, "BRASIL")
 );
-const BankLogoBradesco = () => React.createElement("svg", {viewBox:"0 0 220 100", xmlns:"http://www.w3.org/2000/svg", style:{width:"100%", height:"100%"}},
-  // Quadrado vermelho com arvore branca estilizada
-  React.createElement("g", {transform:"translate(20, 8)"},
-    React.createElement("rect", {x:"0", y:"0", width:"60", height:"60", rx:"14", fill:"#CC092F"}),
-    // Icone arvore/haste simplificada (curva + haste vertical)
-    React.createElement("path", {d:"M 15 45 Q 30 15, 45 45", stroke:"#fff", strokeWidth:"4", fill:"none", strokeLinecap:"round"}),
-    React.createElement("rect", {x:"27", y:"30", width:"6", height:"20", fill:"#fff"}),
-    React.createElement("circle", {cx:"30", cy:"25", r:"3", fill:"#fff"})
+
+const BankLogoBradesco = () => React.createElement("svg", svgProps,
+  // Quadrado vermelho GRANDE com simbolo da arvore/pessoa
+  React.createElement("g", {transform:"translate(30, 10)"},
+    React.createElement("rect", {x:"0", y:"0", width:"80", height:"80", rx:"18", fill:"#CC092F"}),
+    // Pessoa estilizada (circulo cabeca + corpo em U aberto)
+    React.createElement("circle", {cx:"40", cy:"25", r:"6", fill:"#fff"}),
+    React.createElement("path", {d:"M 22 62 Q 22 38, 40 38 Q 58 38, 58 62", stroke:"#fff", strokeWidth:"5", fill:"none", strokeLinecap:"round"}),
+    React.createElement("rect", {x:"37", y:"38", width:"6", height:"28", fill:"#fff"})
   ),
-  React.createElement("text", {x:"150", y:"48", textAnchor:"middle", fontFamily:"Arial Black, Arial, sans-serif", fontSize:"26", fontWeight:"900", fill:"#333"}, "Bradesco")
+  React.createElement("text", {x:"200", y:"58", textAnchor:"middle", fontFamily:"Arial Black, sans-serif", fontSize:"32", fontWeight:"900", fill:"#333"}, "Bradesco")
 );
-const BankLogoItau = () => React.createElement("svg", {viewBox:"0 0 220 100", xmlns:"http://www.w3.org/2000/svg", style:{width:"100%", height:"100%"}},
-  React.createElement("rect", {x:"55", y:"10", width:"110", height:"80", rx:"18", fill:"#EC7000"}),
-  React.createElement("text", {x:"110", y:"65", textAnchor:"middle", fontFamily:"Arial Black, Arial, sans-serif", fontSize:"42", fontWeight:"900", fill:"#fff"}, "itaú")
+
+const BankLogoItau = () => React.createElement("svg", svgProps,
+  // Quadrado laranja arredondado centralizado com "itaú"
+  React.createElement("rect", {x:"90", y:"10", width:"120", height:"80", rx:"20", fill:"#EC7000"}),
+  React.createElement("text", {x:"150", y:"68", textAnchor:"middle", fontFamily:"Arial Black, sans-serif", fontSize:"48", fontWeight:"900", fill:"#fff"}, "itaú")
 );
-const BankLogoSantander = () => React.createElement("svg", {viewBox:"0 0 220 100", xmlns:"http://www.w3.org/2000/svg", style:{width:"100%", height:"100%"}},
-  React.createElement("rect", {x:"0", y:"0", width:"220", height:"100", fill:"#EC0000"}),
-  // Chama simplificada
-  React.createElement("g", {transform:"translate(20, 30)"},
-    React.createElement("ellipse", {cx:"20", cy:"20", rx:"18", ry:"12", fill:"none", stroke:"#fff", strokeWidth:"4"}),
-    React.createElement("path", {d:"M 20 8 Q 30 15, 25 25 Q 15 20, 20 8", fill:"#fff"})
+
+const BankLogoSantander = () => React.createElement("svg", svgProps,
+  // Fundo vermelho completo (300x100 pra ocupar todo o viewBox)
+  React.createElement("rect", {x:"0", y:"0", width:"300", height:"100", fill:"#EC0000"}),
+  // Simbolo da chama (circulo com detalhe)
+  React.createElement("g", {transform:"translate(30, 30)"},
+    React.createElement("ellipse", {cx:"25", cy:"20", rx:"22", ry:"14", fill:"none", stroke:"#fff", strokeWidth:"4"}),
+    React.createElement("path", {d:"M 15 20 Q 25 5, 35 20 Q 30 25, 20 25 Z", fill:"#fff"})
   ),
-  React.createElement("text", {x:"130", y:"58", textAnchor:"middle", fontFamily:"Arial, sans-serif", fontSize:"28", fontWeight:"600", fill:"#fff"}, "Santander")
+  React.createElement("text", {x:"180", y:"60", textAnchor:"middle", fontFamily:"Arial, sans-serif", fontSize:"32", fontWeight:"400", fill:"#fff"}, "Santander")
 );
-const BankLogoBanrisul = () => React.createElement("svg", {viewBox:"0 0 220 100", xmlns:"http://www.w3.org/2000/svg", style:{width:"100%", height:"100%"}},
-  React.createElement("rect", {x:"0", y:"0", width:"220", height:"100", fill:"#001E62"}),
-  // 3 hexagonos coloridos
-  React.createElement("g", {transform:"translate(15, 30)"},
-    React.createElement("polygon", {points:"15,0 30,8 30,25 15,33 0,25 0,8", fill:"none", stroke:"#8659A5", strokeWidth:"3"}),
-    React.createElement("polygon", {points:"38,0 53,8 53,25 38,33 23,25 23,8", fill:"none", stroke:"#4C6BE5", strokeWidth:"3"}),
-    React.createElement("polygon", {points:"27,20 42,28 42,45 27,53 12,45 12,28", fill:"none", stroke:"#26D3B4", strokeWidth:"3"})
+
+const BankLogoBanrisul = () => React.createElement("svg", svgProps,
+  // Fundo azul escuro completo
+  React.createElement("rect", {x:"0", y:"0", width:"300", height:"100", fill:"#001E62"}),
+  // 3 hexagonos coloridos formando triangulo (esquerda)
+  React.createElement("g", {transform:"translate(20, 25)"},
+    React.createElement("polygon", {points:"15,0 30,9 30,26 15,35 0,26 0,9", fill:"none", stroke:"#8659A5", strokeWidth:"2.5"}),
+    React.createElement("polygon", {points:"37,0 52,9 52,26 37,35 22,26 22,9", fill:"none", stroke:"#4C6BE5", strokeWidth:"2.5"}),
+    React.createElement("polygon", {points:"26,20 41,29 41,46 26,55 11,46 11,29", fill:"none", stroke:"#26D3B4", strokeWidth:"2.5"})
   ),
-  React.createElement("text", {x:"130", y:"62", textAnchor:"middle", fontFamily:"Arial, sans-serif", fontSize:"32", fontWeight:"400", fill:"#fff", letterSpacing:"-1"}, "banrisul")
+  // Texto banrisul
+  React.createElement("text", {x:"185", y:"62", textAnchor:"middle", fontFamily:"Arial, sans-serif", fontSize:"38", fontWeight:"300", fill:"#fff", letterSpacing:"-1"}, "banrisul")
 );
-const BankLogoSicoob = () => React.createElement("svg", {viewBox:"0 0 220 100", xmlns:"http://www.w3.org/2000/svg", style:{width:"100%", height:"100%"}},
-  // V triangular verde
-  React.createElement("g", {transform:"translate(25, 30)"},
-    React.createElement("polygon", {points:"0,0 40,0 20,35", fill:"#7ABC3F"}),
-    React.createElement("polygon", {points:"5,3 35,3 20,28", fill:"#00A651"})
+
+const BankLogoSicoob = () => React.createElement("svg", svgProps,
+  // V verde triangular (esquerda) + texto SICOOB (direita)
+  React.createElement("g", {transform:"translate(40, 30)"},
+    // Triangulo invertido verde
+    React.createElement("polygon", {points:"0,0 45,0 22.5,40", fill:"#7ABC3F"}),
+    React.createElement("polygon", {points:"7,4 38,4 22.5,32", fill:"#00A651"})
   ),
-  React.createElement("text", {x:"135", y:"62", textAnchor:"middle", fontFamily:"Arial Black, Arial, sans-serif", fontSize:"32", fontWeight:"900", fill:"#003641"}, "SICOOB")
+  React.createElement("text", {x:"185", y:"62", textAnchor:"middle", fontFamily:"Arial Black, sans-serif", fontSize:"38", fontWeight:"900", fill:"#003641", letterSpacing:"1"}, "SICOOB")
 );
 
 function FinancingPage({settings}) {
