@@ -1592,6 +1592,16 @@ const DEFAULT_SETTINGS = {
   certifBadgeSize: 70,
   certifBadgeOffsetY: 0,
   certifBadgeOffsetX: 0,
+  // Logos customizadas dos bancos na pagina de financiamento (URLs do Cloudinary)
+  bankLogos: {
+    caixa: "",
+    bb: "",
+    bradesco: "",
+    itau: "",
+    santander: "",
+    banrisul: "",
+    sicoob: ""
+  },
   watermarkEnabled: true,
   watermarkUrl: "",
   watermarkOpacity: 35,
@@ -2542,16 +2552,17 @@ function AboutPage() {
 
 // ===== CONTACT PAGE =====
 // ===== FINANCIAMENTO (bancos parceiros para simulacao) =====
-function FinancingPage() {
-  // Cada banco tem: nome, url do simulador, cor de fundo, cor do texto, iniciais/texto grande, fonte estilizada
+function FinancingPage({settings}) {
+  const bankLogos = (settings && settings.bankLogos) || {};
+  // Cada banco tem: nome, url do simulador, cor de fundo, cor do texto, iniciais/texto grande, fonte estilizada, key (pra logo customizada)
   const banks = [
-    { name: "Caixa Econômica Federal", short: "CAIXA", tagline: "Federal", url: "https://simuladorhabitacao.caixa.gov.br/home", bg: "linear-gradient(135deg, #0070c0, #005a9e)", color: "#fff", accentBg: "#f7941d", accentColor: "#fff" },
-    { name: "Banco do Brasil", short: "BB", tagline: "Banco do Brasil", url: "https://cim-simulador-imovelproprio.apps.bb.com.br/simulacao-imobiliario/sobre-imovel", bg: "linear-gradient(135deg, #fff100, #ffd100)", color: "#0033a0", accentBg: "#0033a0", accentColor: "#fff100" },
-    { name: "Bradesco", short: "Bradesco", tagline: "", url: "https://banco.bradesco/html/classic/produtos-servicos/emprestimo-e-financiamento/encontre-seu-credito/simuladores-imoveis.shtm", bg: "linear-gradient(135deg, #cc092f, #a30726)", color: "#fff", accentBg: "#fff", accentColor: "#cc092f" },
-    { name: "Itaú", short: "itaú", tagline: "", url: "https://credito-imobiliario.itau.com.br/", bg: "linear-gradient(135deg, #ec7000, #d16500)", color: "#003399", accentBg: "#003399", accentColor: "#ec7000" },
-    { name: "Santander", short: "Santander", tagline: "", url: "https://www.negociosimobiliarios.santander.com.br/negociosimobiliarios/#/dados-pessoais?goal=3&ic=lpcreditoimob", bg: "linear-gradient(135deg, #ec0000, #c30000)", color: "#fff", accentBg: "#fff", accentColor: "#ec0000" },
-    { name: "Banrisul", short: "Banrisul", tagline: "RS", url: "https://www.banrisul.com.br/brz/link/brzwswhn.html", bg: "linear-gradient(135deg, #005baa, #003f7f)", color: "#fff", accentBg: "#00a8e8", accentColor: "#fff" },
-    { name: "Sicoob", short: "sicoob", tagline: "", url: "https://www.sicoob.com.br/web/sicoob/credito-voce/financiamentoimobiliario#simulacao-secao", bg: "linear-gradient(135deg, #003641, #002128)", color: "#7dbc3f", accentBg: "#7dbc3f", accentColor: "#003641" }
+    { key: "caixa", name: "Caixa Econômica Federal", short: "CAIXA", tagline: "Federal", url: "https://simuladorhabitacao.caixa.gov.br/home", bg: "linear-gradient(135deg, #0070c0, #005a9e)", color: "#fff", accentBg: "#f7941d", accentColor: "#fff" },
+    { key: "bb", name: "Banco do Brasil", short: "BB", tagline: "Banco do Brasil", url: "https://cim-simulador-imovelproprio.apps.bb.com.br/simulacao-imobiliario/sobre-imovel", bg: "linear-gradient(135deg, #fff100, #ffd100)", color: "#0033a0", accentBg: "#0033a0", accentColor: "#fff100" },
+    { key: "bradesco", name: "Bradesco", short: "Bradesco", tagline: "", url: "https://banco.bradesco/html/classic/produtos-servicos/emprestimo-e-financiamento/encontre-seu-credito/simuladores-imoveis.shtm", bg: "linear-gradient(135deg, #cc092f, #a30726)", color: "#fff", accentBg: "#fff", accentColor: "#cc092f" },
+    { key: "itau", name: "Itaú", short: "itaú", tagline: "", url: "https://credito-imobiliario.itau.com.br/", bg: "linear-gradient(135deg, #ec7000, #d16500)", color: "#003399", accentBg: "#003399", accentColor: "#ec7000" },
+    { key: "santander", name: "Santander", short: "Santander", tagline: "", url: "https://www.negociosimobiliarios.santander.com.br/negociosimobiliarios/#/dados-pessoais?goal=3&ic=lpcreditoimob", bg: "linear-gradient(135deg, #ec0000, #c30000)", color: "#fff", accentBg: "#fff", accentColor: "#ec0000" },
+    { key: "banrisul", name: "Banrisul", short: "Banrisul", tagline: "RS", url: "https://www.banrisul.com.br/brz/link/brzwswhn.html", bg: "linear-gradient(135deg, #005baa, #003f7f)", color: "#fff", accentBg: "#00a8e8", accentColor: "#fff" },
+    { key: "sicoob", name: "Sicoob", short: "sicoob", tagline: "", url: "https://www.sicoob.com.br/web/sicoob/credito-voce/financiamentoimobiliario#simulacao-secao", bg: "linear-gradient(135deg, #003641, #002128)", color: "#7dbc3f", accentBg: "#7dbc3f", accentColor: "#003641" }
   ];
   return React.createElement("main", {className:"page-fade", style:{maxWidth:"1200px", margin:"0 auto", padding:"0 28px 100px"}},
     // Hero da pagina
@@ -2599,8 +2610,15 @@ function FinancingPage() {
         onMouseEnter: (e) => { e.currentTarget.style.transform = "translateY(-6px)"; e.currentTarget.style.boxShadow = "0 12px 30px rgba(0,0,0,.2)"; e.currentTarget.style.borderColor = "var(--red)"; },
         onMouseLeave: (e) => { e.currentTarget.style.transform = "translateY(0)"; e.currentTarget.style.boxShadow = "0 4px 12px rgba(0,0,0,.05)"; e.currentTarget.style.borderColor = "var(--border)"; }
       },
-        // Logo em texto estilizado
-        React.createElement("div", {style:{
+        // Logo (imagem customizada se configurada; senao texto estilizado)
+        bankLogos[b.key] ? React.createElement("div", {style:{
+          background: "#fff",
+          flex: 1,
+          display: "flex", alignItems: "center", justifyContent: "center",
+          padding: "28px 24px"
+        }},
+          React.createElement("img", {src: bankLogos[b.key], alt: b.name, style:{maxWidth:"100%", maxHeight:110, objectFit:"contain"}, loading:"lazy"})
+        ) : React.createElement("div", {style:{
           background: b.bg,
           color: b.color,
           flex: 1,
@@ -4459,6 +4477,27 @@ function SettingsPanel({settings, showToast}) {
   const heroBgFileRef = useRef(null);
   const aboutImgFileRef = useRef(null);
   const watermarkFileRef = useRef(null);
+  // Refs pra upload das logos dos bancos (pagina de financiamento)
+  const bankLogoRefs = { caixa: useRef(null), bb: useRef(null), bradesco: useRef(null), itau: useRef(null), santander: useRef(null), banrisul: useRef(null), sicoob: useRef(null) };
+  const [uploadingBank, setUploadingBank] = useState("");
+  const uploadBankLogo = async (file, bankKey) => {
+    if (!file) return;
+    setUploadingBank(bankKey);
+    try {
+      const fd = new FormData();
+      fd.append("file", file);
+      fd.append("upload_preset", CLOUDINARY_CONFIG.uploadPreset);
+      fd.append("folder", `g4-investimoveis/bancos`);
+      const res = await fetch(`https://api.cloudinary.com/v1_1/${CLOUDINARY_CONFIG.cloudName}/image/upload`, {method: "POST", body: fd});
+      const data = await res.json();
+      if (data.secure_url) {
+        setS(prev => ({...prev, bankLogos: {...(prev.bankLogos || {}), [bankKey]: data.secure_url}}));
+        showToast("Logo enviada!", "success");
+      } else { showToast("Erro no upload", "error"); }
+    } catch(e) { showToast("Erro no upload: " + e.message, "error"); }
+    setUploadingBank("");
+  };
+  const clearBankLogo = (bankKey) => setS(prev => ({...prev, bankLogos: {...(prev.bankLogos || {}), [bankKey]: ""}}));
   useEffect(() => {
     setS(settings || DEFAULT_SETTINGS);
     setSavedSnapshot(settings || DEFAULT_SETTINGS);
@@ -4868,6 +4907,37 @@ function SettingsPanel({settings, showToast}) {
         Field({key:"sm-fb", label:"Facebook (URL completa)", k:"facebookUrl", placeholder:"https://facebook.com/g4investimoveis"}),
         Field({key:"sm-yt", label:"YouTube (URL completa, opcional)", k:"youtubeUrl", placeholder:"https://youtube.com/@g4investimoveis"}),
         Field({key:"sm-tk", label:"TikTok (URL completa, opcional)", k:"tiktokUrl", placeholder:"https://tiktok.com/@g4investimoveis"})
+      ]}),
+      Sec({title: "🏦 Logos dos bancos (Página de Financiamento)", children: [
+        React.createElement("div", {key:"bank-help", className:"af-group full", style:{background:"rgba(59,130,246,.06)", border:"1px solid rgba(59,130,246,.2)", borderRadius:8, padding:"12px 16px", marginBottom:12, fontSize:".82rem", color:"#1e40af", lineHeight:1.5}},
+          "💡 Faça upload da logo oficial de cada banco (PNG transparente recomendado). Se algum ficar vazio, aparece o design de texto padrão no lugar da logo."
+        ),
+        ...[
+          {k:"caixa", n:"Caixa Econômica Federal"},
+          {k:"bb", n:"Banco do Brasil"},
+          {k:"bradesco", n:"Bradesco"},
+          {k:"itau", n:"Itaú"},
+          {k:"santander", n:"Santander"},
+          {k:"banrisul", n:"Banrisul"},
+          {k:"sicoob", n:"Sicoob"}
+        ].map(b => React.createElement("div", {key:"bank-"+b.k, className:"af-group full"},
+          React.createElement("label", {className:"af-label"}, "🏦 ", b.n),
+          React.createElement("div", {style:{display:"flex", gap:8, alignItems:"flex-start"}},
+            React.createElement("div", {style:{width:80, height:80, borderRadius:8, overflow:"hidden", border:"1px solid var(--border)", background:"#f1f5f9", flexShrink:0, display:"flex", alignItems:"center", justifyContent:"center"}},
+              ((s.bankLogos || {})[b.k])
+                ? React.createElement("img", {src: (s.bankLogos || {})[b.k], style:{maxWidth:"100%", maxHeight:"100%", objectFit:"contain"}})
+                : React.createElement("span", {style:{fontSize:".62rem", color:"var(--text-light)", textAlign:"center", padding:"0 4px"}}, "sem logo")
+            ),
+            React.createElement("div", {style:{flex:1}},
+              React.createElement("input", {className:"af-input", value: (s.bankLogos || {})[b.k] || "", onChange: e => setS(prev => ({...prev, bankLogos: {...(prev.bankLogos || {}), [b.k]: e.target.value}})), placeholder:"Cole URL da logo ou clique pra enviar", style:{marginBottom:8, fontSize:".85rem"}}),
+              React.createElement("div", {style:{display:"flex", gap:8}},
+                React.createElement("input", {ref: bankLogoRefs[b.k], type:"file", accept:"image/*", style:{display:"none"}, onChange: e => uploadBankLogo(e.target.files[0], b.k)}),
+                React.createElement("button", {type:"button", className:"btn-sm btn-outline-sm", onClick:()=>bankLogoRefs[b.k].current && bankLogoRefs[b.k].current.click(), disabled: uploadingBank === b.k}, uploadingBank === b.k ? "Enviando..." : "📤 Enviar"),
+                ((s.bankLogos || {})[b.k]) && React.createElement("button", {type:"button", className:"btn-sm btn-outline-sm", onClick:()=>clearBankLogo(b.k), style:{color:"var(--red)"}}, "Limpar")
+              )
+            )
+          )
+        ))
       ]}),
       React.createElement("div", {key:"agents", style:{marginBottom:32}},
         React.createElement("h3", {style:{fontFamily:"var(--font-display)",fontSize:"1.3rem",letterSpacing:".03em",textTransform:"uppercase",fontWeight:400,marginBottom:14,paddingBottom:8,borderBottom:"2px solid var(--border-light)", display:"flex", justifyContent:"space-between", alignItems:"center"}},
@@ -7680,7 +7750,7 @@ function App() {
     page === "about" && React.createElement(React.Fragment, null, React.createElement("div", {className: `page-offset ${isAdmin ? 'has-admin-bar' : ''}`}), React.createElement(AboutPage)),
     page === "privacy" && React.createElement(React.Fragment, null, React.createElement("div", {className: `page-offset ${isAdmin ? 'has-admin-bar' : ''}`}), React.createElement(PrivacyPage)),
     page === "contact" && React.createElement(React.Fragment, null, React.createElement("div", {className: `page-offset ${isAdmin ? 'has-admin-bar' : ''}`}), React.createElement(ContactPage, {settings})),
-    page === "financing" && React.createElement(React.Fragment, null, React.createElement("div", {className: `page-offset ${isAdmin ? 'has-admin-bar' : ''}`}), React.createElement(FinancingPage)),
+    page === "financing" && React.createElement(React.Fragment, null, React.createElement("div", {className: `page-offset ${isAdmin ? 'has-admin-bar' : ''}`}), React.createElement(FinancingPage, {settings})),
     page === "login" && React.createElement(AdminLogin, {setIsAdmin: setAdmin, setPage, showToast}),
     page === "admin" && isAdmin && React.createElement(AdminPanel, {properties: props, setProperties: setProps, showToast, settings, viewsMap}),
     page !== "admin" && React.createElement(FooterComp, {setPage, settings}),
