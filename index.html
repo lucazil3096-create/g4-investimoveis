@@ -967,27 +967,20 @@ button.footer-link { padding-left: 0; }
 .footer-social { display: flex; gap: 14px; margin-top: 22px; flex-wrap: wrap; }
 .footer-social a {
   width: 58px; height: 58px; border-radius: 14px;
-  background: linear-gradient(135deg, rgba(255,255,255,.14), rgba(255,255,255,.06));
-  border: 1.5px solid rgba(255,255,255,.15);
+  border: 1.5px solid rgba(255,255,255,.2);
   display: flex; align-items: center; justify-content: center;
   color: #fff;
   transition: all .3s var(--ease);
-  box-shadow: 0 4px 14px rgba(0,0,0,.25);
+  box-shadow: 0 4px 14px rgba(0,0,0,.3);
   position: relative; overflow: hidden;
 }
-.footer-social a::before {
-  content: ""; position: absolute; inset: 0;
-  background: linear-gradient(135deg, transparent, transparent);
-  transition: background .3s var(--ease);
-  z-index: 0;
-}
-.footer-social a svg { width: 26px; height: 26px; position: relative; z-index: 1; filter: drop-shadow(0 1px 2px rgba(0,0,0,.4)); }
-.footer-social a:hover { transform: translateY(-3px) scale(1.06); box-shadow: 0 8px 24px rgba(0,0,0,.5); border-color: rgba(255,255,255,.35); }
-/* Cores especificas de cada rede no hover */
-.footer-social a[title="Instagram"]:hover::before { background: linear-gradient(135deg, #f09433 0%, #e6683c 25%, #dc2743 50%, #cc2366 75%, #bc1888 100%); }
-.footer-social a[title="Facebook"]:hover::before { background: #1877f2; }
-.footer-social a[title="YouTube"]:hover::before { background: #ff0000; }
-.footer-social a[title="TikTok"]:hover::before { background: linear-gradient(135deg, #25f4ee, #000, #fe2c55); }
+.footer-social a svg { width: 26px; height: 26px; position: relative; z-index: 1; filter: drop-shadow(0 1px 2px rgba(0,0,0,.35)); }
+.footer-social a:hover { transform: translateY(-3px) scale(1.08); box-shadow: 0 10px 28px rgba(0,0,0,.55); border-color: rgba(255,255,255,.5); }
+/* Cores oficiais SEMPRE visiveis (background direto, nao no hover) */
+.footer-social a[title="Instagram"] { background: linear-gradient(135deg, #f09433 0%, #e6683c 25%, #dc2743 50%, #cc2366 75%, #bc1888 100%); }
+.footer-social a[title="Facebook"] { background: #1877f2; }
+.footer-social a[title="YouTube"] { background: #ff0000; }
+.footer-social a[title="TikTok"] { background: linear-gradient(135deg, #25f4ee, #000, #fe2c55); }
 .footer-bottom {
   border-top: 1px solid rgba(255,255,255,.06); max-width: var(--max-w);
   margin: 0 auto; padding: 24px 28px;
