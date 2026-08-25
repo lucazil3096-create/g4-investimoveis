@@ -7236,8 +7236,22 @@ function PropForm({property, onSave, onCancel, showToast, existingNeighborhoods,
       React.createElement("div", {className: "af-group"}, React.createElement("label", {className: "af-label"}, "Nome do proprietário"), React.createElement("input", {className: "af-input", type:"text", value:f.ownerName||"", onChange:e=>upd("ownerName",e.target.value), placeholder:"Ex: João da Silva"})),
       React.createElement("div", {className: "af-group"}, React.createElement("label", {className: "af-label"}, "Telefone do proprietário"), React.createElement("input", {className: "af-input", type:"tel", value:f.ownerPhone||"", onChange:e=>upd("ownerPhone",e.target.value), placeholder:"(44) 99999-9999"})),
       React.createElement("div", {className: "af-group"}, React.createElement("label", {className: "af-label"}, "CPF/CNPJ do proprietário (opcional)"), React.createElement("input", {className: "af-input", type:"text", value:f.ownerCpf||"", onChange:e=>upd("ownerCpf",e.target.value), placeholder:"000.000.000-00"})),
-      React.createElement("div", {className: "af-group"}, React.createElement("label", {className: "af-label"}, "Data de início do contrato"), React.createElement("input", {className: "af-input", type:"date", value:f.contractStart||"", onChange:e=>upd("contractStart",e.target.value)})),
-      React.createElement("div", {className: "af-group"}, React.createElement("label", {className: "af-label"}, "Data fim do contrato (opcional)"), React.createElement("input", {className: "af-input", type:"date", value:f.contractEnd||"", onChange:e=>upd("contractEnd",e.target.value)})),
+      React.createElement("div", {className: "af-group"}, React.createElement("label", {className: "af-label"}, "Data de início do contrato"), React.createElement("input", {className: "af-input", type:"date", value:f.contractStart||"", onChange:e=>{
+        const start = e.target.value;
+        upd("contractStart", start);
+        // Auto-preenche fim como +2 anos a partir do início
+        if (start) {
+          const d = new Date(start);
+          if (!isNaN(d.getTime())) {
+            d.setFullYear(d.getFullYear() + 2);
+            const yyyy = d.getFullYear();
+            const mm = String(d.getMonth()+1).padStart(2,"0");
+            const dd = String(d.getDate()).padStart(2,"0");
+            upd("contractEnd", yyyy+"-"+mm+"-"+dd);
+          }
+        }
+      }})),
+      React.createElement("div", {className: "af-group"}, React.createElement("label", {className: "af-label"}, "Data fim do contrato (auto: +2 anos)"), React.createElement("input", {className: "af-input", type:"date", value:f.contractEnd||"", onChange:e=>upd("contractEnd",e.target.value)})),
       React.createElement("div", {className: "af-group full"}, React.createElement("label", {className: "af-label"}, "Observações do contrato (opcional)"), React.createElement("textarea", {className: "af-input af-textarea", value:f.contractNotes||"", onChange:e=>upd("contractNotes",e.target.value), placeholder:"Ex: Comissão 6%, exclusividade 60 dias, autorização por email...", style:{minHeight:80}})),
       // Botao pra enviar pro G4 Sistema
       React.createElement("div", {className: "af-group full", style:{marginTop:4}},
