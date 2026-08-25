@@ -5719,6 +5719,19 @@ function InstagramPostMaker({property, settings, onClose, showToast}) {
     for (let i = 0; i < lines.length; i++) ctx.fillText(lines[i], x, y + i * lineHeight);
     return lines.length;
   };
+  // Mede quantas linhas o texto vai ocupar sem desenhar (pra pre-ajustar layout)
+  // Requer que ctx.font ja esteja setado com a mesma fonte que sera usada no draw
+  const measureLines = (ctx, text, maxWidth) => {
+    const words = String(text || "").split(/\s+/).filter(Boolean);
+    if (!words.length) return 0;
+    let cur = words[0], lines = 1;
+    for (let i = 1; i < words.length; i++) {
+      const test = cur + " " + words[i];
+      if (ctx.measureText(test).width > maxWidth) { lines++; cur = words[i]; }
+      else { cur = test; }
+    }
+    return lines;
+  };
 
   const drawClassic = async (ctx) => {
     const propImg = await loadImg(imgUrl);
@@ -5797,7 +5810,12 @@ function InstagramPostMaker({property, settings, onClose, showToast}) {
     // === Conteúdo inferior ===
     const padX = 60;
     const hasOldPrice = highlightBadge === "price_drop" && oldPriceStr;
-    let y = H - 480 - (hasOldPrice ? 60 : 0); // sobe conteudo quando tem preco antigo (caixa fica maior)
+    // Pre-mede o titulo pra subir o Y quando ele quebrar em 2+ linhas (senao empurra o preco pra fora)
+    const _titleSizePre = cs("titleSize", 64);
+    ctx.font = `800 ${_titleSizePre}px Arial, Helvetica, sans-serif`;
+    const _titleLinesPre = measureLines(ctx, (p.title || "Imóvel").toUpperCase(), W - padX*2);
+    const _titleExtra = Math.max(0, _titleLinesPre - 1) * (_titleSizePre + 4);
+    let y = H - 480 - (hasOldPrice ? 60 : 0) - _titleExtra;
 
     // CASA (tipo) - CUSTOMIZAVEL: cor + tamanho
     const typeSize = cs("typeSize", 32);
@@ -6155,7 +6173,11 @@ function InstagramPostMaker({property, settings, onClose, showToast}) {
 
     // === Conteúdo embaixo ===
     const padX = 60;
-    let y = H - 480;
+    // Pre-mede o titulo (Minimal usa 72px) pra subir o Y quando quebrar em 2+ linhas
+    ctx.font = "800 72px Arial, Helvetica, sans-serif";
+    const _minTitleLines = measureLines(ctx, (p.title || "Imóvel").toUpperCase(), W - padX*2);
+    const _minTitleExtra = Math.max(0, _minTitleLines - 1) * 76;
+    let y = H - 480 - _minTitleExtra;
 
     // Tag de tipo + localização
     ctx.fillStyle = t.accent;
