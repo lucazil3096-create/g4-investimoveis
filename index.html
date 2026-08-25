@@ -6658,18 +6658,18 @@ function InstagramPostMaker({property, settings, onClose, showToast}) {
     return renderMinimal(refP);
   };
 
-  return React.createElement("div", {style:{position:"fixed", inset:0, background:"rgba(0,0,0,.85)", zIndex:9999, display:"flex", alignItems:"center", justifyContent:"center", padding:20, overflowY:"auto"}, onClick: onClose},
-    React.createElement("div", {style:{background:"white", borderRadius:14, maxWidth:1100, width:"100%", maxHeight:"95vh", overflow:"auto", boxShadow:"0 20px 60px rgba(0,0,0,.5)"}, onClick: e => e.stopPropagation()},
-      React.createElement("div", {style:{padding:"22px 28px", background:"linear-gradient(135deg, var(--red), var(--red-dark))", color:"white", borderRadius:"14px 14px 0 0", display:"flex", justifyContent:"space-between", alignItems:"center", position:"sticky", top:0, zIndex:2}},
+  return React.createElement("div", {style:{position:"fixed", inset:0, background:"rgba(0,0,0,.85)", zIndex:9999, display:"flex", alignItems:"center", justifyContent:"center", padding:20}, onClick: onClose},
+    React.createElement("div", {style:{background:"white", borderRadius:14, maxWidth:1100, width:"100%", maxHeight:"95vh", height:"95vh", overflow:"hidden", boxShadow:"0 20px 60px rgba(0,0,0,.5)", display:"flex", flexDirection:"column"}, onClick: e => e.stopPropagation()},
+      React.createElement("div", {style:{padding:"22px 28px", background:"linear-gradient(135deg, var(--red), var(--red-dark))", color:"white", borderRadius:"14px 14px 0 0", display:"flex", justifyContent:"space-between", alignItems:"center", flexShrink:0}},
         React.createElement("div", null,
           React.createElement("h3", {style:{margin:0, fontSize:"1.3rem", fontWeight:800}}, "📸 Montagem para Instagram"),
           React.createElement("p", {style:{margin:0, fontSize:".82rem", opacity:.9, marginTop:4}}, p.title || "Imóvel", " · Ref. ", p.reference || "—")
         ),
         React.createElement("button", {onClick: onClose, style:{background:"rgba(255,255,255,.2)", border:"none", color:"white", width:36, height:36, borderRadius:"50%", cursor:"pointer", fontSize:"1.2rem", fontWeight:700}}, "✕")
       ),
-      React.createElement("div", {style:{display:"grid", gridTemplateColumns:"320px 1fr", gap:0}},
-        // Controles à esquerda
-        React.createElement("div", {style:{padding:"20px 22px", borderRight:"1px solid var(--border)", background:"var(--bg-accent)", minHeight:"400px"}},
+      React.createElement("div", {style:{display:"grid", gridTemplateColumns:"320px 1fr", gap:0, flex:1, overflow:"hidden", minHeight:0}},
+        // Controles à esquerda (rola sozinho, preview fica fixo)
+        React.createElement("div", {style:{padding:"20px 22px", borderRight:"1px solid var(--border)", background:"var(--bg-accent)", overflowY:"auto", overflowX:"hidden"}},
           React.createElement("h4", {style:{fontSize:".82rem", fontWeight:800, textTransform:"uppercase", letterSpacing:".08em", color:"var(--text-light)", marginBottom:10}}, "Formato"),
           React.createElement("div", {style:{display:"grid", gridTemplateColumns:"1fr 1fr", gap:8, marginBottom:18}},
             React.createElement("button", {onClick: () => setFormat("feed"), className: format === "feed" ? "btn-red" : "btn-outline-sm", style:{padding:"10px 12px", fontSize:".82rem"}}, "📐 Feed (1:1)"),
