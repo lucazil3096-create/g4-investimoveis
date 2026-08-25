@@ -5703,6 +5703,23 @@ function InstagramPostMaker({property, settings, onClose, showToast}) {
   };
 
   // Renderer Canvas API — desenha o template Classic
+  // Quebra texto em varias linhas respeitando maxWidth (igual ao HTML/CSS do preview)
+  // Retorna quantas linhas foram desenhadas — o caller usa (n-1)*lineHeight pra ajustar y depois
+  const wrapText = (ctx, text, x, y, maxWidth, lineHeight) => {
+    const words = String(text || "").split(/\s+/).filter(Boolean);
+    if (!words.length) return 0;
+    const lines = [];
+    let cur = words[0];
+    for (let i = 1; i < words.length; i++) {
+      const test = cur + " " + words[i];
+      if (ctx.measureText(test).width > maxWidth) { lines.push(cur); cur = words[i]; }
+      else { cur = test; }
+    }
+    lines.push(cur);
+    for (let i = 0; i < lines.length; i++) ctx.fillText(lines[i], x, y + i * lineHeight);
+    return lines.length;
+  };
+
   const drawClassic = async (ctx) => {
     const propImg = await loadImg(imgUrl);
     const logoImg = await loadImg(logo);
@@ -5795,8 +5812,8 @@ function InstagramPostMaker({property, settings, onClose, showToast}) {
     const titleSize = cs("titleSize", 64);
     ctx.fillStyle = cs("titleColor", "#fff");
     ctx.font = `800 ${titleSize}px Arial, Helvetica, sans-serif`;
-    ctx.fillText((p.title || "Imóvel").toUpperCase(), padX, y);
-    y += titleSize + 20;
+    const _tlLines = wrapText(ctx, (p.title || "Imóvel").toUpperCase(), padX, y, W - padX*2, titleSize + 4);
+    y += titleSize + 20 + (_tlLines - 1) * (titleSize + 4);
 
     // Localização - CUSTOMIZAVEL: cor + tamanho
     const locSize = cs("locSize", 30);
@@ -5986,8 +6003,8 @@ function InstagramPostMaker({property, settings, onClose, showToast}) {
     ctx.font = `800 ${titleFontSize}px Arial, Helvetica, sans-serif`;
     ctx.textAlign = "left";
     ctx.textBaseline = "top";
-    ctx.fillText((p.title || "Imóvel").toUpperCase(), padX, y);
-    y += titleFontSize + 14;
+    const _tlLinesMod = wrapText(ctx, (p.title || "Imóvel").toUpperCase(), padX, y, W - padX*2, titleFontSize + 4);
+    y += titleFontSize + 14 + (_tlLinesMod - 1) * (titleFontSize + 4);
 
     // Localização
     const locFontSize = isStory ? 30 : 24;
@@ -6152,8 +6169,8 @@ function InstagramPostMaker({property, settings, onClose, showToast}) {
     // Título grande
     ctx.fillStyle = "#fff";
     ctx.font = "800 72px Arial, Helvetica, sans-serif";
-    ctx.fillText((p.title || "Imóvel").toUpperCase(), padX, y);
-    y += 100;
+    const _tlLinesMin = wrapText(ctx, (p.title || "Imóvel").toUpperCase(), padX, y, W - padX*2, 76);
+    y += 100 + (_tlLinesMin - 1) * 76;
 
     // Features (chips com fundo escuro)
     ctx.font = "700 24px Arial, Helvetica, sans-serif";
@@ -6271,9 +6288,10 @@ function InstagramPostMaker({property, settings, onClose, showToast}) {
     y += cs("typeSize", 28) + 14;
     // Título
     ctx.fillStyle = cs("titleColor", "#fff");
-    ctx.font = `400 ${cs("titleSize", 54)}px Georgia, serif`;
-    ctx.fillText((p.title || "Imóvel").toUpperCase(), W/2, y);
-    y += cs("titleSize", 54) + 18;
+    const _elTitleSize = cs("titleSize", 54);
+    ctx.font = `400 ${_elTitleSize}px Georgia, serif`;
+    const _tlLinesEl = wrapText(ctx, (p.title || "Imóvel").toUpperCase(), W/2, y, W - 120, _elTitleSize + 4);
+    y += _elTitleSize + 18 + (_tlLinesEl - 1) * (_elTitleSize + 4);
     // Localização
     ctx.fillStyle = cs("locColor", "#d4d4d4");
     ctx.font = `300 ${cs("locSize", 26)}px Georgia, serif`;
@@ -6356,9 +6374,10 @@ function InstagramPostMaker({property, settings, onClose, showToast}) {
     y += cs("typeSize", 30) + 12;
     // Título
     ctx.fillStyle = cs("titleColor", "#1a1a1a");
-    ctx.font = `900 ${cs("titleSize", 60)}px Arial, sans-serif`;
-    ctx.fillText((p.title || "Imóvel").toUpperCase(), padX, y);
-    y += cs("titleSize", 60) + 16;
+    const _prTitleSize = cs("titleSize", 60);
+    ctx.font = `900 ${_prTitleSize}px Arial, sans-serif`;
+    const _tlLinesPr = wrapText(ctx, (p.title || "Imóvel").toUpperCase(), padX, y, W - padX*2, _prTitleSize + 4);
+    y += _prTitleSize + 16 + (_tlLinesPr - 1) * (_prTitleSize + 4);
     // Localização
     ctx.fillStyle = cs("locColor", "#555");
     ctx.font = `500 ${cs("locSize", 28)}px Arial, sans-serif`;
