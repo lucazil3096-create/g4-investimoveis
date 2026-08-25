@@ -4206,7 +4206,7 @@ function AdminPanel({properties, setProperties, showToast, settings, viewsMap}) 
       const max = nums.length > 0 ? Math.max(...nums) : 0;
       return String(max + 1).padStart(3, "0");
     })();
-    setEditProp({id:genId(),reference:nextRef,title:"",type:"Casa",transaction:"Venda",price:0,oldPrice:0,priceReduced:false,showPrice:true,watermark:true,area:0,builtArea:0,bedrooms:0,suites:0,bathrooms:0,garages:0,city:"",neighborhood:"",address:"",number:"",lat:"",lng:"",streetHeading:0,streetPitch:0,description:"",posicionamento:"",tipoConstrucao:"",localizacaoLote:"",features:[],rooms:[],images:[],sold:false,reserved:false,featured:false,active:true,createdAt:new Date().toISOString().split("T")[0]});
+    setEditProp({id:genId(),reference:nextRef,title:"",type:"Casa",transaction:"Venda",price:0,oldPrice:0,priceReduced:false,showPrice:true,watermark:true,area:0,builtArea:0,bedrooms:0,suites:0,bathrooms:0,garages:0,city:"",neighborhood:"",address:"",number:"",lat:"",lng:"",streetHeading:0,streetPitch:0,description:"",posicionamento:"",tipoConstrucao:"",localizacaoLote:"",features:[],rooms:[],images:[],sold:false,reserved:false,featured:false,active:true,createdAt:new Date().toISOString().split("T")[0],ownerName:"",ownerPhone:"",ownerCpf:"",contractStart:"",contractEnd:"",contractNotes:""});
     setShowForm(true);
   };
   const save = async prop => {
@@ -7227,6 +7227,43 @@ function PropForm({property, onSave, onCancel, showToast, existingNeighborhoods,
       React.createElement("div", {className: "af-group"}, React.createElement("label", {className: "af-label"}, "Tipo de construção"), React.createElement("input", {className: "af-input", type:"text", value:f.tipoConstrucao||"", onChange:e=>upd("tipoConstrucao",e.target.value), placeholder:"Ex: Alvenaria"})),
       React.createElement("div", {className: "af-group"}, React.createElement("label", {className: "af-label"}, "Localização (Lote/Quadra)"), React.createElement("input", {className: "af-input", type:"text", value:f.localizacaoLote||"", onChange:e=>upd("localizacaoLote",e.target.value), placeholder:"Ex: L. 01 - Q. 04"})),
       React.createElement("div", {className: "af-group full"}, React.createElement("label", {className: "af-label"}, "Descrição (texto livre)"), React.createElement("textarea", {className: "af-input af-textarea", value:f.description, onChange:e=>upd("description",e.target.value), placeholder:"Texto livre — diferenciais, vizinhança, mensagem extra...\n\nEx: Faça hoje mesmo uma visita, vale a pena conferir!", style:{minHeight:150}})),
+
+      // ===== DADOS DO PROPRIETARIO E CONTRATO (uso interno - vai pro G4 Sistema) =====
+      ST({icon: I.user || I.check, title: "🔒 Dados do Proprietário e Contrato", sub: "Uso interno — NÃO aparece no site público. Serve pra você exportar pro G4 Sistema (g4sistema.fun)."}),
+      React.createElement("div", {className: "af-group full", style:{background:"rgba(217,119,6,.06)", border:"1px solid rgba(217,119,6,.25)", borderRadius:8, padding:"12px 16px", marginBottom:8, fontSize:".78rem", color:"#78350f", lineHeight:1.5}},
+        "🔐 Estes dados ficam salvos apenas no seu painel administrativo e no G4 Sistema. Nenhum visitante do site vê essas informações."
+      ),
+      React.createElement("div", {className: "af-group"}, React.createElement("label", {className: "af-label"}, "Nome do proprietário"), React.createElement("input", {className: "af-input", type:"text", value:f.ownerName||"", onChange:e=>upd("ownerName",e.target.value), placeholder:"Ex: João da Silva"})),
+      React.createElement("div", {className: "af-group"}, React.createElement("label", {className: "af-label"}, "Telefone do proprietário"), React.createElement("input", {className: "af-input", type:"tel", value:f.ownerPhone||"", onChange:e=>upd("ownerPhone",e.target.value), placeholder:"(44) 99999-9999"})),
+      React.createElement("div", {className: "af-group"}, React.createElement("label", {className: "af-label"}, "CPF/CNPJ do proprietário (opcional)"), React.createElement("input", {className: "af-input", type:"text", value:f.ownerCpf||"", onChange:e=>upd("ownerCpf",e.target.value), placeholder:"000.000.000-00"})),
+      React.createElement("div", {className: "af-group"}, React.createElement("label", {className: "af-label"}, "Data de início do contrato"), React.createElement("input", {className: "af-input", type:"date", value:f.contractStart||"", onChange:e=>upd("contractStart",e.target.value)})),
+      React.createElement("div", {className: "af-group"}, React.createElement("label", {className: "af-label"}, "Data fim do contrato (opcional)"), React.createElement("input", {className: "af-input", type:"date", value:f.contractEnd||"", onChange:e=>upd("contractEnd",e.target.value)})),
+      React.createElement("div", {className: "af-group full"}, React.createElement("label", {className: "af-label"}, "Observações do contrato (opcional)"), React.createElement("textarea", {className: "af-input af-textarea", value:f.contractNotes||"", onChange:e=>upd("contractNotes",e.target.value), placeholder:"Ex: Comissão 6%, exclusividade 60 dias, autorização por email...", style:{minHeight:80}})),
+      // Botao pra enviar pro G4 Sistema
+      React.createElement("div", {className: "af-group full", style:{marginTop:4}},
+        React.createElement("button", {
+          type:"button",
+          onClick: () => {
+            if (!f.ownerName || !f.ownerPhone) { showToast("Preencha pelo menos Nome e Telefone do proprietário", "error"); return; }
+            const data = {
+              ref: f.reference, tipo: f.type, titulo: f.title,
+              transacao: f.transaction, preco: f.price,
+              endereco: [f.address, f.number].filter(Boolean).join(", "),
+              bairro: f.neighborhood, cidade: f.city,
+              proprietario: { nome: f.ownerName, telefone: f.ownerPhone, cpf: f.ownerCpf },
+              contrato: { inicio: f.contractStart, fim: f.contractEnd, obs: f.contractNotes }
+            };
+            // Copia JSON pro clipboard pra colar no G4 Sistema
+            navigator.clipboard.writeText(JSON.stringify(data, null, 2))
+              .then(() => showToast("✅ Dados copiados! Cole no G4 Sistema.", "success"))
+              .catch(() => showToast("Erro ao copiar. Copie manualmente:\n" + JSON.stringify(data), "error"));
+            // Abre o G4 Sistema em nova aba
+            window.open("https://g4sistema.fun/", "_blank", "noopener");
+          },
+          className:"btn-red",
+          style:{padding:"12px 20px", fontSize:".9rem", fontWeight:800, width:"100%", display:"flex", alignItems:"center", justifyContent:"center", gap:8}
+        }, "📤 Copiar dados e abrir G4 Sistema")
+      ),
 
       ST({icon: I.grid, title: "Cômodos", sub: "Adicione os cômodos. Para sobrado/prédio, escolha o andar (opcional). Se deixar 'Sem andar' em tudo, aparece em lista simples como uma casa térrea."}),
       React.createElement("div", {className: "af-group full"},
