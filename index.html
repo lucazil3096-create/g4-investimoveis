@@ -4190,14 +4190,101 @@ function AdminPanel({properties, setProperties, showToast, settings, viewsMap}) 
       return {ok:false, error: e.message};
     }
   };
+  // Monta texto descritivo completo do imovel (vai junto no ZIP como .txt pra colar em OLX/WhatsApp/etc)
+  const buildPropertyText = (p) => {
+    const fmtPrice = (v) => v ? "R$ " + Number(v).toLocaleString("pt-BR", {minimumFractionDigits:2, maximumFractionDigits:2}) : "Sob consulta";
+    const L = [];
+    L.push("=".repeat(60));
+    L.push((p.title || "Imóvel").toUpperCase());
+    L.push("=".repeat(60));
+    L.push("");
+    if (p.reference) L.push("Referência: " + p.reference);
+    L.push("Tipo: " + (p.type || "—"));
+    L.push("Transação: " + (p.transaction || "—"));
+    L.push("Valor: " + fmtPrice(p.price));
+    if (p.oldPrice && p.priceReduced) L.push("Valor anterior: " + fmtPrice(p.oldPrice) + "  (BAIXOU O PREÇO)");
+    L.push("");
+    // Localizacao
+    L.push("📍 LOCALIZAÇÃO");
+    L.push("-".repeat(60));
+    const enderecoLinha = [p.address, p.number].filter(Boolean).join(", ");
+    if (enderecoLinha) L.push("Endereço: " + enderecoLinha);
+    if (p.neighborhood) L.push("Bairro: " + p.neighborhood);
+    if (p.city) L.push("Cidade: " + p.city + "/PR");
+    if (p.localizacaoLote) L.push("Localização (lote): " + p.localizacaoLote);
+    if (p.posicionamento) L.push("Posicionamento: " + p.posicionamento);
+    L.push("");
+    // Ficha tecnica
+    L.push("🏠 FICHA TÉCNICA");
+    L.push("-".repeat(60));
+    if (p.bedrooms) L.push("Quartos: " + p.bedrooms + (p.suites ? " (sendo " + p.suites + " suíte" + (p.suites > 1 ? "s" : "") + ")" : ""));
+    if (p.bathrooms) L.push("Banheiros: " + p.bathrooms);
+    if (p.garages) L.push("Vagas de garagem: " + p.garages);
+    if (p.area) L.push("Área do terreno: " + p.area + " m²");
+    if (p.builtArea) L.push("Área construída: " + p.builtArea + " m²");
+    if (p.tipoConstrucao) L.push("Tipo de construção: " + p.tipoConstrucao);
+    L.push("");
+    // Comodos
+    if (p.rooms && p.rooms.length > 0) {
+      L.push("🛋️ DEMAIS CÔMODOS");
+      L.push("-".repeat(60));
+      // Agrupa por andar
+      const byFloor = {};
+      p.rooms.forEach(r => {
+        const key = r.floor || "";
+        if (!byFloor[key]) byFloor[key] = [];
+        byFloor[key].push(r);
+      });
+      const floorOrder = ["Térreo","1º Andar","2º Andar","3º Andar","4º Andar","5º Andar","Cobertura","Sótão","Mezanino","Sub-solo","Sub-solo 2",""];
+      floorOrder.forEach(fl => {
+        if (!byFloor[fl]) return;
+        if (fl) L.push("  [" + fl + "]");
+        byFloor[fl].forEach(r => {
+          const qty = r.qty && r.qty > 1 ? " (" + r.qty + "x)" : "";
+          L.push("  • " + (r.name || "Cômodo") + qty);
+        });
+      });
+      L.push("");
+    }
+    // Beneficios / caracteristicas
+    if (p.features && p.features.length > 0) {
+      L.push("✨ BENFEITORIAS / CARACTERÍSTICAS");
+      L.push("-".repeat(60));
+      p.features.forEach(f => L.push("  ✓ " + f));
+      L.push("");
+    }
+    // Descricao livre
+    if (p.description && p.description.trim()) {
+      L.push("📝 DESCRIÇÃO");
+      L.push("-".repeat(60));
+      L.push(p.description.trim());
+      L.push("");
+    }
+    // Contato
+    L.push("📞 CONTATO");
+    L.push("-".repeat(60));
+    if (settings.ownerName) L.push(settings.ownerName + " — Corretor de Imóveis");
+    if (settings.creci) L.push("CRECI-PR " + settings.creci);
+    if (settings.phones) L.push("Telefone(s): " + settings.phones);
+    if (settings.whatsappNumber) L.push("WhatsApp: https://wa.me/" + settings.whatsappNumber);
+    if (settings.instagramUrl) L.push("Instagram: " + settings.instagramUrl);
+    if (settings.email) L.push("Email: " + settings.email);
+    L.push("");
+    L.push("=".repeat(60));
+    L.push("Gerado em " + new Date().toLocaleString("pt-BR"));
+    return L.join("\r\n");
+  };
+
   const downloadPhotos = async (p) => {
     if (!p.images || p.images.length === 0) { showToast("Nenhuma foto para baixar","error"); return; }
     if (typeof JSZip === "undefined") { showToast("Biblioteca ZIP nao carregou. Recarregue a pagina.","error"); return; }
-    showToast(`Preparando ZIP com ${p.images.length} foto(s)...`, "success");
+    showToast(`Preparando ZIP com ${p.images.length} foto(s) + descrição...`, "success");
     try {
       const zip = new JSZip();
       const safeName = (p.title || "imovel").replace(/[^a-zA-Z0-9\-_ ]/g,"_").trim() || "imovel";
       const folder = zip.folder(safeName);
+      // Adiciona o TXT com a descricao completa dentro do ZIP
+      folder.file("DESCRICAO.txt", "﻿" + buildPropertyText(p));
       // Baixa todas as imagens em paralelo (limitado pra nao travar)
       const CONCURRENCY = 6;
       let idx = 0;
