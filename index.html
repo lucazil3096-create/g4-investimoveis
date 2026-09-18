@@ -263,15 +263,16 @@ a { text-decoration: none; color: inherit; }
   max-width: var(--max-w); margin: 0 auto; padding: 0 28px;
   display: flex; align-items: center; justify-content: space-between; height: var(--header-h);
 }
-.brand-wrap { display: flex; align-items: center; gap: 16px; min-width: 0; height: 100%; overflow: visible; }
-.logo-visual { position: relative; display: inline-flex; align-items: center; min-width: 0; height: 100%; overflow: visible; }
+.brand-wrap { display: flex; align-items: center; gap: 16px; min-width: 0; height: 100%; overflow: visible; pointer-events: none; }
+.logo-visual { position: relative; display: inline-flex; align-items: center; min-width: 0; height: 100%; overflow: visible; pointer-events: none; }
 .logo-click-target {
   position: absolute; left: 0; top: 50%; transform: translateY(-50%); z-index: 2;
   width: min(220px, 100%); height: min(80px, 100%); padding: 0;
-  border: 0; background: transparent; cursor: pointer;
+  border: 0; background: transparent; cursor: pointer; pointer-events: auto;
 }
-.logo-img { height: 96px; width: auto; transform: translateY(var(--logo-offset-y, 0)); transition: transform .3s var(--ease); filter: drop-shadow(0 0 1px rgba(255,255,255,.3)); flex-shrink: 0; object-fit: contain; }
-.certif-badge-img { transition: transform .3s var(--ease); flex-shrink: 0; object-fit: contain; }
+.logo-img { height: 96px; width: auto; transform: translateY(var(--logo-offset-y, 0)); transition: transform .3s var(--ease); filter: drop-shadow(0 0 1px rgba(255,255,255,.3)); flex-shrink: 0; object-fit: contain; pointer-events: none; }
+.certif-badge-img { transition: transform .3s var(--ease); flex-shrink: 0; object-fit: contain; pointer-events: none; }
+.certif-badge-placeholder { pointer-events: auto; }
 /* ===== MOBILE - garantir que caiba (sem overflow horizontal) ===== */
 @media(max-width:768px) {
   .header-inner { padding: 8px 14px !important; }
