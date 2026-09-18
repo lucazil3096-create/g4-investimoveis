@@ -263,6 +263,9 @@ a { text-decoration: none; color: inherit; }
   max-width: var(--max-w); margin: 0 auto; padding: 0 28px;
   display: flex; align-items: center; justify-content: space-between; height: var(--header-h);
 }
+@media(min-width:769px) {
+  .header-inner { overflow: clip; }
+}
 .logo-link { display: flex; align-items: center; gap: 16px; min-width: 0; }
 .logo-img { height: 96px; width: auto; transition: transform .3s var(--ease); filter: drop-shadow(0 0 1px rgba(255,255,255,.3)); flex-shrink: 0; object-fit: contain; }
 .certif-badge-img { transition: transform .3s var(--ease); flex-shrink: 0; object-fit: contain; }
@@ -310,7 +313,7 @@ a { text-decoration: none; color: inherit; }
 }
 .hero-content {
   position: relative; z-index: 2; max-width: var(--max-w); margin: 0 auto;
-  padding: 120px 28px 80px; width: 100%;
+  padding: max(120px, calc(var(--header-h) + 24px)) 28px 80px; width: 100%;
 }
 .hero-tag {
   display: inline-flex; align-items: center; gap: 10px;
@@ -1218,7 +1221,7 @@ button.footer-link { padding-left: 0; }
   .nav-cta { margin-left: 0; text-align: center; }
   .mobile-toggle { display: flex; }
   .hero { min-height: auto; padding-top: 0; }
-  .hero-content { padding: 120px 20px 60px; }
+  .hero-content { padding: max(120px, calc(var(--header-h) + 20px)) 20px 60px; }
   .hero-stats { gap: 28px; flex-wrap: wrap; }
   .hero-stat-num { font-size: 1.8rem; }
   .search-row { flex-direction: column; }
@@ -1776,6 +1779,25 @@ function Toast({msg, type, onClose}) {
 }
 
 // ===== HEADER =====
+function getSafeHeaderHeight(settings, mobile) {
+  const s = settings || {};
+  const configuredHeight = mobile ? (s.headerHeightMobile || 108) : (s.headerHeight || 110);
+  const logoHeight = mobile ? (s.logoSizeMobile || 92) : (s.logoSize || 96);
+  const logoOffset = mobile
+    ? (typeof s.logoOffsetYMobile === "number" ? s.logoOffsetYMobile : 0)
+    : (typeof s.logoOffsetY === "number" ? s.logoOffsetY : 0);
+  const badgeHeight = mobile ? (s.certifBadgeSizeMobile || 118) : (s.certifBadgeSize || 70);
+  const badgeOffset = mobile
+    ? (typeof s.certifBadgeOffsetYMobile === "number" ? s.certifBadgeOffsetYMobile : 0)
+    : (typeof s.certifBadgeOffsetY === "number" ? s.certifBadgeOffsetY : 0);
+  const safeGap = 14;
+  const logoMinimum = logoHeight + (Math.abs(logoOffset) * 2) + safeGap;
+  const badgeMinimum = s.certifBadgeUrl
+    ? badgeHeight + (Math.abs(logoOffset + badgeOffset) * 2) + safeGap
+    : 0;
+  return Math.max(configuredHeight, logoMinimum, badgeMinimum);
+}
+
 function Header({page, setPage, scrolled, isAdmin, setIsAdmin, settings}) {
   const logoSrc = (settings && settings.logoUrl) || LOGO_SRC;
   const [menuOpen, setMenuOpen] = useState(false);
@@ -1788,7 +1810,6 @@ function Header({page, setPage, scrolled, isAdmin, setIsAdmin, settings}) {
   }, []);
   const s = settings || {};
   // Desktop
-  const hdrHeight = s.headerHeight || 110;
   const logoH = s.logoSize || 96;
   const logoOffY = typeof s.logoOffsetY === "number" ? s.logoOffsetY : 0;
   const certifUrl = s.certifBadgeUrl || "";
@@ -1796,7 +1817,6 @@ function Header({page, setPage, scrolled, isAdmin, setIsAdmin, settings}) {
   const certifOffY = typeof s.certifBadgeOffsetY === "number" ? s.certifBadgeOffsetY : 0;
   const certifOffX = typeof s.certifBadgeOffsetX === "number" ? s.certifBadgeOffsetX : 0;
   // Mobile (independente)
-  const hdrHeightM = s.headerHeightMobile || 108;
   const logoHM = s.logoSizeMobile || 92;
   const logoOffYM = typeof s.logoOffsetYMobile === "number" ? s.logoOffsetYMobile : 0;
   const certifHM = s.certifBadgeSizeMobile || 118;
@@ -1813,7 +1833,7 @@ function Header({page, setPage, scrolled, isAdmin, setIsAdmin, settings}) {
     return () => mq.removeEventListener ? mq.removeEventListener("change", handler) : mq.removeListener(handler);
   }, []);
   // Valores efetivos (mobile OU desktop)
-  const useHdr = mobileMode ? hdrHeightM : hdrHeight;
+  const useHdr = getSafeHeaderHeight(s, mobileMode);
   const useLogoH = mobileMode ? logoHM : logoH;
   const useLogoOffY = mobileMode ? logoOffYM : logoOffY;
   const useCertifH = mobileMode ? certifHM : certifH;
@@ -4849,7 +4869,7 @@ function SettingsPanel({settings, showToast}) {
             React.createElement("span", null, "⬇ Descer (+60px)")
           ),
           React.createElement("div", {style:{marginTop:10, padding:"6px 10px", background:"rgba(59,130,246,.08)", borderRadius:4, fontSize:".72rem", color:"#1e40af", lineHeight:1.4}},
-            "💡 Se sua logo tá saindo pra fora da tarja, aumenta a ", React.createElement("strong",null,"altura da tarja preta"), " ou usa o ", React.createElement("strong",null,"deslocamento vertical"), " pra centralizar. ",
+            "💡 A tarja preta aumenta automaticamente quando necessário para manter a logo e a área de clique dentro do cabeçalho. ",
             React.createElement("strong",null,"Esses controles valem só pra desktop."), " Ajustes pra celular ficam abaixo."
           )
         ),
@@ -4927,7 +4947,7 @@ function SettingsPanel({settings, showToast}) {
             )
           ),
           React.createElement("div", {style:{marginTop:10, padding:"6px 10px", background:"rgba(236,112,0,.08)", borderRadius:4, fontSize:".72rem", color:"#7a3a00", lineHeight:1.4}},
-            "💡 Esses ajustes só afetam quem visita pelo ", React.createElement("strong",null,"celular"), " (tela ≤ 768px). Não interferem no que você configurou no desktop acima."
+            "💡 A tarja também aumenta automaticamente no celular para impedir que a logo cubra o conteúdo. Esses ajustes só afetam quem visita pelo ", React.createElement("strong",null,"celular"), " (tela ≤ 768px)."
           )
         ),
         // ===== SELO DE CERTIFICAÇÃO (CRECI/CNAI - imagem ao lado da logo) =====
@@ -7846,11 +7866,17 @@ function App() {
     return () => { if (typeof unsub === 'function') unsub(); };
   }, []);
 
-  // Aplica a altura do header como CSS variable (--header-h) pra que todo o conteudo
-  // se desloque automaticamente quando o usuario mudar o tamanho da tarja preta
+  // Mantem todo o conteudo abaixo da altura real do header. A altura minima cresce
+  // automaticamente com logo, selo e deslocamentos, impedindo sobreposicao clicavel.
   useEffect(() => {
-    const h = (settings && settings.headerHeight) || 110;
-    document.documentElement.style.setProperty("--header-h", h + "px");
+    const mq = window.matchMedia("(max-width: 768px)");
+    const applyHeaderHeight = () => {
+      const h = getSafeHeaderHeight(settings, mq.matches);
+      document.documentElement.style.setProperty("--header-h", h + "px");
+    };
+    applyHeaderHeight();
+    mq.addEventListener ? mq.addEventListener("change", applyHeaderHeight) : mq.addListener(applyHeaderHeight);
+    return () => mq.removeEventListener ? mq.removeEventListener("change", applyHeaderHeight) : mq.removeListener(applyHeaderHeight);
   }, [settings]);
 
   useEffect(() => {
