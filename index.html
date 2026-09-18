@@ -263,8 +263,13 @@ a { text-decoration: none; color: inherit; }
   max-width: var(--max-w); margin: 0 auto; padding: 0 28px;
   display: flex; align-items: center; justify-content: space-between; height: var(--header-h);
 }
-.brand-wrap { display: flex; align-items: center; gap: 16px; min-width: 0; height: 100%; overflow: hidden; }
-.logo-link { display: inline-flex; align-items: center; min-width: 0; height: 100%; overflow: hidden; cursor: pointer; }
+.brand-wrap { display: flex; align-items: center; gap: 16px; min-width: 0; height: 100%; overflow: visible; }
+.logo-visual { position: relative; display: inline-flex; align-items: center; min-width: 0; height: 100%; overflow: visible; }
+.logo-click-target {
+  position: absolute; left: 0; top: 50%; transform: translateY(-50%); z-index: 2;
+  width: min(220px, 100%); height: min(80px, 100%); padding: 0;
+  border: 0; background: transparent; cursor: pointer;
+}
 .logo-img { height: 96px; width: auto; transform: translateY(var(--logo-offset-y, 0)); transition: transform .3s var(--ease); filter: drop-shadow(0 0 1px rgba(255,255,255,.3)); flex-shrink: 0; object-fit: contain; }
 .certif-badge-img { transition: transform .3s var(--ease); flex-shrink: 0; object-fit: contain; }
 /* ===== MOBILE - garantir que caiba (sem overflow horizontal) ===== */
@@ -274,7 +279,7 @@ a { text-decoration: none; color: inherit; }
   .certif-badge-img { max-width: 40vw; object-fit: contain; }
   .brand-wrap { gap: 10px; }
 }
-.logo-link:hover .logo-img { transform: translateY(var(--logo-offset-y, 0)) scale(1.04); }
+.logo-visual:has(.logo-click-target:hover) .logo-img { transform: translateY(var(--logo-offset-y, 0)) scale(1.04); }
 .nav { display: flex; align-items: center; gap: 4px; }
 .nav-link {
   padding: 11px 22px; border-radius: 8px; font-weight: 500; font-size: 1.02rem;
@@ -1823,8 +1828,9 @@ function Header({page, setPage, scrolled, isAdmin, setIsAdmin, settings}) {
   return React.createElement("header", {className: `header ${scrolled ? 'scrolled' : ''} ${showAdminBar ? 'has-admin-bar' : ''}`},
     React.createElement("div", {className: "header-inner", style: {height: `${useHdr}px`}},
       React.createElement("div", {className: "brand-wrap"},
-        React.createElement("a", {className: "logo-link", onClick: (e) => { e.preventDefault(); nav("home"); }, href: "#", "aria-label": "Ir para o início"},
-          React.createElement("img", {src: logoSrc, alt: "G4 Investimóveis", className: "logo-img", style: {height: `${useLogoH}px`, maxHeight: "none", "--logo-offset-y": `${useLogoOffY}px`}})
+        React.createElement("div", {className: "logo-visual"},
+          React.createElement("img", {src: logoSrc, alt: "G4 Investimóveis", className: "logo-img", style: {height: `${useLogoH}px`, maxHeight: "none", "--logo-offset-y": `${useLogoOffY}px`}}),
+          React.createElement("button", {type: "button", className: "logo-click-target", onClick: () => nav("home"), "aria-label": "Ir para o início"})
         ),
         certifUrl
           ? React.createElement("img", {src: certifUrl, alt: "Certificações CRECI/CNAI", className: "certif-badge-img", style: {height: `${useCertifH}px`, width:"auto", maxHeight:"none", transform: `translate(${useCertifOffX}px, ${useCertifOffY}px)`, filter:"drop-shadow(0 1px 2px rgba(0,0,0,.4))"}})
