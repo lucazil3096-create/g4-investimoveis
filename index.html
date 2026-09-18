@@ -263,12 +263,13 @@ a { text-decoration: none; color: inherit; }
   max-width: var(--max-w); margin: 0 auto; padding: 0 28px;
   display: flex; align-items: center; justify-content: space-between; height: var(--header-h);
 }
-.logo-link { display: flex; align-items: center; gap: 16px; min-width: 0; }
-.logo-click-box { display: flex; align-items: center; flex: 0 0 auto; overflow: visible; cursor: pointer; line-height: 0; }
+.logo-link { display: flex; align-items: center; gap: 16px; min-width: 0; pointer-events: none; }
+.logo-click-box { display: flex; align-items: center; flex: 0 0 auto; overflow: visible; cursor: pointer; line-height: 0; pointer-events: auto; }
 .logo-click-box:focus-visible { outline: 2px solid var(--gold); outline-offset: 3px; border-radius: 4px; }
 .logo-click-box .logo-img { pointer-events: none; }
 .logo-img { height: 96px; width: auto; transition: transform .3s var(--ease); filter: drop-shadow(0 0 1px rgba(255,255,255,.3)); flex-shrink: 0; object-fit: contain; }
-.certif-badge-img { transition: transform .3s var(--ease); flex-shrink: 0; object-fit: contain; }
+.certif-badge-img { transition: transform .3s var(--ease); flex-shrink: 0; object-fit: contain; pointer-events: none; }
+.certif-badge-placeholder { pointer-events: auto; }
 /* ===== MOBILE - garantir que caiba (sem overflow horizontal) ===== */
 @media(max-width:768px) {
   .header-inner { padding: 8px 14px !important; }
@@ -276,7 +277,7 @@ a { text-decoration: none; color: inherit; }
   .certif-badge-img { max-width: 40vw; object-fit: contain; }
   .logo-link { gap: 10px; }
 }
-.logo-link:hover .logo-img { transform: scale(1.04); }
+.logo-click-box:hover .logo-img { transform: scale(1.04); }
 .nav { display: flex; align-items: center; gap: 4px; }
 .nav-link {
   padding: 11px 22px; border-radius: 8px; font-weight: 500; font-size: 1.02rem;
@@ -1148,8 +1149,8 @@ button.footer-link { padding-left: 0; }
 .no-data p { color: var(--text-light); }
 
 /* FILTERS BAR */
-.filters-bar { background: white; border-bottom: 1px solid var(--border); padding: 28px 0 22px; position: relative; z-index: 1; margin-top: calc(var(--header-h) - 22px); }
-.filters-bar.has-admin-bar { margin-top: calc(var(--header-h) + 12px); padding-top: 22px; }
+.filters-bar { background: white; border-bottom: 1px solid var(--border); padding: 28px 0 22px; position: relative; z-index: 1; margin-top: var(--header-h); }
+.filters-bar.has-admin-bar { margin-top: calc(var(--header-h) + var(--admin-bar-h)); padding-top: 22px; }
 .filters-bar + .section { padding-top: 36px; }
 @media(max-width:768px) { .filters-bar { padding: 20px 0 16px; } .filters-bar + .section { padding-top: 24px; } }
 .filters-inner { max-width: var(--max-w); margin: 0 auto; padding: 0 28px; }
@@ -1262,10 +1263,10 @@ button.footer-link { padding-left: 0; }
 
 </style>
 <!-- Firebase SDK (carrega em paralelo, não bloqueia o site) -->
-<script async src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
-<script async src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
-<script async src="https://www.gstatic.com/firebasejs/10.12.2/firebase-storage-compat.js"></script>
-<script async src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-storage-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
 </head><body>
 <div id="app"></div>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
