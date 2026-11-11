@@ -4253,11 +4253,21 @@ function AdminPanel({properties, setProperties, showToast, settings, viewsMap}) 
   const toggleSold = async id => {
     const p = properties.find(x=>x.id===id); if (!p) return;
     const newSold = !p.sold;
-    const patch = {sold:newSold, active: p.sold ? true : false, reserved: false};
+    if (newSold) {
+      if (!confirm(`Arquivar "${p.title}"?\n\n• Sai do catálogo público\n• Vai pra aba "Vendidos" do painel\n• Pode ser reativado depois`)) return;
+    }
+    const patch = newSold
+      ? {sold: true, active: false, reserved: false, soldDisplay: false}
+      : {sold: false, active: true};
     setProperties(prev => prev.map(x => x.id===id ? {...x, ...patch} : x));
     const res = await FB.updateFields(id, patch);
-    if (!res.ok) { setProperties(prev => prev.map(x => x.id===id ? {...x, sold:p.sold, active:p.active, reserved:p.reserved} : x)); showToast("Erro: " + res.error, "error"); return; }
-    showToast("Status atualizado!","success");
+    if (!res.ok) { setProperties(prev => prev.map(x => x.id===id ? {...x, sold:p.sold, active:p.active, reserved:p.reserved, soldDisplay:p.soldDisplay} : x)); showToast("Erro: " + res.error, "error"); return; }
+    if (newSold) {
+      showToast("📦 Arquivado em 'Vendidos' — removido do site público","success");
+      setAp("sold"); // Muda automaticamente pra aba Vendidos pra o usuario ver que foi
+    } else {
+      showToast("✅ Imóvel reativado no catálogo público","success");
+    }
   };
   // Mostra selo VENDIDO animado no site publico, mas mantem o imovel ativo e visivel
   const toggleSoldDisplay = async id => {
