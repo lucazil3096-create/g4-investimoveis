@@ -1026,9 +1026,10 @@ button.footer-link { padding-left: 0; }
   display: inline-flex; align-items: center; gap: 5px; transition: all .2s var(--ease);
   cursor: pointer; border: none; font-family: var(--font-body);
 }
-.btn-sold-sm.off { background: rgba(30,41,59,.08); color: #475569; }
-.btn-sold-sm.off:hover { background: #1e293b; color: white; }
-.btn-sold-sm.on { background: linear-gradient(135deg, #1e293b, #334155); color: white; }
+.btn-sold-sm.off { background: rgba(30,41,59,.10); color: #1e293b; border: 1px solid rgba(30,41,59,.25); }
+.btn-sold-sm.off:hover { background: linear-gradient(135deg, #1e293b, #334155); color: white; border-color: transparent; transform: translateY(-1px); box-shadow: 0 4px 12px rgba(30,41,59,.3); }
+.btn-sold-sm.on { background: linear-gradient(135deg, #1e293b, #334155); color: white; box-shadow: 0 2px 8px rgba(30,41,59,.4); }
+.btn-sold-sm.on:hover { opacity: .85; }
 
 .btn-download-sm {
   padding: 7px 12px; border-radius: 7px; font-weight: 600; font-size: .75rem;
@@ -4409,7 +4410,12 @@ function AdminPanel({properties, setProperties, showToast, settings, viewsMap}) 
     React.createElement("td", {style:{fontWeight:600}}, fmtCurrency(p.price)),
     React.createElement("td", {style:{textAlign:"center"}}, React.createElement("div", {style:{display:"inline-flex", alignItems:"center", gap:6, background:"rgba(196,30,30,.08)", color:"var(--red)", padding:"4px 12px", borderRadius:50, fontSize:".82rem", fontWeight:700, fontFamily:"var(--font-num)"}}, "👁 ", (vMap[p.id] || 0).toLocaleString("pt-BR"))),
     !minimal && React.createElement("td", null, React.createElement("button", {onClick:()=>togglePrice(p.id), style:{display:"flex",alignItems:"center",gap:4,color:p.showPrice?"var(--success)":"var(--text-light)",cursor:"pointer",border:"none",background:"none",fontFamily:"var(--font-body)"}}, p.showPrice ? I.eye : I.eyeOff, React.createElement("span",{style:{fontSize:".75rem"}}, p.showPrice?"Visível":"Oculto"))),
-    !minimal && React.createElement("td", null, !p.sold && React.createElement("button", {className: `btn-reserve-sm ${p.reserved ? 'on' : 'off'}`, onClick:()=>toggleReserve(p.id)}, p.reserved ? "⚡ Reservado" : "Reservar")),
+    !minimal && React.createElement("td", null,
+      React.createElement("div", {style:{display:"flex", gap:6, flexWrap:"wrap", alignItems:"center"}},
+        !p.sold && React.createElement("button", {className: `btn-reserve-sm ${p.reserved ? 'on' : 'off'}`, onClick:()=>toggleReserve(p.id)}, p.reserved ? "⚡ Reservado" : "Reservar"),
+        React.createElement("button", {className: `btn-sold-sm ${p.sold ? 'on' : 'off'}`, onClick:()=>toggleSold(p.id), title: p.sold ? "Clique para reativar" : "Marcar imóvel como vendido"}, p.sold ? "↩ Reativar" : "✓ Vender")
+      )
+    ),
     React.createElement("td", null,
       p.sold ? React.createElement("span", {style:{background:"linear-gradient(135deg,#1e293b,#334155)",color:"white",padding:"4px 14px",borderRadius:50,fontSize:".72rem",fontWeight:800,display:"inline-block"}}, "VENDIDO") :
       !p.active ? React.createElement("span", {className:"status-pill status-inactive"}, "Inativo") :
@@ -4417,7 +4423,7 @@ function AdminPanel({properties, setProperties, showToast, settings, viewsMap}) 
     ),
     React.createElement("td", null, React.createElement("div", {className: "a-table-actions"},
       !p.sold && React.createElement("button", {className: "btn-sm btn-outline-sm", onClick:()=>openEdit(p), title:"Editar"}, I.edit),
-      React.createElement("button", {className: `btn-sold-sm ${p.sold ? 'on' : 'off'}`, onClick:()=>toggleSold(p.id), title: p.sold ? "Reativar" : "Marcar como vendido"}, p.sold ? "↩" : "✓"),
+      p.sold && React.createElement("button", {className: `btn-sold-sm on`, onClick:()=>toggleSold(p.id), title:"Reativar imóvel"}, "↩"),
       !p.sold && React.createElement("button", {className: "btn-sm btn-outline-sm", onClick:()=>toggleActive(p.id), title: p.active?"Desativar":"Ativar"}, p.active?"⊘":"✓"),
       React.createElement("button", {className: "btn-download-sm", onClick:(e)=>{e.stopPropagation();downloadPhotos(p)}, title:"Baixar fotos"}, I.photo),
       !p.sold && React.createElement("button", {className: "btn-sm btn-outline-sm", onClick:()=>setIgProp(p), title:"Gerar imagem para Instagram", style:{background:"linear-gradient(45deg, #f09433, #e6683c, #dc2743, #cc2366, #bc1888)", color:"white", border:"none"}}, "📸"),
@@ -4483,7 +4489,7 @@ function AdminPanel({properties, setProperties, showToast, settings, viewsMap}) 
           React.createElement("h3", {style:{fontFamily:"var(--font-display)",fontSize:"1.5rem",letterSpacing:".03em",textTransform:"uppercase"}}, "Últimos Imóveis"),
           React.createElement("button", {className: "btn-sm btn-outline-sm", onClick:()=>setAp("list"), style:{padding:"8px 16px"}}, "Ver todos →")
         ),
-        React.createElement(ScrollableTable, null, React.createElement("table", {className: "a-table"}, React.createElement("thead", null, React.createElement("tr", null, ["Foto","Imóvel","Tipo","Cidade","Preço","Views","Visível","Reserva","Status","Ações"].map(h => React.createElement("th", {key:h}, h)))), React.createElement("tbody", null, activeProps.slice(0,5).map(p => React.createElement(TableRow, {key:p.id, p})))))
+        React.createElement(ScrollableTable, null, React.createElement("table", {className: "a-table"}, React.createElement("thead", null, React.createElement("tr", null, ["Foto","Imóvel","Tipo","Cidade","Preço","Views","Visível","Reserva / Venda","Status","Ações"].map(h => React.createElement("th", {key:h}, h)))), React.createElement("tbody", null, activeProps.slice(0,5).map(p => React.createElement(TableRow, {key:p.id, p})))))
       ) : ap === 'list' ? React.createElement(React.Fragment, null,
         React.createElement("div", {className: "admin-top"},
           React.createElement("h1", {className: "admin-page-title"}, "Todos os Imóveis"),
@@ -4570,7 +4576,7 @@ function AdminPanel({properties, setProperties, showToast, settings, viewsMap}) 
             React.createElement("p", {style:{color:"var(--text-light)",marginBottom:24}}, "Comece adicionando seu primeiro imóvel ao catálogo"),
             React.createElement("button", {className: "btn-red", onClick: openNew, style:{padding:"16px 36px",fontSize:"1rem"}}, I.plus, " Cadastrar Primeiro Imóvel")
           ) :
-          React.createElement(ScrollableTable, null, React.createElement("table", {className: "a-table"}, React.createElement("thead", null, React.createElement("tr", null, (selectMode ? ["",  "Foto","Imóvel","Tipo","Cidade","Preço","Views","Visível","Reserva","Status","Ações"] : ["Foto","Imóvel","Tipo","Cidade","Preço","Views","Visível","Reserva","Status","Ações"]).map((h,i) => React.createElement("th", {key:i}, h)))), React.createElement("tbody", null, activeProps.map(p => React.createElement(TableRow, {key:p.id, p})))))
+          React.createElement(ScrollableTable, null, React.createElement("table", {className: "a-table"}, React.createElement("thead", null, React.createElement("tr", null, (selectMode ? ["",  "Foto","Imóvel","Tipo","Cidade","Preço","Views","Visível","Reserva / Venda","Status","Ações"] : ["Foto","Imóvel","Tipo","Cidade","Preço","Views","Visível","Reserva / Venda","Status","Ações"]).map((h,i) => React.createElement("th", {key:i}, h)))), React.createElement("tbody", null, activeProps.map(p => React.createElement(TableRow, {key:p.id, p})))))
 
       ) : ap === 'sold' ? React.createElement(React.Fragment, null,
         React.createElement("div", {className: "admin-top"},
