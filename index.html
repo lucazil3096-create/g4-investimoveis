@@ -1060,6 +1060,69 @@ button.footer-link { padding-left: 0; }
 .property-card.is-reserved .card-img-wrap img { filter: brightness(.7) saturate(.6); }
 .property-card.is-reserved { border: 2px solid #dc2626; }
 
+/* ===== VENDIDO (selo publico animado, imovel continua visivel) ===== */
+.sold-display-ribbon {
+  position: absolute; top: 0; left: 0; right: 0; bottom: 0;
+  z-index: 6; pointer-events: none; overflow: hidden;
+}
+.sold-display-ribbon::before {
+  content: 'VENDIDO'; position: absolute;
+  top: 26px; left: -32px; width: 200px;
+  background: linear-gradient(135deg, #047857 0%, #10b981 50%, #047857 100%);
+  background-size: 200% 100%;
+  color: white; text-align: center; padding: 10px 0;
+  font-size: .9rem; font-weight: 900; letter-spacing: .22em;
+  transform: rotate(-45deg);
+  box-shadow: 0 4px 16px rgba(5,150,105,.55);
+  font-family: var(--font-body);
+  animation: sold-shimmer 2.2s linear infinite, sold-ribbon-pulse 1.6s ease-in-out infinite;
+  text-shadow: 0 1px 3px rgba(0,0,0,.4);
+}
+.sold-display-ribbon::after {
+  content: ''; position: absolute; inset: 0;
+  background: rgba(0,0,0,.25);
+}
+@keyframes sold-shimmer {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+@keyframes sold-ribbon-pulse {
+  0%,100% { box-shadow: 0 4px 16px rgba(5,150,105,.55); transform: rotate(-45deg) scale(1); }
+  50% { box-shadow: 0 6px 24px rgba(16,185,129,.9); transform: rotate(-45deg) scale(1.05); }
+}
+.property-card.is-sold-display .card-img-wrap img { filter: brightness(.65) saturate(.5); }
+.property-card.is-sold-display { border: 2px solid #047857; }
+
+/* Selo VENDIDO grande na pagina de detalhes */
+.sold-display-badge-detail {
+  background: linear-gradient(135deg, #047857 0%, #10b981 50%, #047857 100%);
+  background-size: 200% 100%;
+  color: white; padding: 16px 28px; border-radius: var(--radius);
+  display: flex; align-items: center; gap: 14px;
+  margin-bottom: 24px; box-shadow: 0 4px 20px rgba(5,150,105,.4);
+  animation: sold-shimmer 2.2s linear infinite, sold-detail-pulse 1.8s ease-in-out infinite;
+}
+.sold-display-badge-detail svg { width: 32px; height: 32px; }
+.sold-display-badge-detail h4 {
+  font-family: var(--font-display); font-size: 1.7rem;
+  letter-spacing: .06em; font-weight: 400; text-transform: uppercase;
+  text-shadow: 0 1px 3px rgba(0,0,0,.3);
+}
+.sold-display-badge-detail p { font-size: .88rem; opacity: .95; }
+@keyframes sold-detail-pulse {
+  0%,100% { box-shadow: 0 4px 20px rgba(5,150,105,.4); }
+  50% { box-shadow: 0 6px 32px rgba(16,185,129,.75); }
+}
+.badge-sold-display {
+  background: linear-gradient(135deg, #047857, #10b981) !important;
+  color: white !important; animation: sold-badge-pulse 1.8s ease-in-out infinite;
+  font-weight: 900 !important; letter-spacing: .12em !important;
+}
+@keyframes sold-badge-pulse {
+  0%,100% { box-shadow: 0 2px 10px rgba(5,150,105,.5); }
+  50% { box-shadow: 0 2px 20px rgba(16,185,129,.9); }
+}
+
 .reserved-badge-detail {
   background: linear-gradient(135deg, #dc2626, #b91c1c);
   color: white; padding: 16px 28px; border-radius: var(--radius);
@@ -1096,6 +1159,17 @@ button.footer-link { padding-left: 0; }
 .btn-reserve-sm.off:hover { background: #dc2626; color: white; }
 .btn-reserve-sm.on { background: linear-gradient(135deg, #dc2626, #b91c1c); color: white; }
 .btn-reserve-sm.on:hover { opacity: .85; }
+
+/* Botao do selo VENDIDO animado no site publico (nao arquiva o imovel) */
+.btn-sold-display-sm {
+  padding: 7px 14px; border-radius: 7px; font-weight: 800; font-size: .78rem;
+  display: inline-flex; align-items: center; gap: 5px; transition: all .2s var(--ease);
+  cursor: pointer; border: none; font-family: var(--font-body);
+}
+.btn-sold-display-sm.off { background: rgba(5,150,105,.10); color: #047857; border: 1px solid rgba(5,150,105,.3); }
+.btn-sold-display-sm.off:hover { background: linear-gradient(135deg, #047857, #065f46); color: white; border-color: transparent; transform: translateY(-1px); box-shadow: 0 4px 12px rgba(5,150,105,.35); }
+.btn-sold-display-sm.on { background: linear-gradient(135deg, #047857, #065f46); color: white; box-shadow: 0 2px 10px rgba(5,150,105,.45); animation: sold-btn-pulse 2s infinite; }
+@keyframes sold-btn-pulse { 0%,100% { box-shadow: 0 2px 10px rgba(5,150,105,.45); } 50% { box-shadow: 0 2px 18px rgba(5,150,105,.75); } }
 
 /* ADMIN INDICATOR BAR */
 .admin-bar {
@@ -1924,17 +1998,18 @@ function Hero({setPage, setSearchFilters, properties, settings}) {
 function PropCard({p, onClick, favs, toggleFav, isAdmin, settings}) {
   const isFav = favs.includes(p.id);
   const canSeePrice = p.showPrice || isAdmin;
-  return React.createElement("div", {className: `property-card ${p.reserved ? 'is-reserved' : ''}`, onClick: () => onClick(p)},
+  return React.createElement("div", {className: `property-card ${p.soldDisplay ? 'is-sold-display' : p.reserved ? 'is-reserved' : ''}`, onClick: () => onClick(p)},
     React.createElement("div", {className: "card-img-wrap"},
       React.createElement(WmImg, {src: p.images[0], alt: p.title, loading: "lazy", settings, prop: p, wrapStyle:{width:"100%", height:"100%"}, imgStyle:{width:"100%", height:"100%", objectFit:"cover"}}),
       React.createElement("div", {className: "card-overlay"}),
-      p.reserved && React.createElement("div", {className: "reserved-ribbon"}),
+      p.soldDisplay && React.createElement("div", {className: "sold-display-ribbon"}),
+      !p.soldDisplay && p.reserved && React.createElement("div", {className: "reserved-ribbon"}),
       p.reference && React.createElement("div", {className: "card-ref"}, "Ref.: ", p.reference),
-      React.createElement("div", {className: "card-badges", style: p.reserved ? {top:"auto",bottom:16,left:16} : {}},
+      React.createElement("div", {className: "card-badges", style: (p.soldDisplay || p.reserved) ? {top:"auto",bottom:16,left:16} : {}},
         React.createElement("span", {className: "badge badge-type"}, p.type),
         React.createElement("span", {className: `badge badge-transaction ${p.transaction==="Aluguel"?"aluguel":p.transaction==="Temporada"?"temporada":""}`}, p.transaction),
-        isAdmin && p.featured && !p.reserved && React.createElement("span", {className: "badge badge-featured"}, "Destaque"),
-        p.priceReduced && !p.sold && React.createElement("span", {className: "badge badge-drop"}, "🔥 PREÇO BAIXOU!"),
+        isAdmin && p.featured && !p.reserved && !p.soldDisplay && React.createElement("span", {className: "badge badge-featured"}, "Destaque"),
+        p.priceReduced && !p.sold && !p.soldDisplay && React.createElement("span", {className: "badge badge-drop"}, "🔥 PREÇO BAIXOU!"),
         isAdmin && !p.showPrice && React.createElement("span", {className: "badge", style:{background:"rgba(212,160,18,.9)",color:"#1a1a1a"}}, "Preço Oculto")
       ),
       React.createElement("button", {className: "card-fav", onClick: e => { e.stopPropagation(); toggleFav(p.id); }}, isFav ? I.heartFill : I.heart)
@@ -2204,12 +2279,12 @@ function PropertiesPage({properties, searchFilters, setSearchFilters, setSelecte
         React.createElement("div", {className: viewMode === 'grid' ? 'properties-grid' : 'properties-list'},
           result.map(p => viewMode === 'grid' ?
             React.createElement(PropCard, {key: p.id, p, onClick: goDetail, favs, toggleFav, isAdmin, settings}) :
-            React.createElement("div", {key: p.id, className: "property-list-card", onClick: () => goDetail(p), style: p.reserved ? {borderColor:"#dc2626",borderWidth:2} : {}},
-              React.createElement("div", {className: "list-card-img", style:{position:"relative"}}, React.createElement(WmImg, {src: p.images[0], alt: p.title, settings, prop: p, imgStyle: p.reserved ? {filter:"brightness(.7) saturate(.6)", width:"100%", height:"100%", objectFit:"cover"} : {width:"100%", height:"100%", objectFit:"cover"}, wrapStyle:{width:"100%", height:"100%"}}), p.reserved && React.createElement("div", {style:{position:"absolute",top:12,left:12,zIndex:5}}, React.createElement("span", {className:"list-reserved-tag"}, "⚡ RESERVADO"))),
+            React.createElement("div", {key: p.id, className: "property-list-card", onClick: () => goDetail(p), style: p.soldDisplay ? {borderColor:"#047857",borderWidth:2} : p.reserved ? {borderColor:"#dc2626",borderWidth:2} : {}},
+              React.createElement("div", {className: "list-card-img", style:{position:"relative"}}, React.createElement(WmImg, {src: p.images[0], alt: p.title, settings, prop: p, imgStyle: (p.soldDisplay || p.reserved) ? {filter:"brightness(.7) saturate(.6)", width:"100%", height:"100%", objectFit:"cover"} : {width:"100%", height:"100%", objectFit:"cover"}, wrapStyle:{width:"100%", height:"100%"}}), p.soldDisplay && React.createElement("div", {style:{position:"absolute",top:12,left:12,zIndex:5}}, React.createElement("span", {className:"badge badge-sold-display", style:{padding:"6px 14px",fontSize:".72rem"}}, "✓ VENDIDO")), !p.soldDisplay && p.reserved && React.createElement("div", {style:{position:"absolute",top:12,left:12,zIndex:5}}, React.createElement("span", {className:"list-reserved-tag"}, "⚡ RESERVADO"))),
               React.createElement("div", {className: "list-card-body"},
                 React.createElement("div", {className: "list-card-top"},
                   React.createElement("div", null,
-                    React.createElement("div", {className: "card-badges", style:{position:"static",marginBottom:8}}, p.reserved && React.createElement("span", {className: "badge badge-reserved"}, "RESERVADO"), React.createElement("span", {className: "badge badge-type"}, p.type), React.createElement("span", {className: `badge badge-transaction ${p.transaction==="Aluguel"?"aluguel":p.transaction==="Temporada"?"temporada":""}`}, p.transaction)),
+                    React.createElement("div", {className: "card-badges", style:{position:"static",marginBottom:8}}, p.soldDisplay && React.createElement("span", {className: "badge badge-sold-display"}, "✓ VENDIDO"), !p.soldDisplay && p.reserved && React.createElement("span", {className: "badge badge-reserved"}, "RESERVADO"), React.createElement("span", {className: "badge badge-type"}, p.type), React.createElement("span", {className: `badge badge-transaction ${p.transaction==="Aluguel"?"aluguel":p.transaction==="Temporada"?"temporada":""}`}, p.transaction)),
                     React.createElement("div", {className: "card-title", style:{fontSize:"1.12rem"}}, p.title),
                     React.createElement("div", {className: "card-location"}, I.pin, " ", p.neighborhood, ", ", p.city)
                   ),
@@ -2337,9 +2412,10 @@ function DetailPage({property: p, setPage, properties, setSelectedProp, favs, to
       p.images.length > 1 && React.createElement("div", {className: "lightbox-counter"}, ci + 1, " / ", p.images.length),
       p.images.length > 1 && React.createElement("div", {className: "lightbox-hint"}, "← Arraste para navegar →")
     ),
-    React.createElement("div", {className: "detail-gallery", style: p.reserved ? {border:"3px solid #dc2626"} : {}, onTouchStart: onTouchStart, onTouchEnd: onTouchEnd},
-      React.createElement(WmImg, {src: p.images[ci], alt: p.title, settings, prop: p, imgStyle: Object.assign({width:"100%", height:"100%", objectFit:"cover", cursor:"zoom-in"}, p.reserved ? {filter:"brightness(.8)"} : {}), wrapStyle:{width:"100%", height:"100%"}, onClick: () => p.images.length > 0 && setLightbox(true), title: "Clique para ampliar"}),
-      p.reserved && React.createElement("div", {style:{position:"absolute",top:20,left:20,zIndex:5,background:"linear-gradient(135deg,#dc2626,#b91c1c)",color:"white",padding:"10px 24px",borderRadius:8,fontSize:".85rem",fontWeight:900,letterSpacing:".1em",boxShadow:"0 4px 16px rgba(220,38,38,.4)",display:"flex",alignItems:"center",gap:8}}, "⚡ IMÓVEL RESERVADO"),
+    React.createElement("div", {className: "detail-gallery", style: p.soldDisplay ? {border:"3px solid #047857"} : p.reserved ? {border:"3px solid #dc2626"} : {}, onTouchStart: onTouchStart, onTouchEnd: onTouchEnd},
+      React.createElement(WmImg, {src: p.images[ci], alt: p.title, settings, prop: p, imgStyle: Object.assign({width:"100%", height:"100%", objectFit:"cover", cursor:"zoom-in"}, (p.soldDisplay || p.reserved) ? {filter:"brightness(.8)"} : {}), wrapStyle:{width:"100%", height:"100%"}, onClick: () => p.images.length > 0 && setLightbox(true), title: "Clique para ampliar"}),
+      p.soldDisplay && React.createElement("div", {style:{position:"absolute",top:20,left:20,zIndex:5,background:"linear-gradient(135deg, #047857 0%, #10b981 50%, #047857 100%)",backgroundSize:"200% 100%",color:"white",padding:"12px 28px",borderRadius:8,fontSize:".95rem",fontWeight:900,letterSpacing:".16em",boxShadow:"0 4px 20px rgba(5,150,105,.6)",display:"flex",alignItems:"center",gap:8,animation:"sold-shimmer 2.2s linear infinite, sold-detail-pulse 1.8s ease-in-out infinite",textShadow:"0 1px 3px rgba(0,0,0,.4)"}}, "✓ VENDIDO"),
+      !p.soldDisplay && p.reserved && React.createElement("div", {style:{position:"absolute",top:20,left:20,zIndex:5,background:"linear-gradient(135deg,#dc2626,#b91c1c)",color:"white",padding:"10px 24px",borderRadius:8,fontSize:".85rem",fontWeight:900,letterSpacing:".1em",boxShadow:"0 4px 16px rgba(220,38,38,.4)",display:"flex",alignItems:"center",gap:8}}, "⚡ IMÓVEL RESERVADO"),
       isAdmin && React.createElement("button", {className: "no-print", onClick: (e) => { e.stopPropagation(); setPresentMode(true); }, title:"Apresentar imóvel em tela cheia (admin)", style:{position:"absolute", top:20, right:20, zIndex:6, background:"linear-gradient(135deg, #1e293b, #334155)", color:"white", border:"2px solid rgba(255,255,255,.7)", padding:"10px 18px", borderRadius:10, fontWeight:800, cursor:"pointer", fontSize:".88rem", display:"inline-flex", alignItems:"center", gap:8, boxShadow:"0 6px 18px rgba(0,0,0,.45)", letterSpacing:".02em"}}, "📺 Apresentar"),
       p.images.length > 1 && React.createElement(React.Fragment, null,
         React.createElement("button", {className: "gal-nav left", onClick: () => setCi(i => (i-1+p.images.length)%p.images.length)}, I.chevL),
@@ -2350,8 +2426,23 @@ function DetailPage({property: p, setPage, properties, setSelectedProp, favs, to
     React.createElement("div", {className: "gal-thumbs"}, p.images.map((img, i) => React.createElement("div", {key: i, className: `gal-thumb ${i===ci?'active':''}`, onClick: () => setCi(i)}, React.createElement("img", {src: img})))),
     React.createElement("div", {className: "detail-grid"},
       React.createElement("div", null,
-        React.createElement("div", {className: "dt-badges"}, p.reserved && React.createElement("span", {className: "badge badge-reserved", style:{fontSize:".8rem",padding:"7px 18px"}}, "⚡ RESERVADO"), React.createElement("span", {className: "badge badge-type"}, p.type), React.createElement("span", {className: `badge badge-transaction ${p.transaction==="Aluguel"?"aluguel":p.transaction==="Temporada"?"temporada":""}`}, p.transaction), isAdmin && p.featured && !p.reserved && React.createElement("span", {className: "badge badge-featured"}, "Destaque")),
-        p.reserved && React.createElement("div", {className: "reserved-badge-detail"},
+        React.createElement("div", {className: "dt-badges"},
+          p.soldDisplay && React.createElement("span", {className: "badge badge-sold-display", style:{fontSize:".85rem",padding:"8px 20px"}}, "✓ VENDIDO"),
+          !p.soldDisplay && p.reserved && React.createElement("span", {className: "badge badge-reserved", style:{fontSize:".8rem",padding:"7px 18px"}}, "⚡ RESERVADO"),
+          React.createElement("span", {className: "badge badge-type"}, p.type),
+          React.createElement("span", {className: `badge badge-transaction ${p.transaction==="Aluguel"?"aluguel":p.transaction==="Temporada"?"temporada":""}`}, p.transaction),
+          isAdmin && p.featured && !p.reserved && !p.soldDisplay && React.createElement("span", {className: "badge badge-featured"}, "Destaque")
+        ),
+        p.soldDisplay && React.createElement("div", {className: "sold-display-badge-detail"},
+          React.createElement("div", null,
+            React.createElement("svg", {width:32,height:32,fill:"none",stroke:"currentColor",strokeWidth:2.5,viewBox:"0 0 24 24"}, React.createElement("path",{d:"M5 13l4 4L19 7"}))
+          ),
+          React.createElement("div", null,
+            React.createElement("h4", null, "Imóvel Vendido"),
+            React.createElement("p", null, "Este imóvel foi vendido pela G4. Temos outras oportunidades — fale conosco!")
+          )
+        ),
+        !p.soldDisplay && p.reserved && React.createElement("div", {className: "reserved-badge-detail"},
           React.createElement("div", null,
             React.createElement("svg", {width:32,height:32,fill:"none",stroke:"currentColor",strokeWidth:2,viewBox:"0 0 24 24"}, React.createElement("path",{d:"M13 2 3 14h9l-1 8 10-12h-9l1-8z"}))
           ),
@@ -4168,6 +4259,15 @@ function AdminPanel({properties, setProperties, showToast, settings, viewsMap}) 
     if (!res.ok) { setProperties(prev => prev.map(x => x.id===id ? {...x, sold:p.sold, active:p.active, reserved:p.reserved} : x)); showToast("Erro: " + res.error, "error"); return; }
     showToast("Status atualizado!","success");
   };
+  // Mostra selo VENDIDO animado no site publico, mas mantem o imovel ativo e visivel
+  const toggleSoldDisplay = async id => {
+    const p = properties.find(x=>x.id===id); if (!p) return;
+    const newVal = !p.soldDisplay;
+    setProperties(prev => prev.map(x => x.id===id ? {...x, soldDisplay:newVal} : x));
+    const res = await FB.updateField(id,"soldDisplay",newVal);
+    if (!res.ok) { setProperties(prev => prev.map(x => x.id===id ? {...x, soldDisplay:!newVal} : x)); showToast("Erro: " + res.error, "error"); return; }
+    showToast(newVal ? "Selo VENDIDO ativado no site!" : "Selo VENDIDO removido do site","success");
+  };
   // Renomear bairro em todos os imoveis que usam
   const renameNeighborhood = async (oldName, newName) => {
     const oldT = (oldName || "").trim(); const newT = (newName || "").trim();
@@ -4349,7 +4449,7 @@ function AdminPanel({properties, setProperties, showToast, settings, viewsMap}) 
       const max = nums.length > 0 ? Math.max(...nums) : 0;
       return String(max + 1).padStart(3, "0");
     })();
-    setEditProp({id:genId(),reference:nextRef,title:"",type:"Casa",transaction:"Venda",price:0,oldPrice:0,priceReduced:false,showPrice:true,watermark:true,area:0,builtArea:0,bedrooms:0,suites:0,bathrooms:0,garages:0,city:"",neighborhood:"",address:"",number:"",lat:"",lng:"",streetHeading:0,streetPitch:0,description:"",posicionamento:"",tipoConstrucao:"",localizacaoLote:"",features:[],rooms:[],images:[],sold:false,reserved:false,featured:false,active:true,createdAt:new Date().toISOString().split("T")[0],ownerName:"",ownerPhone:"",ownerCpf:"",contractStart:"",contractEnd:"",contractNotes:""});
+    setEditProp({id:genId(),reference:nextRef,title:"",type:"Casa",transaction:"Venda",price:0,oldPrice:0,priceReduced:false,showPrice:true,watermark:true,area:0,builtArea:0,bedrooms:0,suites:0,bathrooms:0,garages:0,city:"",neighborhood:"",address:"",number:"",lat:"",lng:"",streetHeading:0,streetPitch:0,description:"",posicionamento:"",tipoConstrucao:"",localizacaoLote:"",features:[],rooms:[],images:[],sold:false,soldDisplay:false,reserved:false,featured:false,active:true,createdAt:new Date().toISOString().split("T")[0],ownerName:"",ownerPhone:"",ownerCpf:"",contractStart:"",contractEnd:"",contractNotes:""});
     setShowForm(true);
   };
   const save = async prop => {
@@ -4398,8 +4498,9 @@ function AdminPanel({properties, setProperties, showToast, settings, viewsMap}) 
       React.createElement("div", {style:{display:"flex", flexDirection:"column", alignItems:"flex-start", gap:3}},
         React.createElement("div", {style:{position:"relative",display:"inline-block"}},
           React.createElement("img", {className: "a-table-img", src: p.images[0] || "https://via.placeholder.com/64x46", alt: "", style: p.sold ? {filter:"saturate(.2)"} : {}}),
-          p.reserved && !p.sold && React.createElement("div", {style:{position:"absolute",bottom:-2,left:0,right:0,background:"linear-gradient(135deg,#dc2626,#b91c1c)",color:"white",textAlign:"center",fontSize:".52rem",fontWeight:900,padding:"1px 0",letterSpacing:".06em"}}, "RESERVADO"),
-          p.sold && React.createElement("div", {style:{position:"absolute",bottom:-2,left:0,right:0,background:"linear-gradient(135deg,#1e293b,#334155)",color:"white",textAlign:"center",fontSize:".52rem",fontWeight:900,padding:"1px 0",letterSpacing:".06em"}}, "VENDIDO")
+          p.soldDisplay && !p.sold && React.createElement("div", {style:{position:"absolute",bottom:-2,left:0,right:0,background:"linear-gradient(135deg,#047857,#10b981)",color:"white",textAlign:"center",fontSize:".52rem",fontWeight:900,padding:"1px 0",letterSpacing:".06em"}}, "VENDIDO"),
+          !p.soldDisplay && p.reserved && !p.sold && React.createElement("div", {style:{position:"absolute",bottom:-2,left:0,right:0,background:"linear-gradient(135deg,#dc2626,#b91c1c)",color:"white",textAlign:"center",fontSize:".52rem",fontWeight:900,padding:"1px 0",letterSpacing:".06em"}}, "RESERVADO"),
+          p.sold && React.createElement("div", {style:{position:"absolute",bottom:-2,left:0,right:0,background:"linear-gradient(135deg,#1e293b,#334155)",color:"white",textAlign:"center",fontSize:".52rem",fontWeight:900,padding:"1px 0",letterSpacing:".06em"}}, "ARQUIVADO")
         ),
         p.reference && React.createElement("span", {style:{fontSize:".62rem", fontWeight:700, color:"var(--text-light)", fontFamily:"var(--font-num)", letterSpacing:".04em"}}, "Ref. ", p.reference)
       )
@@ -4412,8 +4513,9 @@ function AdminPanel({properties, setProperties, showToast, settings, viewsMap}) 
     !minimal && React.createElement("td", null, React.createElement("button", {onClick:()=>togglePrice(p.id), style:{display:"flex",alignItems:"center",gap:4,color:p.showPrice?"var(--success)":"var(--text-light)",cursor:"pointer",border:"none",background:"none",fontFamily:"var(--font-body)"}}, p.showPrice ? I.eye : I.eyeOff, React.createElement("span",{style:{fontSize:".75rem"}}, p.showPrice?"Visível":"Oculto"))),
     !minimal && React.createElement("td", null,
       React.createElement("div", {style:{display:"flex", gap:6, flexWrap:"wrap", alignItems:"center"}},
-        !p.sold && React.createElement("button", {className: `btn-reserve-sm ${p.reserved ? 'on' : 'off'}`, onClick:()=>toggleReserve(p.id)}, p.reserved ? "⚡ Reservado" : "Reservar"),
-        React.createElement("button", {className: `btn-sold-sm ${p.sold ? 'on' : 'off'}`, onClick:()=>toggleSold(p.id), title: p.sold ? "Clique para reativar" : "Marcar imóvel como vendido"}, p.sold ? "↩ Reativar" : "✓ Vender")
+        !p.sold && React.createElement("button", {className: `btn-reserve-sm ${p.reserved ? 'on' : 'off'}`, onClick:()=>toggleReserve(p.id), title: p.reserved ? "Remover reserva" : "Marcar como reservado (aparece selo no site)"}, p.reserved ? "⚡ Reservado" : "Reservar"),
+        !p.sold && React.createElement("button", {className: `btn-sold-display-sm ${p.soldDisplay ? 'on' : 'off'}`, onClick:()=>toggleSoldDisplay(p.id), title: p.soldDisplay ? "Remover selo VENDIDO do site" : "Mostrar selo VENDIDO animado no site (imóvel continua visível)"}, p.soldDisplay ? "✓ Vendido" : "Vendido"),
+        React.createElement("button", {className: `btn-sold-sm ${p.sold ? 'on' : 'off'}`, onClick:()=>toggleSold(p.id), title: p.sold ? "Reativar e tirar do arquivo" : "Arquivar: tira do catálogo público e manda pros Vendidos"}, p.sold ? "↩ Reativar" : "📦 Arquivar")
       )
     ),
     React.createElement("td", null,
